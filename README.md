@@ -8,7 +8,7 @@ A modular web application designed to track agricultural production for **crop f
 
 - **Backend:** Spring Boot 3 (Java 17/21) with Modular Architecture
 - **Frontend:** React + Vite
-- **Database:** Neon Online Serverless PostgreSQL (`postgresql://...`)
+- **Database:** Aiven Online Managed MySQL (`mysql://...`)
 - **API Documentation:** Swagger / OpenAPI 3 (`/swagger-ui.html`)
 
 ---
@@ -18,26 +18,23 @@ A modular web application designed to track agricultural production for **crop f
 ```text
 farmers-production-tracking-platform/
 │
-├── .env.example                          # Environment variables template for Neon DB & server
+├── .env.example                          # Environment variables template for Aiven MySQL & server
 ├── README.md                             # Project setup and architecture documentation
 │
 ├── backend/                              # Spring Boot Application
-│   ├── pom.xml                           # Maven dependencies (Web, JPA, Postgres, Springdoc)
+│   ├── pom.xml                           # Maven dependencies (Web, JPA, MySQL Connector/J, Springdoc)
 │   └── src/
 │       └── main/
 │           ├── java/com/farmer/tracking/
 │           │   ├── FarmerProductionTrackingApplication.java # Spring Boot entrypoint
-│           │   ├── config/
-│           │   │   ├── OpenApiConfig.java# Swagger / OpenAPI 3 configuration
-│           │   │   └── CorsConfig.java   # Cross-Origin configuration for React
-│           │   ├── modules/              # Domain-Driven Modular Structure
+│           │   ├── modules/              # Domain-Driven Modular Scaffolding
 │           │   │   ├── farmer/           # Farmer & farm management
 │           │   │   ├── crop/             # Crop planting, cycles, harvest tracking
 │           │   │   ├── animal/           # Livestock batches & production outputs
 │           │   │   └── analytics/        # Yield calculations & dashboard summaries
-│           │   └── common/               # Shared exceptions, utilities, middleware
+│           │   └── common/               # Shared exceptions, utilities
 │           └── resources/
-│               └── application.properties # Neon PostgreSQL connection & Swagger settings
+│               └── application.properties # Aiven MySQL connection & Swagger settings
 │
 └── frontend/                             # React Application (Vite)
     ├── package.json                      # Dependencies and scripts
@@ -46,7 +43,7 @@ farmers-production-tracking-platform/
     └── src/
         ├── main.jsx                      # React mounting entry point
         ├── App.jsx                       # Root initial component
-        ├── index.css                     # Base styling
+        ├── index.css                     # Base styling reset
         ├── components/                   # Reusable UI components
         ├── pages/                        # Feature view pages
         ├── services/                     # API client services
@@ -55,16 +52,16 @@ farmers-production-tracking-platform/
 
 ---
 
-## 1. Database Configuration (Neon PostgreSQL)
+## 1. Database Configuration (Aiven MySQL)
 
-1. Create a project at [Neon Console](https://console.neon.tech).
-2. Copy your connection details or connection string from the Neon dashboard.
+1. Create a MySQL service at the [Aiven Console](https://console.aiven.io).
+2. Copy your connection URI or host, port, user (`avnadmin`), and password from the Aiven Service Overview.
 3. Configure your credentials via environment variables or in `backend/src/main/resources/application.properties`:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://<neon-hostname>:5432/<dbname>?sslmode=require
-spring.datasource.username=<neon-username>
-spring.datasource.password=<neon-password>
+spring.datasource.url=jdbc:mysql://<aiven-host>:<port>/defaultdb?sslMode=REQUIRED
+spring.datasource.username=avnadmin
+spring.datasource.password=<aiven-password>
 ```
 
 Or set environment variables:
