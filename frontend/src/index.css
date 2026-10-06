@@ -1,10 +1,120 @@
-/* Reset and base font */
-* {
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Acrea Surface Palette */
+  --color-sidebar-bg: #164230;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --color-sidebar-active-bg: #FFFFFF;
+  --color-sidebar-active-text: #164230;
+  --color-sidebar-text: rgba(255, 255, 255, 0.72);
+  --color-sidebar-subtle-badge: rgba(255, 255, 255, 0.12);
+
+  --color-canvas-bg: #F9F6F0;
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #ECE7DC;
+  --color-surface-subtle: #F4EFE6;
+
+  /* Brand Greens */
+  --color-brand-primary: #3E7B52;
+  --color-brand-hover: #336844;
+  --color-brand-active: #285336;
+  --color-brand-tint: #EAF4ED;
+  --color-brand-border: #C8E2D0;
+
+  /* Agricultural Accents */
+  --color-accent-amber: #D97706;
+  --color-accent-amber-bg: #FEF3C7;
+  --color-accent-amber-border: #FDE68A;
+  
+  --color-accent-teal: #0D9488;
+  --color-accent-teal-bg: #E6F6F4;
+
+  --color-accent-blue: #2563EB;
+  --color-accent-blue-bg: #EFF6FF;
+
+  /* Inks */
+  --color-text-primary: #19201C;
+  --color-text-secondary: #4B5752;
+  --color-text-muted: #788680;
+  --color-text-faint: #A4B0AA;
+  --color-border-input: #DFD8CA;
+  --color-border-focus: #3E7B52;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 3px rgba(22, 66, 48, 0.04);
+  --shadow-card: 0 2px 8px rgba(22, 66, 48, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(22, 66, 48, 0.08);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Reset */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--color-canvas-bg);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DFD8CA;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C4BCAF;
+}
+
+/* Utility Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn var(--transition-normal) forwards;
 }
