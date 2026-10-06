@@ -9,8 +9,9 @@ export function TopBar({
   farmName = "Green Acres Farm",
   onSearch,
   onNotificationClick,
-  onProfileClick
+  onLogout
 }) {
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   return (
     <header style={{
       display: 'flex',
@@ -114,43 +115,89 @@ export function TopBar({
         </button>
 
         {/* User Profile Pill */}
-        <div
-          onClick={onProfileClick}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '4px 10px 4px 4px',
-            borderRadius: 'var(--radius-pill)',
-            cursor: 'pointer',
-            transition: 'background-color var(--transition-fast)'
-          }}
-        >
-          <div style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '50%',
-            backgroundColor: '#E2EAE5',
-            color: 'var(--color-sidebar-bg)',
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            {userInitials}
+        <div style={{ position: 'relative' }}>
+          <div
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '4px 10px 4px 4px',
+              borderRadius: 'var(--radius-pill)',
+              cursor: 'pointer',
+              backgroundColor: dropdownOpen ? '#FFFFFF' : 'transparent',
+              boxShadow: dropdownOpen ? 'var(--shadow-card)' : 'none',
+              transition: 'background-color var(--transition-fast)'
+            }}
+          >
+            <div style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              backgroundColor: '#E2EAE5',
+              color: 'var(--color-sidebar-bg)',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {userInitials}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                {userName}
+              </span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                {farmName}
+              </span>
+            </div>
+
+            <IconChevronDown size={14} color="var(--color-text-muted)" />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-              {userName}
-            </span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-              {farmName}
-            </span>
-          </div>
-
-          <IconChevronDown size={14} color="var(--color-text-muted)" />
+          {dropdownOpen && (
+            <div style={{
+              position: 'absolute',
+              top: '46px',
+              right: 0,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-card-border)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-card-hover)',
+              padding: '8px',
+              width: '180px',
+              zIndex: 100,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <div style={{ padding: '8px 12px', borderBottom: '1px solid #F4EFE6' }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{userName}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{farmName}</div>
+              </div>
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  if (onLogout) onLogout();
+                }}
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  fontSize: '0.8125rem',
+                  color: '#DC2626',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  transition: 'background-color 150ms'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEE2E2'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

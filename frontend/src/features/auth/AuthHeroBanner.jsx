@@ -1,11 +1,11 @@
 import React from 'react';
-import { AcreaLogo } from '../../shared/components/Icons';
+import { AcreaLogo, IconCrop, IconLivestock } from '../../shared/components/Icons';
 
 export function AuthHeroBanner() {
   return (
-    <div style={{
+    <div className="auth-hero-banner" style={{
       flex: 1,
-      minHeight: '100vh',
+      minHeight: '100%',
       background: 'linear-gradient(175deg, #184D35 0%, #123C29 45%, #0C281B 100%)',
       color: '#FFFFFF',
       padding: '48px 56px',
@@ -42,7 +42,7 @@ export function AuthHeroBanner() {
       </div>
 
       {/* Hero Headline & Message */}
-      <div style={{ maxWidth: '440px', position: 'relative', zIndex: 2 }}>
+      <div style={{ maxWidth: '440px', position: 'relative', zIndex: 2, margin: '40px 0' }}>
         <h1 style={{
           fontSize: '2.5rem',
           fontWeight: 700,
@@ -61,22 +61,39 @@ export function AuthHeroBanner() {
           Acrea brings crop cycles, animal groups, daily activities and production records into one calm, practical workspace.
         </p>
 
-        {/* Feature Badges */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        {/* Feature Badges matching mockup */}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{
-            height: '32px',
-            width: '84px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            color: '#164230',
+            padding: '7px 16px',
             borderRadius: '9999px',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }} />
+          }}>
+            <IconCrop size={16} color="#2D7A52" />
+            <span>Crop Cycles</span>
+          </div>
+
           <div style={{
-            height: '32px',
-            width: '96px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            color: '#164230',
+            padding: '7px 16px',
             borderRadius: '9999px',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }} />
+          }}>
+            <IconLivestock size={16} color="#D97706" />
+            <span>Animal Groups</span>
+          </div>
         </div>
       </div>
 

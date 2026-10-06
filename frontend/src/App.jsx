@@ -1,13 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
+import { authService } from './features/auth/services/authService';
 
 export function App() {
-  const [currentRoute, setCurrentRoute] = useState('dashboard');
+  const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser());
+  const [currentRoute, setCurrentRoute] = useState(() => (authService.isAuthenticated() ? 'dashboard' : 'login'));
+
+  useEffect(() => {
+    // If authenticated on mount, refresh current profile
+    if (authService.isAuthenticated()) {
+      authService.getCurrentUser().then((user) => {
+        if (user) setCurrentUser(user);
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handleLoginSuccess = (farmer) => {
+    setCurrentUser(farmer);
+    setCurrentRoute('dashboard');
+  };
+
+  const handleRegisterSuccess = (farmer) => {
+    setCurrentUser(farmer);
+    setCurrentRoute('dashboard');
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(null);
+    setCurrentRoute('login');
+  };
 
   // Title and subtitle per authenticated route
   const routeHeaders = {
@@ -49,7 +76,7 @@ export function App() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* Quick Screen Preview Switcher Bar (Pins at top or bottom for easy demo testing) */}
+      {/* Quick Screen Preview Switcher Bar (Pins at bottom for testing all mockups) */}
       <div style={{
         position: 'fixed',
         bottom: '16px',
@@ -99,12 +126,12 @@ export function App() {
       {currentRoute === 'login' ? (
         <LoginView
           onNavigate={(r) => setCurrentRoute(r)}
-          onLoginSuccess={() => setCurrentRoute('dashboard')}
+          onLoginSuccess={handleLoginSuccess}
         />
       ) : currentRoute === 'register' ? (
         <RegisterView
           onNavigate={(r) => setCurrentRoute(r)}
-          onRegisterSuccess={() => setCurrentRoute('dashboard')}
+          onRegisterSuccess={handleRegisterSuccess}
         />
       ) : (
         <AppLayout
@@ -112,6 +139,8 @@ export function App() {
           onNavigate={(r) => setCurrentRoute(r)}
           title={currentHeader.title}
           subtitle={currentHeader.subtitle}
+          user={currentUser}
+          onLogout={handleLogout}
         >
           {currentRoute === 'dashboard' && <DashboardView onNavigate={(r) => setCurrentRoute(r)} />}
           {currentRoute === 'farms' && <FarmsAndPlotsView />}
