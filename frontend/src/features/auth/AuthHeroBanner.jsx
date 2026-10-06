@@ -96,36 +96,6 @@ export function AuthHeroBanner() {
           </div>
         </div>
       </div>
-
-      {/* Farmer Social Proof */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 2 }}>
-        <div style={{ display: 'flex' }}>
-          {['JM', 'KO', 'AN'].map((initials, idx) => (
-            <div
-              key={initials}
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                color: '#164230',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginLeft: idx === 0 ? 0 : '-8px',
-                border: '2px solid #164230'
-              }}
-            >
-              {initials}
-            </div>
-          ))}
-        </div>
-        <span style={{ fontSize: '0.8125rem', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-          Built around the way farms actually work.
-        </span>
-      </div>
     </div>
   );
 }
