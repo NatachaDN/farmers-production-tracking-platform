@@ -19,7 +19,8 @@ async function request(endpoint, options = {}) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      const errorMessage = data?.message || (data?.validationErrors ? Object.values(data.validationErrors).join(', ') : 'Request failed');
+      const validationMsg = data?.validationErrors ? Object.values(data.validationErrors).join('. ') : null;
+      const errorMessage = validationMsg || data?.message || 'Request failed';
       const error = new Error(errorMessage);
       error.status = response.status;
       error.data = data;

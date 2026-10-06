@@ -12,7 +12,7 @@ export function RegisterPasswordFields({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
-  const isPasswordStrongEnough = password.length >= 6;
+  const isPasswordStrongEnough = password.length >= 8;
 
   return (
     <div className="grid-two-cols">
@@ -24,7 +24,7 @@ export function RegisterPasswordFields({
               fontSize: '0.75rem',
               color: isPasswordStrongEnough ? 'var(--color-brand-primary)' : 'var(--color-accent-amber)'
             }}>
-              {isPasswordStrongEnough ? '✓ 6+ chars' : 'Min 6 chars'}
+              {isPasswordStrongEnough ? '✓ 8+ chars' : 'Min 8 chars'}
             </span>
           )}
         </div>
@@ -41,7 +41,7 @@ export function RegisterPasswordFields({
           <input
             id="reg-password"
             type={showPassword ? 'text' : 'password'}
-            placeholder="Min 6 characters"
+            placeholder="Min 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"

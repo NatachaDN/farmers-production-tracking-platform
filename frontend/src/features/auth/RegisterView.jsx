@@ -24,8 +24,8 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
       setError('Passwords do not match. Please verify both fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
