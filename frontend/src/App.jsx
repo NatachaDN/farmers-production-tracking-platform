@@ -142,7 +142,12 @@ export function App() {
           user={currentUser}
           onLogout={handleLogout}
         >
-          {currentRoute === 'dashboard' && <DashboardView onNavigate={(r) => setCurrentRoute(r)} />}
+          {currentRoute === 'dashboard' && (
+            <DashboardView
+              onNavigate={(r) => setCurrentRoute(r)}
+              user={currentUser}
+            />
+          )}
           {currentRoute === 'farms' && <FarmsAndPlotsView />}
           {currentRoute === 'crops' && <CropProductionView />}
           {['livestock', 'activities', 'production', 'reports', 'settings'].includes(currentRoute) && (
