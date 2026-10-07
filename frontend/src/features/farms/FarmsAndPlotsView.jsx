@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlotCard } from '../../shared/components/PlotCard';
+import { farmService } from './services/farmService';
 import {
   IconFarms,
   IconPlus,
@@ -11,8 +12,55 @@ import {
   IconLeaf
 } from '../../shared/components/Icons';
 
-export function FarmsAndPlotsView() {
+export function FarmsAndPlotsView({ onNavigate, onSelectFarm }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [farms, setFarms] = useState([]);
+  const [loadingFarms, setLoadingFarms] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadFarms() {
+      try {
+        const fetchedFarms = await farmService.getFarms();
+        if (isMounted && Array.isArray(fetchedFarms) && fetchedFarms.length > 0) {
+          setFarms(fetchedFarms);
+        } else if (isMounted) {
+          // Fallback initial farm for display
+          setFarms([{
+            id: 1,
+            name: 'Green Valley Farm',
+            type: 'CROP',
+            size: 25,
+            sizeUnit: 'HECTARES',
+            country: 'Cameroon',
+            region: 'West',
+            district: 'Bafoussam',
+            status: 'ACTIVE'
+          }]);
+        }
+      } catch (err) {
+        console.warn('Using default farm representation for view:', err);
+        if (isMounted) {
+          setFarms([{
+            id: 1,
+            name: 'Green Valley Farm',
+            type: 'CROP',
+            size: 25,
+            sizeUnit: 'HECTARES',
+            country: 'Cameroon',
+            region: 'West',
+            district: 'Bafoussam',
+            status: 'ACTIVE'
+          }]);
+        }
+      } finally {
+        if (isMounted) setLoadingFarms(false);
+      }
+    }
+
+    loadFarms();
+    return () => { isMounted = false; };
+  }, []);
 
   const plots = [
     {
@@ -58,6 +106,16 @@ export function FarmsAndPlotsView() {
     p.stage.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const mainFarm = farms[0] || {
+    id: 1,
+    name: 'Green Valley Farm',
+    district: 'Bafoussam',
+    region: 'West',
+    country: 'Cameroon',
+    size: 25,
+    sizeUnit: 'HECTARES'
+  };
+
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       {/* Farm Overview Banner */}
@@ -69,7 +127,13 @@ export function FarmsAndPlotsView() {
         boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div
+            onClick={() => {
+              if (onSelectFarm) onSelectFarm(mainFarm.id);
+              else if (onNavigate) onNavigate('farm-details');
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+          >
             <div style={{
               width: '44px',
               height: '44px',
@@ -83,34 +147,61 @@ export function FarmsAndPlotsView() {
             </div>
             <div>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.015em' }}>
-                Green Acres Farm
+                {mainFarm.name}
               </h2>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                Nakuru County, Kenya · Main farm
+                {mainFarm.district}, {mainFarm.region}, {mainFarm.country} · Main farm
               </p>
             </div>
           </div>
 
-          <button
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: 'var(--color-brand-primary)',
-              color: '#FFFFFF',
-              padding: '10px 18px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              boxShadow: 'var(--shadow-subtle)',
-              transition: 'background-color var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)'}
-          >
-            <IconPlus size={16} />
-            <span>Add Farm</span>
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => {
+                if (onSelectFarm) onSelectFarm(mainFarm.id);
+                else if (onNavigate) onNavigate('farm-details');
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: '#FFFFFF',
+                color: 'var(--color-brand-primary)',
+                border: '1px solid var(--color-brand-primary)',
+                padding: '10px 16px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              View Farm Details →
+            </button>
+
+            <button
+              onClick={() => onNavigate && onNavigate('farms-create')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: 'var(--color-brand-primary)',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                boxShadow: 'var(--shadow-subtle)',
+                cursor: 'pointer',
+                transition: 'background-color var(--transition-fast)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)'}
+            >
+              <IconPlus size={16} />
+              <span>Add New Farm</span>
+            </button>
+          </div>
         </div>
 
         {/* Metric Summary Bar */}
@@ -123,7 +214,9 @@ export function FarmsAndPlotsView() {
         }}>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Total area</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>8.7 ha</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+              {mainFarm.size} {mainFarm.sizeUnit === 'ACRES' ? 'acres' : 'ha'}
+            </div>
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Plot count</div>
