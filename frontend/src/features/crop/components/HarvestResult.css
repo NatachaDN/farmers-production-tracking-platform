@@ -1,159 +1,140 @@
 .harvest-result {
-  background-color: var(--color-white);
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  border: 1px solid var(--color-sage-border);
-  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-/* Header */
 .result-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .completed-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background-color: var(--color-sage);
-  color: var(--color-forest-green);
-  border: 1px solid var(--color-sage-border);
-  font-size: 12.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  gap: 6px;
+  background-color: var(--color-brand-tint);
+  color: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-border);
   padding: 4px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
   align-self: flex-start;
 }
 
-.completed-icon {
-  font-size: 14px;
-}
-
 .result-title {
-  font-size: 20px;
-  color: var(--color-forest-green);
-  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .result-subtitle {
-  font-size: 13.5px;
-  color: var(--color-charcoal-muted);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
 }
 
-/* Yield Highlight */
 .yield-highlight {
-  background: linear-gradient(135deg, var(--color-forest-green) 0%, #2a7c5c 100%);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-card-border);
   border-radius: var(--radius-lg);
-  padding: 28px 32px;
+  padding: 24px;
   text-align: center;
-  color: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 .yield-number {
-  font-family: var(--font-heading);
-  font-size: 52px;
+  font-size: 2.25rem;
   font-weight: 800;
-  line-height: 1;
-  letter-spacing: -1px;
+  color: var(--color-brand-primary);
+  line-height: 1.1;
 }
 
 .yield-unit {
-  font-size: 28px;
+  font-size: 1.25rem;
   font-weight: 600;
-  opacity: 0.85;
+  color: var(--color-text-secondary);
 }
 
 .yield-label {
-  font-size: 14px;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
   font-weight: 600;
-  opacity: 0.8;
-  margin-top: 6px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
 }
 
 .yield-display-pill {
-  display: inline-block;
-  margin-top: 16px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-full);
-  padding: 6px 18px;
-  font-size: 14px;
-  font-weight: 600;
+  margin-top: 8px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-card-border);
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-subtle);
 }
 
-/* Detail Grid */
 .result-detail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .detail-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  background-color: var(--color-ivory);
-  border: 1px solid var(--color-sage-border);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
+  gap: 12px;
 }
 
 .detail-card-icon {
-  font-size: 22px;
-  flex-shrink: 0;
+  font-size: 1.25rem;
 }
 
 .detail-card-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-charcoal-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 .detail-card-value {
-  font-size: 16px;
+  font-size: 0.9375rem;
   font-weight: 700;
-  color: var(--color-charcoal);
+  color: var(--color-text-primary);
   margin-top: 2px;
 }
 
-/* Notes */
 .result-notes {
-  background-color: var(--color-ivory);
-  border: 1px solid var(--color-sage-border);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-card-border);
   border-radius: var(--radius-md);
   padding: 16px;
 }
 
 .result-notes-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-charcoal-muted);
-  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
 }
 
 .result-notes-text {
-  font-size: 14px;
-  color: var(--color-charcoal);
-  line-height: 1.6;
-  white-space: pre-wrap;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  line-height: 1.5;
 }
 
-/* Audit */
 .result-audit {
-  font-size: 12px;
-  color: var(--color-charcoal-light);
+  font-size: 0.75rem;
+  color: var(--color-text-faint);
   text-align: right;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-sage-light);
 }

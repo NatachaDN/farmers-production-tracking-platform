@@ -1,61 +1,44 @@
-/**
- * Base API client with standard error extraction and JSON headers.
- */
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
 
 async function request(endpoint, options = {}) {
-  const url = `${BASE_URL}${endpoint}`;
-
+  const token = localStorage.getItem('acrea_token');
   const headers = {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
-  const config = {
-    ...options,
-    headers,
-  };
+  const url = `${API_BASE_URL}${endpoint}`;
 
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-    // 204 No Content
-    if (response.status === 204) {
-      return null;
-    }
-
-    const contentType = response.headers.get('content-type');
-    const isJson = contentType && contentType.includes('application/json');
-    const data = isJson ? await response.json() : await response.text();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      let errorMessage = 'An unexpected error occurred';
-      if (data && typeof data === 'object') {
-        if (data.errors && Object.keys(data.errors).length > 0) {
-          errorMessage = Object.values(data.errors).join(', ');
-        } else if (data.message) {
-          errorMessage = data.message;
-        }
-      }
+      const validationMsg = data?.validationErrors ? Object.values(data.validationErrors).join('. ') : null;
+      const errorMessage = validationMsg || data?.message || 'Request failed';
       const error = new Error(errorMessage);
       error.status = response.status;
-      error.details = data;
+      error.data = data;
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error(`API Error on [${options.method || 'GET'} ${url}]:`, error);
+    if (!error.status) {
+      error.message = 'Unable to connect to Acrea server. Please check your connection or server status.';
+    }
     throw error;
   }
 }
 
 export const apiClient = {
-  get: (endpoint, headers) => request(endpoint, { method: 'GET', headers }),
-  post: (endpoint, body, headers) =>
-    request(endpoint, { method: 'POST', body: JSON.stringify(body), headers }),
-  put: (endpoint, body, headers) =>
-    request(endpoint, { method: 'PUT', body: JSON.stringify(body), headers }),
-  delete: (endpoint, headers) => request(endpoint, { method: 'DELETE', headers }),
+  get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
+  post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  put: (endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
 };

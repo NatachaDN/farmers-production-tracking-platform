@@ -1,15 +1,14 @@
 package com.farmer.tracking.common.exception;
 
-/**
- * Thrown when a requested resource (cycle, harvest, farmer, etc.) is not found.
- */
-public class ResourceNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class ResourceNotFoundException extends ApiException {
 
     public ResourceNotFoundException(String message) {
-        super(message);
+        super(message, HttpStatus.NOT_FOUND);
     }
 
     public ResourceNotFoundException(String resourceName, Long id) {
-        super(resourceName + " not found with id: " + id);
+        super(resourceName + " not found with id: " + id, HttpStatus.NOT_FOUND);
     }
 }

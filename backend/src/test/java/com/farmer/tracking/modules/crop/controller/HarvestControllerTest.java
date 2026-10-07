@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(HarvestController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class HarvestControllerTest {
 
@@ -37,6 +39,12 @@ class HarvestControllerTest {
 
     @MockBean
     private HarvestService harvestService;
+
+    @MockBean
+    private com.farmer.tracking.common.security.JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private com.farmer.tracking.common.security.CustomUserDetailsService customUserDetailsService;
 
     private ObjectMapper objectMapper;
 
@@ -99,8 +107,8 @@ class HarvestControllerTest {
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.quantity").exists());
+                .andExpect(jsonPath("$.message").value("Input payload contains invalid fields"))
+                .andExpect(jsonPath("$.validationErrors.quantity").exists());
     }
 
     @Test
@@ -119,8 +127,8 @@ class HarvestControllerTest {
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.unit").exists());
+                .andExpect(jsonPath("$.message").value("Input payload contains invalid fields"))
+                .andExpect(jsonPath("$.validationErrors.unit").exists());
     }
 
     @Test

@@ -1,55 +1,37 @@
 .harvest-form {
-  background-color: var(--color-white);
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  border: 1px solid var(--color-sage-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.form-header {
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .form-header h3 {
-  font-size: 18px;
-  color: var(--color-forest-green);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
   margin-bottom: 4px;
 }
 
 .form-subtitle {
-  font-size: 13.5px;
-  color: var(--color-charcoal-muted);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
 }
 
 .form-group {
-  margin-bottom: 22px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .form-label {
   font-weight: 600;
-  font-size: 13.5px;
-  color: var(--color-charcoal);
-  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
 }
 
 .required {
-  color: var(--color-danger);
+  color: var(--color-accent-red);
 }
 
-.label-with-count {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.char-count {
-  font-size: 11.5px;
-  color: var(--color-charcoal-light);
-}
-
-/* Unit Pill Grid */
 .unit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -61,57 +43,49 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 14px;
-  border: 1.5px solid var(--color-sage-border);
+  padding: 12px 16px;
+  border: 1px solid var(--color-card-border);
   border-radius: var(--radius-md);
-  background-color: var(--color-sage-light);
-  color: var(--color-charcoal);
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-primary);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
+  cursor: pointer;
   transition: all var(--transition-fast);
-  flex-direction: column;
-  text-align: center;
-}
-
-.unit-pill-icon {
-  font-size: 20px;
-}
-
-.unit-pill-label {
-  font-size: 12.5px;
-  font-weight: 600;
 }
 
 .unit-pill:hover {
-  background-color: var(--color-sage);
-  border-color: var(--color-leaf-green);
+  background-color: #EDE7DC;
 }
 
 .unit-pill.selected {
-  background-color: var(--color-forest-green);
-  border-color: var(--color-forest-green);
-  color: var(--color-white);
-  box-shadow: 0 4px 10px rgba(23, 76, 60, 0.25);
+  background-color: var(--color-brand-primary);
+  color: #FFFFFF;
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 4px 10px rgba(62, 123, 82, 0.25);
 }
 
-/* Form Inputs */
+.unit-pill-icon {
+  font-size: 1.125rem;
+}
+
 .form-input,
 .form-textarea {
   width: 100%;
   padding: 10px 14px;
-  border: 1.5px solid var(--color-sage-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
-  background-color: var(--color-white);
-  color: var(--color-charcoal);
+  background-color: #FFFFFF;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
   transition: border-color var(--transition-fast);
-  font-size: 14px;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--color-forest-green);
-  box-shadow: 0 0 0 3px rgba(23, 76, 60, 0.1);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-input-focus);
 }
 
 .form-textarea {
@@ -120,65 +94,61 @@
 }
 
 .input-error {
-  border-color: var(--color-danger) !important;
+  border-color: var(--color-accent-red) !important;
 }
 
 .field-error {
-  font-size: 12px;
-  color: var(--color-danger);
-  margin-top: 5px;
+  font-size: 0.75rem;
+  color: var(--color-accent-red);
 }
 
-/* Warning Banner */
+.label-with-count {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.char-count {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .harvest-warning {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  background-color: var(--color-ochre-light);
-  border: 1px solid var(--color-ochre-border);
-  border-radius: var(--radius-md);
   padding: 12px 16px;
-  font-size: 13.5px;
-  color: #7a4d08;
-  margin-bottom: 24px;
+  background-color: var(--color-accent-amber-bg);
+  border: 1px solid var(--color-accent-amber-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: #92400E;
 }
 
-.warning-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-/* Buttons */
 .form-actions {
   display: flex;
   justify-content: flex-end;
-}
-
-.btn {
-  padding: 12px 24px;
-  border-radius: var(--radius-md);
-  font-weight: 700;
-  font-size: 14.5px;
-  transition: all var(--transition-fast);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  margin-top: 10px;
 }
 
 .btn-harvest {
-  background-color: var(--color-forest-green);
-  color: var(--color-white);
-  box-shadow: 0 4px 12px rgba(23, 76, 60, 0.25);
+  background-color: var(--color-brand-primary);
+  color: #FFFFFF;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-subtle);
+  transition: background-color var(--transition-fast);
 }
 
 .btn-harvest:hover:not(:disabled) {
-  background-color: var(--color-leaf-green);
-  transform: translateY(-1px);
+  background-color: var(--color-brand-hover);
 }
 
-.btn:disabled {
+.btn-harvest:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
