@@ -5,6 +5,7 @@ import com.farmer.tracking.modules.crop.api.CycleActivityRequest;
 import com.farmer.tracking.modules.crop.api.CycleActivityResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleActivity;
+import com.farmer.tracking.modules.crop.entity.CycleStatus;
 import com.farmer.tracking.modules.crop.repository.CycleActivityRepository;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import org.springframework.stereotype.Service;
@@ -64,6 +65,10 @@ public class CycleActivityService {
     public CycleActivityResponse createActivity(Long farmerId, Long cycleId,
                                                   CycleActivityRequest request) {
         Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+
+        if (cycle.getStatus() != null && cycle.getStatus() != CycleStatus.ACTIVE) {
+            throw new IllegalStateException("Activities can only be recorded for an ACTIVE cycle. Current status: " + cycle.getStatus());
+        }
 
         CycleActivity activity = new CycleActivity();
         activity.setCycle(cycle);

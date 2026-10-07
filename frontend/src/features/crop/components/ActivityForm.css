@@ -1,9 +1,7 @@
 .activity-form {
-  background-color: var(--color-white);
+  background-color: var(--color-card-bg);
   border-radius: var(--radius-lg);
-  padding: 24px;
-  border: 1px solid var(--color-sage-border);
-  box-shadow: var(--shadow-sm);
+  padding: 8px 4px;
 }
 
 .form-header {
@@ -20,40 +18,41 @@
 }
 
 .form-header h3 {
-  font-size: 18px;
-  color: var(--color-forest-green);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .editing-badge {
-  background-color: var(--color-ochre-light);
-  color: #92620f;
-  border: 1px solid var(--color-ochre-border);
-  font-size: 12px;
+  background-color: var(--color-accent-amber-bg);
+  color: var(--color-accent-amber);
+  border: 1px solid var(--color-accent-amber-border);
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
 }
 
 .form-subtitle {
-  font-size: 13.5px;
-  color: var(--color-charcoal-muted);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   display: flex;
   flex-direction: column;
 }
 
 .form-label {
   font-weight: 600;
-  font-size: 13.5px;
-  color: var(--color-charcoal);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
 }
 
 .required {
-  color: var(--color-danger);
+  color: var(--color-accent-red);
 }
 
 .label-with-count {
@@ -63,8 +62,8 @@
 }
 
 .char-count {
-  font-size: 11.5px;
-  color: var(--color-charcoal-light);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 /* Activity Type Grid */
@@ -80,29 +79,30 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 14px;
-  border: 1.5px solid var(--color-sage-border);
+  border: 1px solid var(--color-card-border);
   border-radius: var(--radius-md);
-  background-color: var(--color-sage-light);
-  color: var(--color-charcoal);
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-primary);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .type-pill-icon {
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .type-pill:hover {
-  background-color: var(--color-sage);
-  border-color: var(--color-leaf-green);
+  background-color: #EDE7DC;
+  border-color: var(--color-brand-border);
 }
 
 .type-pill.selected {
-  background-color: var(--color-forest-green);
-  border-color: var(--color-forest-green);
-  color: var(--color-white);
-  box-shadow: 0 4px 10px rgba(23, 76, 60, 0.25);
+  background-color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 10px rgba(62, 123, 82, 0.25);
 }
 
 /* Form Inputs */
@@ -110,19 +110,19 @@
 .form-textarea {
   width: 100%;
   padding: 10px 14px;
-  border: 1.5px solid var(--color-sage-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
-  background-color: var(--color-white);
-  color: var(--color-charcoal);
+  background-color: #FFFFFF;
+  color: var(--color-text-primary);
   transition: border-color var(--transition-fast);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--color-forest-green);
-  box-shadow: 0 0 0 3px rgba(23, 76, 60, 0.1);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-input-focus);
 }
 
 .form-textarea {
@@ -131,12 +131,12 @@
 }
 
 .input-error {
-  border-color: var(--color-danger);
+  border-color: var(--color-accent-red) !important;
 }
 
 .field-error {
-  font-size: 12px;
-  color: var(--color-danger);
+  font-size: 0.75rem;
+  color: var(--color-accent-red);
   margin-top: 5px;
 }
 
@@ -145,14 +145,15 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .btn {
   padding: 10px 20px;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
+  cursor: pointer;
   transition: all var(--transition-fast);
   display: inline-flex;
   align-items: center;
@@ -160,23 +161,24 @@
 }
 
 .btn-primary {
-  background-color: var(--color-forest-green);
-  color: var(--color-white);
+  background-color: var(--color-brand-primary);
+  color: #FFFFFF;
+  border: none;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-leaf-green);
-  box-shadow: 0 4px 12px rgba(79, 138, 100, 0.3);
+  background-color: var(--color-brand-hover);
+  box-shadow: 0 4px 12px rgba(62, 123, 82, 0.3);
 }
 
 .btn-secondary {
-  background-color: var(--color-sage-light);
-  color: var(--color-charcoal);
-  border: 1px solid var(--color-sage-border);
+  background-color: #FFFFFF;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-card-border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-sage);
+  background-color: var(--color-surface-subtle);
 }
 
 .btn:disabled {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CycleActivityController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class CycleActivityControllerTest {
 
@@ -37,6 +39,12 @@ class CycleActivityControllerTest {
 
     @MockBean
     private CycleActivityService activityService;
+
+    @MockBean
+    private com.farmer.tracking.common.security.JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private com.farmer.tracking.common.security.CustomUserDetailsService customUserDetailsService;
 
     private ObjectMapper objectMapper;
 
@@ -111,9 +119,9 @@ class CycleActivityControllerTest {
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.activityType").exists())
-                .andExpect(jsonPath("$.errors.activityDate").exists());
+                .andExpect(jsonPath("$.message").value("Input payload contains invalid fields"))
+                .andExpect(jsonPath("$.validationErrors.activityType").exists())
+                .andExpect(jsonPath("$.validationErrors.activityDate").exists());
     }
 
     @Test
