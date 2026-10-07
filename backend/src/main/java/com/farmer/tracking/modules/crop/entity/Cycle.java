@@ -7,11 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a crop production cycle owned by a farmer.
- * <p>
- * This is a minimal entity – just enough to support the Cycle Activities feature.
- * It will be expanded by the team member handling the full Cycle CRUD story.
- * </p>
+ * Represents a crop production cycle.
  */
 @Entity
 @Table(name = "cycles", indexes = {
@@ -23,11 +19,6 @@ public class Cycle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Reference to the farmer who owns this cycle.
-     * Uses a plain Long instead of a FK entity so that the crop module
-     * does not depend on the farmer module's entity layer.
-     */
     @Column(name = "farmer_id", nullable = false)
     private Long farmerId;
 
@@ -37,6 +28,9 @@ public class Cycle {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private CycleStatus status = CycleStatus.ACTIVE;
+
+    @Column(name = "acreage")
+    private Double acreage;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -52,8 +46,6 @@ public class Cycle {
 
     @OneToMany(mappedBy = "cycle", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CycleActivity> activities = new ArrayList<>();
-
-    // --- Lifecycle callbacks ---
 
     @PrePersist
     protected void onCreate() {
@@ -98,6 +90,14 @@ public class Cycle {
 
     public void setStatus(CycleStatus status) {
         this.status = status;
+    }
+
+    public Double getAcreage() {
+        return acreage;
+    }
+
+    public void setAcreage(Double acreage) {
+        this.acreage = acreage;
     }
 
     public LocalDate getStartDate() {

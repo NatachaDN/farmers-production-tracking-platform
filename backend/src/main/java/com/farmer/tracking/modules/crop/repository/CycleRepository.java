@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Database access for {@link Cycle} entities.
+ * Repository for Cycle entity operations.
  */
 @Repository
 public interface CycleRepository extends JpaRepository<Cycle, Long> {
