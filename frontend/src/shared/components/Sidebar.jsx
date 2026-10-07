@@ -1,117 +1,166 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import './Sidebar.css';
+import {
+  AcreaLogo,
+  IconDashboard,
+  IconFarms,
+  IconCrop,
+  IconLivestock,
+  IconActivities,
+  IconProduction,
+  IconReports,
+  IconSettings,
+  IconHelp
+} from './Icons';
 
-export function Sidebar() {
+export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: IconDashboard },
+    { id: 'farms', label: 'Farms & Plots', icon: IconFarms },
+    { id: 'crops', label: 'Crop Production', icon: IconCrop },
+    { id: 'livestock', label: 'Livestock', icon: IconLivestock },
+    { id: 'activities', label: 'Activities', icon: IconActivities },
+    { id: 'production', label: 'Production', icon: IconProduction },
+    { id: 'reports', label: 'Reports', icon: IconReports },
+    { id: 'settings', label: 'Settings', icon: IconSettings },
+  ];
+
   return (
-    <aside className="acrea-sidebar">
-      {/* Brand Logo & Header */}
-      <div className="sidebar-brand">
-        <div className="brand-logo-container">
-          <svg className="brand-logo-icon" viewBox="0 0 40 40" fill="none">
-            {/* Acrea Stylized 'A' with leaf and furrowed fields */}
-            <path
-              d="M18 4L6 34h7l3.5-9h10l1.5 4h6.5L24 4h-6z"
-              fill="var(--color-forest-green)"
-            />
-            {/* Curving green leaf */}
-            <path
-              d="M8 24C10 14 18 8 26 6C23 15 15 26 8 24Z"
-              fill="var(--color-leaf-green)"
-            />
-            {/* Golden ochre field rows */}
-            <path
-              d="M16 28c3 0 7 2 9 6h-6c-1-2-2-3-3-6z"
-              fill="var(--color-ochre)"
-            />
-            <path
-              d="M21 27c3 0 6 2 8 7h-5c-1-2-2-4-3-7z"
-              fill="var(--color-ochre)"
-            />
-          </svg>
-          <div className="brand-text">
-            <span className="brand-title">Acrea</span>
-            <span className="brand-tagline">THRIVING FARM</span>
-          </div>
+    <aside style={{
+      width: '240px',
+      backgroundColor: 'var(--color-sidebar-bg)',
+      color: '#FFFFFF',
+      height: '100vh',
+      position: 'sticky',
+      top: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '24px 16px',
+      boxSizing: 'border-box',
+      flexShrink: 0
+    }}>
+      {/* Brand & Navigation */}
+      <div>
+        {/* Brand Header */}
+        <div style={{ padding: '0 8px', marginBottom: '32px' }}>
+          <AcreaLogo size={32} />
         </div>
+
+        {/* Navigation List */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeRoute === item.id;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate && onNavigate(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: isActive ? 'var(--color-sidebar-active-bg)' : 'transparent',
+                  color: isActive ? 'var(--color-sidebar-active-text)' : 'var(--color-sidebar-text)',
+                  fontSize: '0.875rem',
+                  fontWeight: isActive ? 600 : 500,
+                  width: '100%',
+                  textAlign: 'left',
+                  transition: 'background-color var(--transition-fast), color var(--transition-fast)',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Icon size={18} color={isActive ? 'var(--color-sidebar-active-text)' : 'currentColor'} />
+                  <span>{item.label}</span>
+                </div>
+
+                {isActive && (
+                  <span style={{
+                    width: '3.5px',
+                    height: '18px',
+                    borderRadius: '2px',
+                    backgroundColor: 'var(--color-sidebar-active-text)'
+                  }} />
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="sidebar-nav">
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">📊</span>
-          <span className="nav-label">Dashboard</span>
-        </NavLink>
-
-        <NavLink
-          to="/crops"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">🌱</span>
-          <span className="nav-label">Crops</span>
-        </NavLink>
-
-        <NavLink
-          to="/crops/cycles/1/activities"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">📅</span>
-          <span className="nav-label">Cycle Activities</span>
-        </NavLink>
-
-        <NavLink
-          to="/livestock"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">🐄</span>
-          <span className="nav-label">Livestock</span>
-        </NavLink>
-
-        <NavLink
-          to="/production"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">📈</span>
-          <span className="nav-label">Production</span>
-        </NavLink>
-
-        <NavLink
-          to="/records"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">📑</span>
-          <span className="nav-label">Records</span>
-        </NavLink>
-
-        <NavLink
-          to="/reports"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">📉</span>
-          <span className="nav-label">Reports</span>
-        </NavLink>
-
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">⚙️</span>
-          <span className="nav-label">Settings</span>
-        </NavLink>
-      </nav>
-
-      {/* Sidebar Footer / User Profile snippet */}
-      <div className="sidebar-footer">
-        <div className="user-badge">
-          <div className="user-avatar">AM</div>
-          <div className="user-info">
-            <div className="user-name">Alex Martin</div>
-            <div className="user-role">Farm Owner #1</div>
+      {/* Season Card & Footer */}
+      <div>
+        {/* Current Season Widget */}
+        <div style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '14px',
+          padding: '14px 16px',
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            fontSize: '0.6875rem',
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            color: 'rgba(255, 255, 255, 0.6)',
+            marginBottom: '4px'
+          }}>
+            CURRENT SEASON
+          </div>
+          <div style={{
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            color: '#FFFFFF',
+            marginBottom: '6px'
+          }}>
+            2026 Main Season
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.75rem',
+            color: 'rgba(255, 255, 255, 0.75)'
+          }}>
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#E5A638'
+            }} />
+            <span>4 cycles in progress</span>
           </div>
         </div>
+
+        {/* Help & Support */}
+        <button
+          onClick={() => onNavigate && onNavigate('help')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '8px 12px',
+            color: 'var(--color-sidebar-text)',
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            width: '100%',
+            transition: 'color var(--transition-fast)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-sidebar-text)'}
+        >
+          <IconHelp size={17} />
+          <span>Help & support</span>
+        </button>
       </div>
     </aside>
   );
