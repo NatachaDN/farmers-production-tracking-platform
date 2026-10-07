@@ -1,10 +1,312 @@
-/* Reset and base font */
-* {
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+/* ============================================================
+   ACREA DESIGN SYSTEM — GLOBAL TOKENS & BASE STYLES
+   ============================================================ */
+
+:root {
+  /* --- Surfaces --- */
+  --color-sidebar-bg: #164230;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --color-sidebar-active-bg: #FFFFFF;
+  --color-sidebar-active-text: #164230;
+  --color-sidebar-text: rgba(255, 255, 255, 0.72);
+  --color-sidebar-subtle-badge: rgba(255, 255, 255, 0.12);
+
+  --color-canvas-bg: #F9F6F0;
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #ECE7DC;
+  --color-surface-subtle: #F4EFE6;
+
+  /* --- Brand Greens --- */
+  --color-brand-primary: #3E7B52;
+  --color-brand-hover: #336844;
+  --color-brand-active: #285336;
+  --color-brand-tint: #EAF4ED;
+  --color-brand-border: #C8E2D0;
+
+  /* --- Agricultural Accents --- */
+  --color-accent-amber: #D97706;
+  --color-accent-amber-bg: #FEF3C7;
+  --color-accent-amber-border: #FDE68A;
+  --color-accent-teal: #0D9488;
+  --color-accent-teal-bg: #E6F6F4;
+  --color-accent-blue: #2563EB;
+  --color-accent-blue-bg: #EFF6FF;
+  --color-accent-red: #DC2626;
+  --color-accent-red-bg: #FEF2F2;
+  --color-accent-red-border: #FCA5A5;
+
+  /* --- Ink / Text --- */
+  --color-text-primary: #19201C;
+  --color-text-secondary: #4B5752;
+  --color-text-muted: #788680;
+  --color-text-faint: #A4B0AA;
+
+  /* --- Borders & Inputs --- */
+  --color-border-input: #DFD8CA;
+  --color-border-focus: #3E7B52;
+
+  /* --- Radius --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-subtle: 0 1px 3px rgba(22, 66, 48, 0.04);
+  --shadow-card: 0 2px 8px rgba(22, 66, 48, 0.05);
+  --shadow-card-hover: 0 8px 24px rgba(22, 66, 48, 0.10);
+  --shadow-input-focus: 0 0 0 3px rgba(62, 123, 82, 0.15);
+  --shadow-dropdown: 0 8px 30px rgba(22, 66, 48, 0.12);
+
+  /* --- Transitions --- */
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 380ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Sidebar width --- */
+  --sidebar-width: 240px;
+}
+
+/* ============================================================
+   BASE RESET
+   ============================================================ */
+
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-canvas-bg);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ============================================================
+   CUSTOM SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #DFD8CA; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #C4BCAF; }
+
+/* ============================================================
+   FORM INPUT FOCUS STATES — Global enhancement
+   ============================================================ */
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-border-focus) !important;
+  box-shadow: var(--shadow-input-focus) !important;
+}
+
+/* ============================================================
+   UTILITY ANIMATIONS
+   ============================================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+.fade-in        { animation: fadeIn var(--transition-normal) forwards; }
+.fade-in-scale  { animation: fadeInScale var(--transition-normal) forwards; }
+.slide-in-left  { animation: slideInLeft var(--transition-normal) forwards; }
+.pulse          { animation: pulse 1.5s ease-in-out infinite; }
+
+/* ============================================================
+   AUTH LAYOUT — Responsive split-screen
+   ============================================================ */
+
+.auth-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #FBF9F4;
+}
+
+.auth-hero-banner {
+  flex: 1;
+  min-height: 100%;
+}
+
+.auth-form-wrapper {
+  flex: 1;
+  min-height: 100vh;
+  padding: 36px clamp(24px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   APP LAYOUT — Responsive sidebar
+   ============================================================ */
+
+.app-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  transition: transform var(--transition-normal);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   CARDS — Hover lift effect
+   ============================================================ */
+
+.card-hover {
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+.card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   STATUS BADGES
+   ============================================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ============================================================
+   GRID UTILITIES
+   ============================================================ */
+
+.grid-two-cols   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-three-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-four-cols  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* Tablet & below — collapse auth hero banner, stack vertically */
+@media (max-width: 960px) {
+  .auth-container {
+    flex-direction: column !important;
+  }
+
+  .auth-hero-banner {
+    padding: 32px 24px !important;
+    min-height: auto !important;
+    min-height: 280px !important;
+  }
+
+  .auth-hero-banner h1 {
+    font-size: 1.75rem !important;
+  }
+
+  .auth-form-wrapper {
+    padding: 28px 20px !important;
+    min-height: auto !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Sidebar collapse on tablet */
+  .app-sidebar {
+    width: 64px;
+  }
+}
+
+/* Mobile — single column forms, full-width layout */
+@media (max-width: 640px) {
+  .grid-two-cols {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-three-cols {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .grid-four-cols {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .auth-hero-banner {
+    display: none !important;
+  }
+
+  .auth-form-wrapper {
+    padding: 24px 16px !important;
+    min-height: 100vh;
+  }
+
+  /* Show Acrea brand in form on mobile (hero hidden) */
+  .auth-mobile-brand {
+    display: flex !important;
+  }
+}
+
+/* Large screens — wider sidebar */
+@media (min-width: 1280px) {
+  :root {
+    --sidebar-width: 256px;
+  }
 }

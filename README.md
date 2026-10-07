@@ -6,8 +6,7 @@ A modular web application designed to track agricultural production for crop far
 
 * **Backend:** Spring Boot 3 (Java 17/21) with Modular Architecture
 * **Frontend:** React + Vite
-* **Database:** Neon Online Serverless PostgreSQL (`postgresql://...`)
-* **Database migrations:** Flyway
+* **Database:** Aiven Online Managed MySQL (`mysql://...`)
 * **API Documentation:** Swagger / OpenAPI 3 (`/swagger-ui.html`)
 
 ## Architecture Overview
@@ -23,24 +22,20 @@ A modular web application designed to track agricultural production for crop far
 ```
 farmers-production-tracking-platform/
 │
-├── .env.example                          # Environment variables template (names only, never real values) for Neon DB & server
+├── .env.example                          # Environment variables template (names only, never real values) for Aiven MySQL & server
 ├── .gitignore                            # Files Git must ignore: target/, node_modules/, .env, IDE files
 ├── README.md                             # Project setup, architecture and Git workflow
 │
 ├── docs/                                 # Everything that is not code
 │   ├── api-contract.md                   # Endpoints, request/response shapes, error formats (agreed by each front/back pair BEFORE coding)
-│   └── architecture.md                   # Why we chose a modular monolith, REST API, Flyway...
+│   └── architecture.md                   # Why we chose a modular monolith, REST API...
 │
 ├── backend/                              # Spring Boot Application (all server-side code)
-│   ├── pom.xml                           # Maven dependencies (Web, JPA, Postgres, Springdoc, Flyway). Shared file: warn the team before editing
+│   ├── pom.xml                           # Maven dependencies (Web, JPA, MySQL Connector/J, Springdoc). Shared file: warn the team before editing
 │   └── src/
 │       ├── main/
 │       │   ├── java/com/farmer/tracking/
 │       │   │   ├── FarmerProductionTrackingApplication.java # Spring Boot entrypoint
-│       │   │   │
-│       │   │   ├── config/               # Global configuration, not tied to one module
-│       │   │   │   ├── OpenApiConfig.java    # Swagger / OpenAPI 3 configuration
-│       │   │   │   └── CorsConfig.java       # Cross-Origin configuration for React
 │       │   │   │
 │       │   │   ├── common/               # Small shared code with NO business logic
 │       │   │   │   ├── exception/        # Global error handler, custom exceptions, standard error response
@@ -58,10 +53,7 @@ farmers-production-tracking-platform/
 │       │   │       └── analytics/        # Yield calculations & dashboard summaries. Reads other modules ONLY through their api/ folder
 │       │   │
 │       │   └── resources/
-│       │       ├── application.properties # Neon PostgreSQL connection & Swagger settings (values come from environment variables)
-│       │       └── db/migration/         # Flyway migrations: versioned SQL files that build the database schema
-│       │           ├── V1__create_farmer.sql  # Number = order of execution. Never edit an applied migration, add a new one
-│       │           └── V2__create_crop.sql    # Agree in the team on who takes which number
+│       │       └── application.properties # Aiven MySQL connection & Swagger settings (values come from environment variables)
 │       │
 │       └── test/java/com/farmer/tracking/ # Automated tests, same package structure as main
 │
@@ -157,7 +149,7 @@ fix:       bug fix                 fix: correct total yield calculation
 docs:      documentation           docs: update API contract
 refactor:  code restructuring      refactor: extract harvest calculation
 test:      tests                   test: add FarmerService tests
-chore:     setup / tooling         chore: add Flyway dependency
+chore:     setup / tooling         chore: add MySQL dependency
 ```
 
 ### Working as a front + back pair (step by step)
@@ -239,7 +231,6 @@ These files are edited by everyone. Tell the team on WhatsApp before editing the
 * `frontend/src/App.jsx` (routes)
 * `backend/src/main/resources/application.properties`
 * `frontend/src/index.css`
-* Flyway migration numbers (`V3__...`): agree on who takes which number
 
 Do not reformat files you are not working on, because it creates conflicts with everybody.
 
@@ -267,16 +258,16 @@ In GitHub, go to Settings → Branches and add protection rules on `main` and `d
 
 Also add every teammate in Settings → Collaborators.
 
-## 1. Database Configuration (Neon PostgreSQL)
+## 1. Database Configuration (Aiven MySQL)
 
-1. Create a project at [Neon Console](https://console.neon.tech/).
-2. Copy your connection details or connection string from the Neon dashboard.
+1. Create a MySQL service at the [Aiven Console](https://console.aiven.io).
+2. Copy your connection URI or host, port, user (`avnadmin`), and password from the Aiven Service Overview.
 3. Configure your credentials via environment variables or in `backend/src/main/resources/application.properties`:
 
-```
-spring.datasource.url=jdbc:postgresql://<neon-hostname>:5432/<dbname>?sslmode=require
-spring.datasource.username=<neon-username>
-spring.datasource.password=<neon-password>
+```properties
+spring.datasource.url=jdbc:mysql://<aiven-host>:<port>/defaultdb?sslMode=REQUIRED
+spring.datasource.username=avnadmin
+spring.datasource.password=<aiven-password>
 ```
 
 Or set environment variables:
@@ -289,7 +280,7 @@ Never commit real credentials. Use environment variables or a local `.env` file,
 
 ## 2. Running the Spring Boot Backend
 
-```
+```bash
 cd backend
 mvn clean spring-boot:run
 ```
@@ -300,12 +291,12 @@ The backend starts at `http://localhost:8080`.
 
 Once the backend is running, the interactive Swagger documentation is accessible at:
 
-* Swagger UI: http://localhost:8080/swagger-ui.html
-* OpenAPI JSON: http://localhost:8080/v3/api-docs
+* **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+* **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
 ## 4. Running the React Frontend
 
-```
+```bash
 cd frontend
 npm install
 npm run dev
