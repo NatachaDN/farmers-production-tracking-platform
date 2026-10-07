@@ -1,0 +1,311 @@
+.harvest-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-ivory);
+}
+
+/* Header Nav */
+.page-header-nav {
+  height: var(--header-height);
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-sage);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--color-sage-light);
+  border: 1px solid var(--color-sage-border);
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  width: 320px;
+}
+
+.search-icon {
+  font-size: 14px;
+  color: var(--color-charcoal-muted);
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 13.5px;
+  color: var(--color-charcoal);
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-date {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-charcoal-muted);
+}
+
+.icon-badge-btn {
+  font-size: 18px;
+  padding: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-sage-light);
+  transition: background-color var(--transition-fast);
+}
+
+.icon-badge-btn:hover {
+  background-color: var(--color-sage);
+}
+
+.header-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--color-sage-light);
+  border: 1px solid var(--color-sage-border);
+  padding: 4px 12px 4px 6px;
+  border-radius: var(--radius-full);
+}
+
+.header-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--color-forest-green);
+  color: var(--color-white);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-user-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-charcoal);
+}
+
+/* Page Main */
+.page-main-content {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Toast */
+.toast-banner {
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.toast-success {
+  background-color: var(--color-sage);
+  color: var(--color-forest-green);
+  border: 1px solid var(--color-sage-border);
+}
+
+.toast-info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid #c7e5f0;
+}
+
+.toast-error {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid #f8c9c7;
+}
+
+.toast-close {
+  font-size: 14px;
+  color: inherit;
+  padding: 2px 6px;
+}
+
+/* Title Row */
+.page-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.breadcrumb {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-leaf-green);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.main-title {
+  font-size: 28px;
+  color: var(--color-forest-green);
+}
+
+.main-subtitle {
+  font-size: 14.5px;
+  color: var(--color-charcoal-muted);
+  margin-top: 4px;
+}
+
+/* Cycle Status Badge */
+.cycle-status-badge-wrap {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+}
+
+.status-active {
+  background-color: var(--color-sage);
+  color: var(--color-forest-green);
+  border: 1px solid var(--color-sage-border);
+}
+
+.status-completed {
+  background-color: var(--color-ochre-light);
+  color: #7a4d08;
+  border: 1px solid var(--color-ochre-border);
+}
+
+/* KPI Cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  border: 1px solid var(--color-sage-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kpi-icon-wrap {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.kpi-green  { background-color: var(--color-sage-light); }
+.kpi-forest { background-color: #e5ece8; }
+.kpi-blue   { background-color: #e8f3fa; }
+.kpi-ochre  { background-color: var(--color-ochre-light); }
+
+.kpi-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-charcoal-muted);
+}
+
+.kpi-value {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-charcoal);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpi-status-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background-color: var(--color-sage);
+  color: var(--color-forest-green);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-top: 4px;
+}
+
+.kpi-trend {
+  font-size: 11.5px;
+  color: var(--color-leaf-green);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.kpi-subtext {
+  font-size: 11.5px;
+  color: var(--color-charcoal-light);
+  margin-top: 4px;
+}
+
+/* Loading */
+.harvest-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-charcoal-muted);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-sage);
+  border-top-color: var(--color-forest-green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 14px;
+}
+
+.harvest-loading p {
+  font-size: 14px;
+  color: var(--color-charcoal-muted);
+}
+
+/* Form wrapper */
+.harvest-form-wrapper {
+  /* inherits fade-in from index.css */
+}
