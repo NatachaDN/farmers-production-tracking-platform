@@ -150,6 +150,23 @@ class CycleActivityServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw IllegalStateException when creating activity for non-active cycle")
+    void shouldThrowExceptionWhenCreatingActivityForNonActiveCycle() {
+        testCycle.setStatus(CycleStatus.COMPLETED);
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(testCycle));
+
+        CycleActivityRequest request = new CycleActivityRequest(
+                ActivityType.FERTILIZING,
+                LocalDate.of(2026, 3, 15),
+                "Applied NPK"
+        );
+
+        assertThatThrownBy(() -> activityService.createActivity(farmerId, cycleId, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Activities can only be recorded for an ACTIVE cycle");
+    }
+
+    @Test
     @DisplayName("Should delete an activity")
     void shouldDeleteActivity() {
         when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(testCycle));
