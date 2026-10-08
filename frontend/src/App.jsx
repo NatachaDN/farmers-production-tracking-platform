@@ -5,6 +5,7 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
+import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { authService } from './features/auth/services/authService';
@@ -62,6 +63,10 @@ export function App() {
       title: 'Harvest & Production Records',
       subtitle: 'Harvest tallies, batch weighings, and yield logs'
     },
+    inputs: {
+      title: 'Farm Inputs',
+      subtitle: 'Track seeds, fertilizers, and pesticides — stock & costs'
+    },
     reports: {
       title: 'Reports & Analytics',
       subtitle: 'Seasonal output forecasts and historical performance'
@@ -103,6 +108,7 @@ export function App() {
           { id: 'crops', label: 'Crop Cycles' },
           { id: 'activities', label: 'Activities' },
           { id: 'production', label: 'Harvest / Production' },
+          { id: 'inputs', label: 'Farm Inputs' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' }
         ].map((screen) => (
@@ -157,6 +163,9 @@ export function App() {
           )}
           {currentRoute === 'production' && (
             <HarvestPage farmerId={currentUser?.id} />
+          )}
+          {currentRoute === 'inputs' && (
+            <FarmInputsView farmerId={currentUser?.id || 1} />
           )}
           {['livestock', 'reports', 'settings'].includes(currentRoute) && (
             <div style={{
