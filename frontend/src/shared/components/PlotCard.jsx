@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge } from './StatusBadge';
-import { IconDots, IconChevronRight } from './Icons';
+import { IconDots, IconChevronRight, IconTrash } from './Icons';
 
 export function PlotCard({
   icon,
@@ -9,7 +9,8 @@ export function PlotCard({
   stage,
   progress = 0,
   updated = "Updated today",
-  onViewDetails
+  onViewDetails,
+  onDeletePlot
 }) {
   return (
     <div style={{
@@ -40,9 +41,34 @@ export function PlotCard({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <StatusBadge status={stage} />
-            <button style={{ color: 'var(--color-text-muted)', padding: '4px' }}>
-              <IconDots size={16} />
-            </button>
+            {onDeletePlot && (
+              <button
+                onClick={onDeletePlot}
+                title="Delete Plot"
+                style={{
+                  color: '#DC2626',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FCA5A5',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#DC2626';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FEF2F2';
+                  e.currentTarget.style.color = '#DC2626';
+                }}
+              >
+                <IconTrash size={15} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -102,22 +128,27 @@ export function PlotCard({
           <span>{updated}</span>
         </div>
 
-        <button
-          onClick={onViewDetails}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            color: 'var(--color-text-secondary)',
-            transition: 'color var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-brand-primary)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
-        >
-          View details →
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={onViewDetails}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: 'var(--color-text-secondary)',
+              transition: 'color var(--transition-fast)',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-brand-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
+          >
+            View details →
+          </button>
+        </div>
       </div>
     </div>
   );

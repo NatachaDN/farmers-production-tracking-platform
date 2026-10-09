@@ -20,6 +20,8 @@ public class PlotRequest {
 
     private String stage;
 
+    private Long farmId;
+
     public PlotRequest() {}
 
     public PlotRequest(String name, Double area, String location) {
@@ -34,6 +36,23 @@ public class PlotRequest {
         this.location = location;
         this.cropType = cropType;
         this.stage = stage;
+    }
+
+    public PlotRequest(String name, Double area, String location, String cropType, String stage, Long farmId) {
+        this.name = name;
+        this.area = area;
+        this.location = location;
+        this.cropType = cropType;
+        this.stage = stage;
+        this.farmId = farmId;
+    }
+
+    public Long getFarmId() {
+        return farmId;
+    }
+
+    public void setFarmId(Long farmId) {
+        this.farmId = farmId;
     }
 
     public String getName() {

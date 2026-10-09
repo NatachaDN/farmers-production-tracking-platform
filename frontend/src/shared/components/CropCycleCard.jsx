@@ -9,6 +9,8 @@ export function CropCycleCard({
   status = "Active",
   plantingDate,
   expectedHarvest,
+  expectedQuantity,
+  expectedQuantityUnit = "kg",
   stage,
   progress = 0,
   subStatus = "On track",
@@ -59,22 +61,30 @@ export function CropCycleCard({
           <StatusBadge status={status} size="sm" />
         </div>
 
-        {/* Dates Grid */}
+        {/* Dates & Expected Target Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: expectedQuantity ? '1fr 1fr 1fr' : '1fr 1fr',
           gap: '12px',
           marginTop: '16px',
           marginBottom: '20px'
         }}>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Planting date</div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>{plantingDate}</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>{plantingDate || '—'}</div>
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Expected harvest</div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>{expectedHarvest}</div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>{expectedHarvest || '—'}</div>
           </div>
+          {expectedQuantity && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '2px' }}>Target yield</div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-brand-primary)' }}>
+                {expectedQuantity.toLocaleString()} {expectedQuantityUnit || 'kg'}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stage & Progress */}

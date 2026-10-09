@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { AddInputModal } from './components/AddInputModal';
 import { inputService } from './services/inputService';
+import {
+  IconSprout,
+  IconFlask,
+  IconShieldAlert,
+  IconPackage,
+  IconSearch,
+  IconCheck,
+  IconPlus,
+  IconLeaf
+} from '../../shared/components/Icons';
 
 /* ─── Type metadata ─────────────────────────────────────────────── */
 const TYPE_META = {
-  SEEDS:      { emoji: '🌱', label: 'Seeds',      bg: '#EAF4ED', text: '#2A6740', border: '#C8E2D0' },
-  FERTILIZER: { emoji: '🧪', label: 'Fertilizer', bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
-  PESTICIDE:  { emoji: '🛡️', label: 'Pesticide',  bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
-  OTHER:      { emoji: '📦', label: 'Other',       bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
+  SEEDS:      { icon: IconSprout, label: 'Seeds',      bg: '#EAF4ED', text: '#2A6740', border: '#C8E2D0' },
+  FERTILIZER: { icon: IconFlask,  label: 'Fertilizer', bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
+  PESTICIDE:  { icon: IconShieldAlert,  label: 'Pesticide',  bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
+  OTHER:      { icon: IconPackage, label: 'Other',       bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
 };
 
 /* ─── Seed data for offline-first demo ─────────────────────────── */
@@ -42,6 +52,7 @@ const SEED_INPUTS = [
 /* ─── Single Input Card ─────────────────────────────────────────── */
 function InputCard({ input }) {
   const meta = TYPE_META[input.type] || TYPE_META.OTHER;
+  const IconComponent = meta.icon;
   const formattedCost = (input.totalCost || 0).toLocaleString('fr-CM');
   const formattedDate = input.purchaseDate
     ? new Date(input.purchaseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -77,9 +88,9 @@ function InputCard({ input }) {
             width: '42px', height: '42px', borderRadius: '12px',
             backgroundColor: meta.bg,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.25rem', flexShrink: 0
+            color: meta.text, flexShrink: 0
           }}>
-            {meta.emoji}
+            <IconComponent size={22} color={meta.text} />
           </div>
           <div>
             <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#19201C', lineHeight: 1.3 }}>
@@ -95,8 +106,10 @@ function InputCard({ input }) {
         <span style={{
           padding: '4px 10px', borderRadius: '9999px', fontSize: '0.75rem',
           fontWeight: 600, backgroundColor: meta.bg, color: meta.text,
-          border: `1px solid ${meta.border}`, whiteSpace: 'nowrap'
+          border: `1px solid ${meta.border}`, whiteSpace: 'nowrap',
+          display: 'inline-flex', alignItems: 'center', gap: '5px'
         }}>
+          <IconComponent size={13} color={meta.text} />
           {meta.label}
         </span>
       </div>
@@ -183,7 +196,6 @@ export function FarmInputsView({ farmerId = 1 }) {
     };
 
     setInputs((prev) => {
-      /* If backend returned an updated record (same name+type exists), replace */
       if (saved?.id) {
         const exists = prev.findIndex((i) => i.id === saved.id);
         if (exists >= 0) {
@@ -225,8 +237,10 @@ export function FarmInputsView({ farmerId = 1 }) {
           <span style={{
             width: '22px', height: '22px', borderRadius: '50%',
             backgroundColor: '#3E7B52', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: '0.75rem'
-          }}>✓</span>
+            justifyContent: 'center'
+          }}>
+            <IconCheck size={14} color="#FFFFFF" />
+          </span>
           <span>{toast}</span>
         </div>
       )}
@@ -247,9 +261,11 @@ export function FarmInputsView({ farmerId = 1 }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
               width: '44px', height: '44px', borderRadius: '12px',
-              backgroundColor: '#EAF4ED', fontSize: '1.5rem',
+              backgroundColor: '#EAF4ED', color: '#2A6740',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>🌿</div>
+            }}>
+              <IconLeaf size={24} color="#2A6740" />
+            </div>
             <div>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#19201C', marginBottom: '2px', letterSpacing: '-0.01em' }}>
                 Input Inventory
@@ -273,7 +289,8 @@ export function FarmInputsView({ farmerId = 1 }) {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#336844'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3E7B52'}
           >
-            + Add Input
+            <IconPlus size={16} color="#FFFFFF" />
+            Add Input
           </button>
         </div>
 
@@ -297,6 +314,7 @@ export function FarmInputsView({ farmerId = 1 }) {
           {['ALL', ...Object.keys(TYPE_META)].map((t) => {
             const isActive = filterType === t;
             const meta = TYPE_META[t];
+            const IconComp = meta?.icon;
             return (
               <button
                 key={t}
@@ -309,10 +327,20 @@ export function FarmInputsView({ farmerId = 1 }) {
                   border: isActive
                     ? `1.5px solid ${meta?.border || '#3E7B52'}`
                     : '1.5px solid #DFD8CA',
-                  transition: 'all 150ms ease'
+                  transition: 'all 150ms ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
                 }}
               >
-                {t === 'ALL' ? 'All' : `${meta.emoji} ${meta.label}`}
+                {t === 'ALL' ? (
+                  'All'
+                ) : (
+                  <>
+                    <IconComp size={14} color={isActive ? meta.text : '#4B5752'} />
+                    <span>{meta.label}</span>
+                  </>
+                )}
               </button>
             );
           })}
@@ -324,7 +352,7 @@ export function FarmInputsView({ farmerId = 1 }) {
           backgroundColor: '#FFFFFF', border: '1px solid #DFD8CA',
           borderRadius: '10px', padding: '8px 14px', width: '240px'
         }}>
-          <span style={{ color: '#788680', fontSize: '0.875rem' }}>🔍</span>
+          <IconSearch size={16} color="#788680" />
           <input
             type="text"
             placeholder="Search inputs…"
@@ -344,7 +372,14 @@ export function FarmInputsView({ farmerId = 1 }) {
           backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC',
           borderRadius: '16px', padding: '60px 40px', textAlign: 'center'
         }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📦</div>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            backgroundColor: '#F4EFE6', color: '#788680',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px auto'
+          }}>
+            <IconPackage size={28} color="#788680" />
+          </div>
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#19201C', marginBottom: '6px' }}>
             No inputs found
           </h3>

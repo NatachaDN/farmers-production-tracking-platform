@@ -1,6 +1,8 @@
 package com.farmer.tracking.modules.plot.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.modules.farm.entity.Farm;
+import com.farmer.tracking.modules.farm.repository.FarmRepository;
 import com.farmer.tracking.modules.plot.api.PlotRequest;
 import com.farmer.tracking.modules.plot.api.PlotResponse;
 import com.farmer.tracking.modules.plot.entity.Plot;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,9 +19,11 @@ import java.util.stream.Collectors;
 public class PlotServiceImpl implements PlotService {
 
     private final PlotRepository plotRepository;
+    private final FarmRepository farmRepository;
 
-    public PlotServiceImpl(PlotRepository plotRepository) {
+    public PlotServiceImpl(PlotRepository plotRepository, FarmRepository farmRepository) {
         this.plotRepository = plotRepository;
+        this.farmRepository = farmRepository;
     }
 
     @Override
@@ -33,8 +38,19 @@ public class PlotServiceImpl implements PlotService {
             throw new IllegalArgumentException("Location is required");
         }
 
+        Farm targetFarm = null;
+        if (request.getFarmId() != null) {
+            targetFarm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
+                    .orElse(null);
+        }
+        if (targetFarm == null) {
+            targetFarm = farmRepository.findFirstByFarmerIdAndIsDefaultTrue(farmerId)
+                    .orElse(null);
+        }
+
         Plot plot = new Plot(
                 farmerId,
+                targetFarm,
                 request.getName().trim(),
                 request.getArea(),
                 request.getLocation().trim(),
@@ -60,5 +76,12 @@ public class PlotServiceImpl implements PlotService {
         Plot plot = plotRepository.findByIdAndFarmerId(plotId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot", plotId));
         return PlotResponse.fromEntity(plot);
+    }
+
+    @Override
+    public void deletePlot(Long farmerId, Long plotId) {
+        Plot plot = plotRepository.findByIdAndFarmerId(plotId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plot", plotId));
+        plotRepository.delete(plot);
     }
 }

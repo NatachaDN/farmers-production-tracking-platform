@@ -12,6 +12,7 @@ import {
   IconSettings,
   IconHelp
 } from './Icons';
+import './Sidebar.css';
 
 export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
   const navItems = [
@@ -27,25 +28,16 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
   ];
 
   return (
-    <aside style={{
-      width: '240px',
-      backgroundColor: 'var(--color-sidebar-bg)',
+    <aside className="acrea-sidebar" style={{
       color: '#FFFFFF',
-      height: '100vh',
-      position: 'sticky',
-      top: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
       padding: '24px 16px',
-      boxSizing: 'border-box',
-      flexShrink: 0
+      justifyContent: 'space-between',
     }}>
       {/* Brand & Navigation */}
       <div>
         {/* Brand Header */}
-        <div style={{ padding: '0 8px', marginBottom: '32px' }}>
-          <AcreaLogo size={32} />
+        <div style={{ padding: '0 4px', marginBottom: '28px' }}>
+          <AcreaLogo size={38} />
         </div>
 
         {/* Navigation List */}

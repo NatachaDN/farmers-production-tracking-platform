@@ -157,7 +157,12 @@ export function App() {
             />
           )}
           {currentRoute === 'farms' && <FarmsAndPlotsView />}
-          {currentRoute === 'crops' && <CropProductionView />}
+          {currentRoute === 'crops' && (
+            <CropProductionView
+              farmerId={currentUser?.id || 1}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
           {currentRoute === 'activities' && (
             <CycleActivitiesPage farmerId={currentUser?.id} />
           )}

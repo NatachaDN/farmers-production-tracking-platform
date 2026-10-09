@@ -8,6 +8,8 @@ public class PlotResponse {
 
     private Long id;
     private Long farmerId;
+    private Long farmId;
+    private String farmName;
     private String name;
     private Double area;
     private String location;
@@ -31,7 +33,7 @@ public class PlotResponse {
     }
 
     public static PlotResponse fromEntity(Plot plot) {
-        return new PlotResponse(
+        PlotResponse resp = new PlotResponse(
                 plot.getId(),
                 plot.getFarmerId(),
                 plot.getName(),
@@ -42,6 +44,27 @@ public class PlotResponse {
                 plot.getCreatedAt(),
                 plot.getUpdatedAt()
         );
+        if (plot.getFarm() != null) {
+            resp.setFarmId(plot.getFarm().getId());
+            resp.setFarmName(plot.getFarm().getName());
+        }
+        return resp;
+    }
+
+    public Long getFarmId() {
+        return farmId;
+    }
+
+    public void setFarmId(Long farmId) {
+        this.farmId = farmId;
+    }
+
+    public String getFarmName() {
+        return farmName;
+    }
+
+    public void setFarmName(String farmName) {
+        this.farmName = farmName;
     }
 
     public Long getId() {

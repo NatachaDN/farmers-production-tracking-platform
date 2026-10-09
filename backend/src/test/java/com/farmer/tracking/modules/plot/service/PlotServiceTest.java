@@ -28,6 +28,9 @@ class PlotServiceTest {
     @Mock
     private PlotRepository plotRepository;
 
+    @Mock
+    private com.farmer.tracking.modules.farm.repository.FarmRepository farmRepository;
+
     @InjectMocks
     private PlotServiceImpl plotService;
 

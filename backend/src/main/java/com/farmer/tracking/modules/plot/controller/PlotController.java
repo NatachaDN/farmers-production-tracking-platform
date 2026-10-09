@@ -79,4 +79,21 @@ public class PlotController {
         PlotResponse response = plotService.getPlotById(farmerId, plotId);
         return ResponseEntity.ok(response);
     }
+
+    // ------------------------------------------------------------------ //
+    //  DELETE /api/v1/farmers/{farmerId}/plots/{plotId}                    //
+    // ------------------------------------------------------------------ //
+    @DeleteMapping("/{plotId}")
+    @Operation(
+            summary = "Delete a plot",
+            description = "Deletes a plot belonging to the farmer."
+    )
+    @ApiResponse(responseCode = "204", description = "Plot successfully deleted")
+    @ApiResponse(responseCode = "404", description = "Plot not found")
+    public ResponseEntity<Void> deletePlot(
+            @Parameter(description = "Farmer ID") @PathVariable Long farmerId,
+            @Parameter(description = "Plot ID")   @PathVariable Long plotId) {
+        plotService.deletePlot(farmerId, plotId);
+        return ResponseEntity.noContent().build();
+    }
 }

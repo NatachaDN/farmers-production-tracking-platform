@@ -7,7 +7,9 @@ import {
   IconCrop,
   IconSprout,
   IconProduction,
-  IconCheck
+  IconCheck,
+  IconClose,
+  IconWheat
 } from '../../../shared/components/Icons';
 
 const DEMO_CYCLES = [
@@ -97,7 +99,7 @@ export function HarvestPage({ farmerId = 1 }) {
         };
       }
       setHarvest(recorded);
-      showToast('🌾 Harvest recorded successfully! Cycle marked as Completed.');
+      showToast('Harvest recorded successfully! Cycle marked as Completed.');
     } catch (err) {
       showToast(err?.message || 'Failed to record harvest. Please try again.', 'error');
     } finally {
@@ -121,13 +123,16 @@ export function HarvestPage({ farmerId = 1 }) {
           fontWeight: 600,
           fontSize: '0.875rem'
         }}>
-          <span>{toastMessage.text}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IconWheat size={18} color="currentColor" />
+            <span>{toastMessage.text}</span>
+          </div>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            style={{ fontSize: '1rem', color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            ✕
+            <IconClose size={16} color="currentColor" />
           </button>
         </div>
       )}

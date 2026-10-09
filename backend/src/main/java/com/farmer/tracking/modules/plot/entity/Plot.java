@@ -1,5 +1,6 @@
 package com.farmer.tracking.modules.plot.entity;
 
+import com.farmer.tracking.modules.farm.entity.Farm;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -8,7 +9,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "plots", indexes = {
-        @Index(name = "idx_plots_farmer_id", columnList = "farmer_id")
+        @Index(name = "idx_plots_farmer_id", columnList = "farmer_id"),
+        @Index(name = "idx_plots_farm_id", columnList = "farm_id")
 })
 public class Plot {
 
@@ -18,6 +20,10 @@ public class Plot {
 
     @Column(name = "farmer_id", nullable = false)
     private Long farmerId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "farm_id")
+    private Farm farm;
 
     @Column(nullable = false, length = 120)
     private String name;
@@ -44,6 +50,16 @@ public class Plot {
 
     public Plot(Long farmerId, String name, Double area, String location, String cropType, String stage) {
         this.farmerId = farmerId;
+        this.name = name;
+        this.area = area;
+        this.location = location;
+        this.cropType = cropType;
+        this.stage = stage;
+    }
+
+    public Plot(Long farmerId, Farm farm, String name, Double area, String location, String cropType, String stage) {
+        this.farmerId = farmerId;
+        this.farm = farm;
         this.name = name;
         this.area = area;
         this.location = location;
@@ -118,6 +134,14 @@ public class Plot {
 
     public void setStage(String stage) {
         this.stage = stage;
+    }
+
+    public Farm getFarm() {
+        return farm;
+    }
+
+    public void setFarm(Farm farm) {
+        this.farm = farm;
     }
 
     public LocalDateTime getCreatedAt() {

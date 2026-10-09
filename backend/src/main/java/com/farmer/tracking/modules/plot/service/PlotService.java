@@ -12,4 +12,6 @@ public interface PlotService {
     List<PlotResponse> getPlotsByFarmer(Long farmerId);
 
     PlotResponse getPlotById(Long farmerId, Long plotId);
+
+    void deletePlot(Long farmerId, Long plotId);
 }

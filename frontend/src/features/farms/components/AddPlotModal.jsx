@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IconPlus, IconCheck } from '../../../shared/components/Icons';
+import { IconPlus, IconCheck, IconClose, IconWarning } from '../../../shared/components/Icons';
 
 export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
   const [name, setName] = useState('');
@@ -106,16 +106,19 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             style={{
               background: 'none',
               border: 'none',
-              fontSize: '1.25rem',
               color: 'var(--color-text-muted, #788680)',
               cursor: 'pointer',
-              padding: '4px'
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            ✕
+            <IconClose size={18} color="currentColor" />
           </button>
         </div>
 
@@ -130,10 +133,14 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
               color: '#991B1B',
               fontSize: '0.8125rem',
               fontWeight: 500,
-              lineHeight: 1.4
+              lineHeight: 1.4,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            ⚠️ {validationError}
+            <IconWarning size={16} color="#991B1B" />
+            <span>{validationError}</span>
           </div>
         )}
 

@@ -1,4 +1,11 @@
 import React, { useState } from 'react';
+import {
+  IconClose,
+  IconSprout,
+  IconFlask,
+  IconShieldAlert,
+  IconPackage
+} from '../../../shared/components/Icons';
 
 const INPUT_TYPES = ['SEEDS', 'FERTILIZER', 'PESTICIDE', 'OTHER'];
 const UNITS = ['kg', 'g', 'L', 'mL', 'bag', 'ton', 'unit'];
@@ -140,11 +147,11 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
     }
   };
 
-  const typeBadgeColors = {
-    SEEDS: { bg: '#EAF4ED', text: '#2A6740' },
-    FERTILIZER: { bg: '#FEF3C7', text: '#92400E' },
-    PESTICIDE: { bg: '#FEE2E2', text: '#991B1B' },
-    OTHER: { bg: '#F1F5F9', text: '#475569' }
+  const typeConfig = {
+    SEEDS: { bg: '#EAF4ED', text: '#2A6740', icon: IconSprout },
+    FERTILIZER: { bg: '#FEF3C7', text: '#92400E', icon: IconFlask },
+    PESTICIDE: { bg: '#FEE2E2', text: '#991B1B', icon: IconShieldAlert },
+    OTHER: { bg: '#F1F5F9', text: '#475569', icon: IconPackage }
   };
 
   return (
@@ -200,13 +207,13 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
               width: '32px', height: '32px', borderRadius: '8px',
               border: '1px solid #ECE7DC', backgroundColor: '#FFFFFF',
               cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', color: '#788680', fontSize: '1.1rem',
+              justifyContent: 'center', color: '#788680',
               transition: 'background-color 150ms ease'
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
           >
-            ✕
+            <IconClose size={16} color="#788680" />
           </button>
         </div>
 
@@ -216,7 +223,8 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
           <FieldGroup label="Input Type">
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {INPUT_TYPES.map((t) => {
-                const col = typeBadgeColors[t];
+                const conf = typeConfig[t];
+                const IconComponent = conf.icon;
                 const isSelected = form.type === t;
                 return (
                   <button
@@ -229,13 +237,17 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      border: isSelected ? `1.5px solid ${col.text}` : '1.5px solid #DFD8CA',
-                      backgroundColor: isSelected ? col.bg : '#FFFFFF',
-                      color: isSelected ? col.text : '#4B5752',
+                      border: isSelected ? `1.5px solid ${conf.text}` : '1.5px solid #DFD8CA',
+                      backgroundColor: isSelected ? conf.bg : '#FFFFFF',
+                      color: isSelected ? conf.text : '#4B5752',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       transition: 'all 150ms ease'
                     }}
                   >
-                    {t === 'SEEDS' ? '🌱' : t === 'FERTILIZER' ? '🧪' : t === 'PESTICIDE' ? '🛡️' : '📦'} {t}
+                    <IconComponent size={14} color={isSelected ? conf.text : '#4B5752'} />
+                    <span>{t}</span>
                   </button>
                 );
               })}
@@ -258,57 +270,55 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
               <StyledInput
                 id="input-quantity"
                 type="number"
+                min="0.01"
+                step="any"
                 value={form.quantity}
                 onChange={set('quantity')}
                 placeholder="e.g. 50"
-                min="0"
-                step="0.01"
               />
             </FieldGroup>
             <FieldGroup label="Unit">
               <StyledSelect id="input-unit" value={form.unit} onChange={set('unit')}>
-                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                {UNITS.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
               </StyledSelect>
             </FieldGroup>
           </div>
 
-          {/* Purchase Date & Price */}
+          {/* Price & Purchase Date */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <FieldGroup label="Total Cost (XAF) *" error={errors.purchasePrice}>
+              <StyledInput
+                id="input-price"
+                type="number"
+                min="0"
+                step="any"
+                value={form.purchasePrice}
+                onChange={set('purchasePrice')}
+                placeholder="e.g. 25000"
+              />
+            </FieldGroup>
             <FieldGroup label="Purchase Date *" error={errors.purchaseDate}>
               <StyledInput
-                id="input-purchase-date"
+                id="input-date"
                 type="date"
                 value={form.purchaseDate}
                 onChange={set('purchaseDate')}
               />
             </FieldGroup>
-            <FieldGroup label="Purchase Price (XAF) *" error={errors.purchasePrice}>
-              <StyledInput
-                id="input-purchase-price"
-                type="number"
-                value={form.purchasePrice}
-                onChange={set('purchasePrice')}
-                placeholder="e.g. 12500"
-                min="0"
-                step="0.01"
-              />
-            </FieldGroup>
           </div>
 
-          {/* Divider */}
-          <div style={{ height: '1px', backgroundColor: '#F4EFE6' }} />
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <button
               type="button"
               onClick={onClose}
               style={{
-                padding: '10px 20px', borderRadius: '10px', fontSize: '0.875rem',
-                fontWeight: 600, cursor: 'pointer',
-                backgroundColor: '#FFFFFF', color: '#4B5752',
-                border: '1px solid #DFD8CA',
-                transition: 'background-color 150ms ease'
+                padding: '10px 20px', borderRadius: '10px',
+                border: '1px solid #DFD8CA', backgroundColor: '#FFFFFF',
+                color: '#4B5752', fontSize: '0.875rem', fontWeight: 600,
+                cursor: 'pointer', transition: 'background-color 150ms ease'
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
@@ -316,23 +326,25 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
               Cancel
             </button>
             <button
-              id="submit-add-input"
               type="submit"
+              id="submit-add-input"
               disabled={submitting}
               style={{
-                padding: '10px 24px', borderRadius: '10px', fontSize: '0.875rem',
-                fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
-                backgroundColor: '#3E7B52', color: '#FFFFFF',
-                border: 'none',
+                padding: '10px 24px', borderRadius: '10px',
+                border: 'none', backgroundColor: '#3E7B52',
+                color: '#FFFFFF', fontSize: '0.875rem', fontWeight: 600,
+                cursor: submitting ? 'not-allowed' : 'pointer',
                 opacity: submitting ? 0.7 : 1,
-                transition: 'background-color 150ms ease, opacity 150ms ease'
+                boxShadow: '0 2px 6px rgba(62,123,82,0.3)',
+                transition: 'background-color 150ms ease'
               }}
               onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = '#336844'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3E7B52'; }}
+              onMouseLeave={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = '#3E7B52'; }}
             >
-              {submitting ? 'Saving…' : 'Register Input'}
+              {submitting ? 'Saving…' : 'Save Input'}
             </button>
           </div>
+
         </form>
       </div>
     </>

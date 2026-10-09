@@ -13,4 +13,6 @@ public interface PlotRepository extends JpaRepository<Plot, Long> {
     List<Plot> findByFarmerId(Long farmerId);
 
     Optional<Plot> findByIdAndFarmerId(Long id, Long farmerId);
+
+    List<Plot> findByFarmId(Long farmId);
 }

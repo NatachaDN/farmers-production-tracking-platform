@@ -28,5 +28,14 @@ export const plotService = {
    */
   async getPlotById(farmerId, plotId) {
     return await apiClient.get(`/farmers/${farmerId}/plots/${plotId}`);
+  },
+
+  /**
+   * Delete a plot by ID.
+   * @param {number} farmerId
+   * @param {number} plotId
+   */
+  async deletePlot(farmerId, plotId) {
+    return await apiClient.delete(`/farmers/${farmerId}/plots/${plotId}`);
   }
 };

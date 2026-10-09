@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import './HarvestForm.css';
+import {
+  IconScale,
+  IconShoppingBag,
+  IconTruck,
+  IconWarning,
+  IconWheat
+} from '../../../shared/components/Icons';
 
 const UNIT_OPTIONS = [
-  { value: 'KG',   label: 'Kilograms (kg)', icon: '⚖️' },
-  { value: 'BAGS', label: 'Bags',            icon: '🛍️' },
-  { value: 'TONS', label: 'Tons',            icon: '🚛' },
+  { value: 'KG',   label: 'Kilograms (kg)', icon: IconScale },
+  { value: 'BAGS', label: 'Bags',            icon: IconShoppingBag },
+  { value: 'TONS', label: 'Tons',            icon: IconTruck },
 ];
 
 /**
@@ -111,17 +118,23 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
           Unit of Measure <span className="required">*</span>
         </label>
         <div className="unit-grid">
-          {UNIT_OPTIONS.map((opt) => (
-            <button
-              type="button"
-              key={opt.value}
-              className={`unit-pill ${formData.unit === opt.value ? 'selected' : ''}`}
-              onClick={() => handleUnitSelect(opt.value)}
-            >
-              <span className="unit-pill-icon">{opt.icon}</span>
-              <span className="unit-pill-label">{opt.label}</span>
-            </button>
-          ))}
+          {UNIT_OPTIONS.map((opt) => {
+            const IconComp = opt.icon;
+            const isSelected = formData.unit === opt.value;
+            return (
+              <button
+                type="button"
+                key={opt.value}
+                className={`unit-pill ${isSelected ? 'selected' : ''}`}
+                onClick={() => handleUnitSelect(opt.value)}
+              >
+                <span className="unit-pill-icon">
+                  <IconComp size={16} color="currentColor" />
+                </span>
+                <span className="unit-pill-label">{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
         {errors.unit && <span className="field-error">{errors.unit}</span>}
       </div>
@@ -165,7 +178,9 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
 
       {/* Warning banner */}
       <div className="harvest-warning">
-        <span className="warning-icon">⚠️</span>
+        <span className="warning-icon">
+          <IconWarning size={16} color="var(--color-warning, #D97706)" />
+        </span>
         <span>Recording a harvest will mark this cycle as <strong>Completed</strong> and cannot be undone.</span>
       </div>
 
@@ -175,7 +190,10 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
           {isSubmitting ? (
             <span className="btn-loading">Recording harvest...</span>
           ) : (
-            <span>🌾 Record Harvest &amp; Complete Cycle</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <IconWheat size={18} color="currentColor" />
+              <span>Record Harvest &amp; Complete Cycle</span>
+            </span>
           )}
         </button>
       </div>
