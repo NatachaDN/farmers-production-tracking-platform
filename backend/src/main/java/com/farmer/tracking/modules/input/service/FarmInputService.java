@@ -15,4 +15,6 @@ public interface FarmInputService {
     List<FarmInputResponse> getInputsByFarmerAndType(Long farmerId, InputType type);
 
     FarmInputResponse getInputById(Long farmerId, Long inputId);
+
+    void deleteInput(Long farmerId, Long inputId);
 }

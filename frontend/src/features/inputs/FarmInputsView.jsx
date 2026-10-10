@@ -9,15 +9,17 @@ import {
   IconSearch,
   IconCheck,
   IconPlus,
-  IconLeaf
+  IconLeaf,
+  IconTrash,
+  IconWarning
 } from '../../shared/components/Icons';
 
 /* ─── Type metadata ─────────────────────────────────────────────── */
 const TYPE_META = {
-  SEEDS:      { icon: IconSprout, label: 'Seeds',      bg: '#EAF4ED', text: '#2A6740', border: '#C8E2D0' },
-  FERTILIZER: { icon: IconFlask,  label: 'Fertilizer', bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
-  PESTICIDE:  { icon: IconShieldAlert,  label: 'Pesticide',  bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
-  OTHER:      { icon: IconPackage, label: 'Other',       bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
+  SEEDS:      { icon: IconSprout,      label: 'Seeds',      bg: '#EAF4ED', text: '#2A6740', border: '#C8E2D0' },
+  FERTILIZER: { icon: IconFlask,       label: 'Fertilizer', bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
+  PESTICIDE:  { icon: IconShieldAlert, label: 'Pesticide',  bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
+  OTHER:      { icon: IconPackage,     label: 'Other',      bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
 };
 
 /* ─── Seed data for offline-first demo ─────────────────────────── */
@@ -50,7 +52,7 @@ const SEED_INPUTS = [
 ];
 
 /* ─── Single Input Card ─────────────────────────────────────────── */
-function InputCard({ input }) {
+function InputCard({ input, onDelete }) {
   const meta = TYPE_META[input.type] || TYPE_META.OTHER;
   const IconComponent = meta.icon;
   const formattedCost = (input.totalCost || 0).toLocaleString('fr-CM');
@@ -69,7 +71,8 @@ function InputCard({ input }) {
         flexDirection: 'column',
         gap: '14px',
         transition: 'box-shadow 200ms ease, transform 200ms ease',
-        cursor: 'default'
+        cursor: 'default',
+        position: 'relative'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = '0 6px 20px rgba(22, 66, 48, 0.1)';
@@ -102,16 +105,48 @@ function InputCard({ input }) {
           </div>
         </div>
 
-        {/* Type badge */}
-        <span style={{
-          padding: '4px 10px', borderRadius: '9999px', fontSize: '0.75rem',
-          fontWeight: 600, backgroundColor: meta.bg, color: meta.text,
-          border: `1px solid ${meta.border}`, whiteSpace: 'nowrap',
-          display: 'inline-flex', alignItems: 'center', gap: '5px'
-        }}>
-          <IconComponent size={13} color={meta.text} />
-          {meta.label}
-        </span>
+        {/* Right side: type badge + delete icon */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{
+            padding: '4px 10px', borderRadius: '9999px', fontSize: '0.75rem',
+            fontWeight: 600, backgroundColor: meta.bg, color: meta.text,
+            border: `1px solid ${meta.border}`, whiteSpace: 'nowrap',
+            display: 'inline-flex', alignItems: 'center', gap: '5px'
+          }}>
+            <IconComponent size={13} color={meta.text} />
+            {meta.label}
+          </span>
+
+          {/* Delete icon-only button */}
+          <button
+            onClick={() => onDelete(input)}
+            title="Delete input"
+            style={{
+              width: '30px',
+              height: '30px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              borderRadius: '8px',
+              color: '#DC2626',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              flexShrink: 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#DC2626';
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FEF2F2';
+              e.currentTarget.style.color = '#DC2626';
+            }}
+          >
+            <IconTrash size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Divider */}
@@ -156,6 +191,10 @@ export function FarmInputsView({ farmerId = 1 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Delete confirmation modal state
+  const [inputToDelete, setInputToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -210,6 +249,21 @@ export function FarmInputsView({ farmerId = 1 }) {
     showToast(`"${formData.name}" added — ${formData.quantity} ${formData.unit} @ ${Number(formData.purchasePrice).toLocaleString('fr-CM')} XAF`);
   };
 
+  /* Delete handler */
+  const confirmDelete = async () => {
+    if (!inputToDelete) return;
+    setIsDeleting(true);
+    try {
+      await inputService.deleteInput(farmerId, inputToDelete.id);
+    } catch {
+      /* Remove locally even if backend fails */
+    }
+    setInputs((prev) => prev.filter((i) => i.id !== inputToDelete.id));
+    showToast(`"${inputToDelete.name}" removed from inventory.`);
+    setInputToDelete(null);
+    setIsDeleting(false);
+  };
+
   /* Derived lists */
   const filtered = inputs.filter((i) => {
     const matchesType = filterType === 'ALL' || i.type === filterType;
@@ -242,6 +296,81 @@ export function FarmInputsView({ farmerId = 1 }) {
             <IconCheck size={14} color="#FFFFFF" />
           </span>
           <span>{toast}</span>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {inputToDelete && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(19, 32, 28, 0.45)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1300, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(22, 66, 48, 0.2)',
+            width: '100%', maxWidth: '460px',
+            padding: '28px',
+            border: '1px solid #ECE7DC',
+            display: 'flex', flexDirection: 'column', gap: '20px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px',
+                backgroundColor: '#FEE2E2',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <IconWarning size={22} color="#DC2626" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#19201C', margin: 0 }}>
+                  Remove Input?
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: '#788680', marginTop: '6px', margin: 0, lineHeight: 1.5 }}>
+                  Are you sure you want to delete <strong style={{ color: '#19201C' }}>"{inputToDelete.name}"</strong> from your inventory?
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', justifyContent: 'flex-end', gap: '12px',
+              paddingTop: '16px', borderTop: '1px solid #F4EFE6'
+            }}>
+              <button
+                onClick={() => setInputToDelete(null)}
+                style={{
+                  padding: '10px 18px', borderRadius: '10px',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #DFD8CA',
+                  color: '#4B5752', fontWeight: 600,
+                  fontSize: '0.875rem', cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: '10px 20px', borderRadius: '10px',
+                  backgroundColor: '#DC2626', color: '#FFFFFF',
+                  border: 'none', fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  opacity: isDeleting ? 0.7 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <IconTrash size={15} />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Input'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -392,7 +521,11 @@ export function FarmInputsView({ farmerId = 1 }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
           {filtered.map((input) => (
-            <InputCard key={input.id} input={input} />
+            <InputCard
+              key={input.id}
+              input={input}
+              onDelete={(inp) => setInputToDelete(inp)}
+            />
           ))}
         </div>
       )}

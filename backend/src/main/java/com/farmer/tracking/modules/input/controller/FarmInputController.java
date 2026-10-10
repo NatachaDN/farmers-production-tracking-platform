@@ -84,4 +84,21 @@ public class FarmInputController {
         FarmInputResponse response = farmInputService.getInputById(farmerId, inputId);
         return ResponseEntity.ok(response);
     }
+
+    // ------------------------------------------------------------------ //
+    //  DELETE /api/v1/farmers/{farmerId}/inputs/{inputId}                   //
+    // ------------------------------------------------------------------ //
+    @DeleteMapping("/{inputId}")
+    @Operation(
+            summary = "Delete a farm input",
+            description = "Deletes an inventory input belonging to the authenticated farmer."
+    )
+    @ApiResponse(responseCode = "204", description = "Farm input successfully deleted")
+    @ApiResponse(responseCode = "404", description = "Farm input not found")
+    public ResponseEntity<Void> deleteInput(
+            @Parameter(description = "Farmer ID") @PathVariable Long farmerId,
+            @Parameter(description = "Input ID")  @PathVariable Long inputId) {
+        farmInputService.deleteInput(farmerId, inputId);
+        return ResponseEntity.noContent().build();
+    }
 }

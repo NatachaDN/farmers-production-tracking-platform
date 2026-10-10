@@ -33,5 +33,14 @@ export const inputService = {
    */
   async getInputById(farmerId, inputId) {
     return await apiClient.get(`/farmers/${farmerId}/inputs/${inputId}`);
+  },
+
+  /**
+   * Delete a farm input by ID.
+   * @param {number} farmerId
+   * @param {number} inputId
+   */
+  async deleteInput(farmerId, inputId) {
+    return await apiClient.delete(`/farmers/${farmerId}/inputs/${inputId}`);
   }
 };

@@ -99,4 +99,11 @@ public class FarmInputServiceImpl implements FarmInputService {
                 .orElseThrow(() -> new ResourceNotFoundException("Farm input", inputId));
         return FarmInputResponse.fromEntity(input);
     }
+
+    @Override
+    public void deleteInput(Long farmerId, Long inputId) {
+        FarmInput input = farmInputRepository.findByIdAndFarmerId(inputId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input", inputId));
+        farmInputRepository.delete(input);
+    }
 }
