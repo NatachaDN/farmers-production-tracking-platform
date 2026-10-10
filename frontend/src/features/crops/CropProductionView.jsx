@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CropCycleCard } from '../../shared/components/CropCycleCard';
 import { NewCropCycleModal } from './NewCropCycleModal';
+import { PlotDetailsModal } from './components/PlotDetailsModal';
 import { cropCycleService } from './services/cropCycleService';
 import {
   IconPlus,
@@ -98,6 +99,10 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Plot Details Pop-up Modal State
+  const [selectedPlotDetails, setSelectedPlotDetails] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
   useEffect(() => {
     loadCycles();
   }, [farmerId]);
@@ -122,6 +127,11 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
   const handleCycleCreated = (newCycle) => {
     setCycles(prev => [newCycle, ...prev]);
     setActiveTab('Active');
+  };
+
+  const handleViewDetails = (cycle) => {
+    setSelectedPlotDetails(cycle);
+    setIsDetailsModalOpen(true);
   };
 
   const filteredCycles = cycles.filter(c => {
@@ -321,7 +331,7 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
               stage={cycle.stage || 'Planting'}
               progress={cycle.progress ?? 0}
               subStatus={cycle.subStatus || ((cycle.status || '').toUpperCase() === 'ACTIVE' ? 'On track' : 'Completed')}
-              onViewDetails={() => onNavigate && onNavigate('activities')}
+              onViewDetails={() => handleViewDetails(cycle)}
             />
           ))}
         </div>
@@ -333,6 +343,19 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
         onClose={() => setIsModalOpen(false)}
         onCycleCreated={handleCycleCreated}
         farmerId={farmerId}
+      />
+
+      {/* Plot Details Pop-up Modal */}
+      <PlotDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedPlotDetails(null);
+        }}
+        plot={selectedPlotDetails}
+        onGoToActivities={(plotItem) => {
+          if (onNavigate) onNavigate('activities');
+        }}
       />
     </div>
   );

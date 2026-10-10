@@ -3,6 +3,7 @@ import { PlotCard } from '../../shared/components/PlotCard';
 import { AddPlotModal } from './components/AddPlotModal';
 import { NewFarmModal } from './components/NewFarmModal';
 import { EditFarmModal } from './components/EditFarmModal';
+import { PlotDetailsModal } from '../crops/components/PlotDetailsModal';
 import { plotService } from './services/plotService';
 import { farmService } from './services/farmService';
 import {
@@ -97,6 +98,10 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
 
   const [plotToDelete, setPlotToDelete] = useState(null);
   const [isDeletingPlot, setIsDeletingPlot] = useState(false);
+
+  // Plot Details Pop-up Modal State
+  const [selectedPlotDetails, setSelectedPlotDetails] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const [toast, setToast] = useState(null);
 
@@ -1162,6 +1167,10 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
                     stage={plot.stage}
                     progress={plot.progress}
                     location={plot.location}
+                    onViewDetails={() => {
+                      setSelectedPlotDetails(plot);
+                      setIsDetailsModalOpen(true);
+                    }}
                     onDeletePlot={() => setPlotToDelete(plot)}
                   />
                 ))}
@@ -1170,6 +1179,15 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
           </div>
         </>
       )}
+      {/* Plot Details Pop-up Modal */}
+      <PlotDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedPlotDetails(null);
+        }}
+        plot={selectedPlotDetails}
+      />
     </div>
   );
 }
