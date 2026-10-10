@@ -101,4 +101,21 @@ public class CycleController {
         PlotConflictCheckResponse response = cycleService.checkPlotAvailability(farmerId, plotId);
         return ResponseEntity.ok(response);
     }
+
+    // ------------------------------------------------------------------ //
+    //  DELETE /api/v1/farmers/{farmerId}/cycles/{cycleId}                  //
+    // ------------------------------------------------------------------ //
+    @DeleteMapping("/{cycleId}")
+    @Operation(
+            summary = "Delete a production cycle",
+            description = "Permanently removes a production cycle owned by the farmer."
+    )
+    @ApiResponse(responseCode = "204", description = "Cycle deleted successfully")
+    @ApiResponse(responseCode = "404", description = "Cycle not found")
+    public ResponseEntity<Void> deleteCycle(
+            @Parameter(description = "Farmer ID") @PathVariable Long farmerId,
+            @Parameter(description = "Cycle ID")  @PathVariable Long cycleId) {
+        cycleService.deleteCycle(farmerId, cycleId);
+        return ResponseEntity.noContent().build();
+    }
 }

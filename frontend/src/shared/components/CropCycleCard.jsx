@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatusBadge } from './StatusBadge';
+import { IconTrash } from './Icons';
 
 export function CropCycleCard({
   icon,
@@ -14,7 +15,8 @@ export function CropCycleCard({
   stage,
   progress = 0,
   subStatus = "On track",
-  onViewDetails
+  onViewDetails,
+  onDelete
 }) {
   return (
     <div style={{
@@ -124,19 +126,57 @@ export function CropCycleCard({
           {subStatus}
         </span>
 
-        <button
-          onClick={onViewDetails}
-          style={{
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            color: 'var(--color-text-secondary)',
-            transition: 'color var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-brand-primary)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
-        >
-          View details →
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Delete icon-only button */}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              title="Delete cycle"
+              style={{
+                width: '30px',
+                height: '30px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '8px',
+                color: '#DC2626',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#DC2626';
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FEF2F2';
+                e.currentTarget.style.color = '#DC2626';
+              }}
+            >
+              <IconTrash size={14} />
+            </button>
+          )}
+
+          <button
+            onClick={onViewDetails}
+            style={{
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: 'var(--color-text-secondary)',
+              transition: 'color var(--transition-fast)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-brand-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
+          >
+            View details →
+          </button>
+        </div>
       </div>
     </div>
   );

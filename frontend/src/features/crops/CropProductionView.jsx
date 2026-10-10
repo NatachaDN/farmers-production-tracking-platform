@@ -9,7 +9,9 @@ import {
   IconTomato,
   IconBean,
   IconLeaf,
-  IconWheat
+  IconWheat,
+  IconTrash,
+  IconCheck
 } from '../../shared/components/Icons';
 
 const DEFAULT_CYCLES = [
@@ -98,10 +100,20 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
 
   // Plot Details Pop-up Modal State
   const [selectedPlotDetails, setSelectedPlotDetails] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // Delete confirmation state
+  const [cycleToDelete, setCycleToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  };
 
   useEffect(() => {
     loadCycles();
@@ -134,6 +146,24 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
     setIsDetailsModalOpen(true);
   };
 
+  const handleDeleteClick = (cycle) => {
+    setCycleToDelete(cycle);
+  };
+
+  const confirmDeleteCycle = async () => {
+    if (!cycleToDelete) return;
+    setIsDeleting(true);
+    try {
+      await cropCycleService.deleteCycle(farmerId, cycleToDelete.id);
+    } catch {
+      /* Remove locally even if backend fails */
+    }
+    setCycles((prev) => prev.filter((c) => c.id !== cycleToDelete.id));
+    showToast(`"${cycleToDelete.cropName}" cycle removed.`);
+    setCycleToDelete(null);
+    setIsDeleting(false);
+  };
+
   const filteredCycles = cycles.filter(c => {
     const statusNormalized = (c.status || '').toUpperCase();
     if (activeTab === 'All') return true;
@@ -159,6 +189,104 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '24px', right: '24px', zIndex: 1100,
+          backgroundColor: '#164230', color: '#FFFFFF',
+          padding: '12px 20px', borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          display: 'flex', alignItems: 'center', gap: '10px',
+          fontSize: '0.875rem', fontWeight: 500
+        }}>
+          <span style={{
+            width: '22px', height: '22px', borderRadius: '50%',
+            backgroundColor: '#3E7B52', display: 'flex', alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <IconCheck size={14} color="#FFFFFF" />
+          </span>
+          <span>{toast}</span>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {cycleToDelete && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(19, 32, 28, 0.45)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1300, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(22, 66, 48, 0.2)',
+            width: '100%', maxWidth: '460px',
+            padding: '28px',
+            border: '1px solid #ECE7DC',
+            display: 'flex', flexDirection: 'column', gap: '20px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px',
+                backgroundColor: '#FEE2E2',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <IconTrash size={22} color="#DC2626" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#19201C', margin: 0 }}>
+                  Delete Production Cycle?
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: '#788680', marginTop: '6px', marginBottom: 0, lineHeight: 1.5 }}>
+                  Are you sure you want to delete the <strong style={{ color: '#19201C' }}>"{cycleToDelete.cropName}"</strong> cycle
+                  on <strong style={{ color: '#19201C' }}>{cycleToDelete.plotName || 'this plot'}</strong>?
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', justifyContent: 'flex-end', gap: '12px',
+              paddingTop: '16px', borderTop: '1px solid #F4EFE6'
+            }}>
+              <button
+                onClick={() => setCycleToDelete(null)}
+                style={{
+                  padding: '10px 18px', borderRadius: '10px',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #DFD8CA',
+                  color: '#4B5752', fontWeight: 600,
+                  fontSize: '0.875rem', cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteCycle}
+                disabled={isDeleting}
+                style={{
+                  padding: '10px 20px', borderRadius: '10px',
+                  backgroundColor: '#DC2626', color: '#FFFFFF',
+                  border: 'none', fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  opacity: isDeleting ? 0.7 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <IconTrash size={15} />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Cycle'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Control Bar: Tabs & Action Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {/* Navigation Filter Tabs */}
@@ -332,6 +460,7 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
               progress={cycle.progress ?? 0}
               subStatus={cycle.subStatus || ((cycle.status || '').toUpperCase() === 'ACTIVE' ? 'On track' : 'Completed')}
               onViewDetails={() => handleViewDetails(cycle)}
+              onDelete={() => handleDeleteClick(cycle)}
             />
           ))}
         </div>

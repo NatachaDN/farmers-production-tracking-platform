@@ -140,6 +140,16 @@ public class CycleService {
         return PlotConflictCheckResponse.noConflict();
     }
 
+    /**
+     * Deletes a production cycle ensuring farmer ownership.
+     */
+    @Transactional
+    public void deleteCycle(Long farmerId, Long cycleId) {
+        Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
+        cycleRepository.delete(cycle);
+    }
+
     private int calculateProgress(LocalDate plantingDate, LocalDate plannedHarvestDate) {
         if (plantingDate == null || plannedHarvestDate == null) {
             return 0;

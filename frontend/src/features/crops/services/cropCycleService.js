@@ -41,5 +41,14 @@ export const cropCycleService = {
    */
   async checkPlotAvailability(farmerId, plotId) {
     return await apiClient.get(`/farmers/${farmerId}/cycles/check-plot/${plotId}`);
+  },
+
+  /**
+   * Delete a crop production cycle.
+   * @param {number} farmerId
+   * @param {number} cycleId
+   */
+  async deleteCycle(farmerId, cycleId) {
+    return await apiClient.delete(`/farmers/${farmerId}/cycles/${cycleId}`);
   }
 };
