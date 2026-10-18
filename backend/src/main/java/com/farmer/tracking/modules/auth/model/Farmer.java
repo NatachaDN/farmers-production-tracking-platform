@@ -35,6 +35,20 @@ public class Farmer {
     @Column(name = "agreed_to_terms", nullable = false)
     private boolean agreedToTerms = true;
 
+    /** LOCAL (email/phone + password) or GOOGLE. Null on rows created before this column existed. */
+    @Column(name = "auth_provider", length = 20)
+    private String authProvider = "LOCAL";
+
+    /** Google account identifier ("sub" claim); null for accounts that never used Google sign-in. */
+    @Column(name = "google_id", length = 64, unique = true)
+    private String googleId;
+
+    @Column(name = "avatar_url", length = 512)
+    private String avatarUrl;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -116,6 +130,38 @@ public class Farmer {
 
     public void setAgreedToTerms(boolean agreedToTerms) {
         this.agreedToTerms = agreedToTerms;
+    }
+
+    public String getAuthProvider() {
+        return authProvider != null ? authProvider : "LOCAL";
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
+    }
+
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 
     public LocalDateTime getCreatedAt() {

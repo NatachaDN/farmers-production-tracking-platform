@@ -9,10 +9,41 @@ import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { authService } from './features/auth/services/authService';
+import { googleAuth } from './features/auth/services/googleAuth';
+import { GoogleCallbackView } from './features/auth/GoogleCallbackView';
+import { AdminOverviewView } from './features/admin/AdminOverviewView';
+import { AdminFarmersView } from './features/admin/AdminFarmersView';
+import { AdminActivityView } from './features/admin/AdminActivityView';
+import { AdminProductionView } from './features/admin/AdminProductionView';
+import { AdminSystemView } from './features/admin/AdminSystemView';
+import './features/admin/admin.css';
+
+const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
+
+const todayLabel = () =>
+  new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 export function App() {
   const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser());
-  const [currentRoute, setCurrentRoute] = useState(() => (authService.isAuthenticated() ? 'dashboard' : 'login'));
+  const [currentRoute, setCurrentRoute] = useState(() => {
+    if (googleAuth.isCallback()) return 'google-callback';
+    return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
+  });
+  const [loginError, setLoginError] = useState('');
+
+  useEffect(() => {
+    if (currentRoute !== 'google-callback') return;
+    authService.completeGoogleSignIn()
+      .then((response) => {
+        setCurrentUser(response.farmer);
+        setCurrentRoute(homeRouteFor(response.farmer));
+      })
+      .catch((err) => {
+        setLoginError(err.message || 'Google sign-in failed. Please try again.');
+        setCurrentRoute('login');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
@@ -23,13 +54,14 @@ export function App() {
   }, []);
 
   const handleLoginSuccess = (farmer) => {
+    setLoginError('');
     setCurrentUser(farmer);
-    setCurrentRoute('dashboard');
+    setCurrentRoute(homeRouteFor(farmer));
   };
 
   const handleRegisterSuccess = (farmer) => {
     setCurrentUser(farmer);
-    setCurrentRoute('dashboard');
+    setCurrentRoute(homeRouteFor(farmer));
   };
 
   const handleLogout = () => {
@@ -39,6 +71,11 @@ export function App() {
   };
 
   const routeHeaders = {
+    'admin-overview': { title: 'Platform overview', subtitle: `${todayLabel()} · Every farmer, one view` },
+    'admin-farmers': { title: 'Farmers', subtitle: 'Accounts, farms and production by farmer' },
+    'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
+    'admin-production': { title: 'Production', subtitle: 'Cycles, harvests and input spending' },
+    'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
     dashboard: {
       title: 'Dashboard',
       subtitle: 'Tuesday, 2 October · Green Acres Farm'
@@ -78,11 +115,17 @@ export function App() {
   };
 
   const currentHeader = routeHeaders[currentRoute] || routeHeaders.dashboard;
+  const isAdmin = authService.isAdmin(currentUser);
+  const isAdminRoute = currentRoute.startsWith('admin-');
+
+  if (currentRoute === 'google-callback') {
+    return <GoogleCallbackView />;
+  }
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
       {/* Quick Screen Preview Switcher Bar */}
-      <div style={{
+      {!isAdminRoute && <div style={{
         position: 'fixed',
         bottom: '16px',
         right: '20px',
@@ -128,13 +171,14 @@ export function App() {
             {screen.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* Screen Views */}
       {currentRoute === 'login' ? (
         <LoginView
           onNavigate={(r) => setCurrentRoute(r)}
           onLoginSuccess={handleLoginSuccess}
+          initialError={loginError}
         />
       ) : currentRoute === 'register' ? (
         <RegisterView
@@ -150,6 +194,22 @@ export function App() {
           user={currentUser}
           onLogout={handleLogout}
         >
+          {isAdminRoute && !isAdmin && (
+            <div style={{
+              backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-card-border)',
+              padding: '40px', textAlign: 'center'
+            }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '8px' }}>Administrators only</h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                Your account does not have access to the admin console.
+              </p>
+            </div>
+          )}
+          {isAdmin && currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={(r) => setCurrentRoute(r)} />}
+          {isAdmin && currentRoute === 'admin-farmers' && <AdminFarmersView />}
+          {isAdmin && currentRoute === 'admin-activity' && <AdminActivityView />}
+          {isAdmin && currentRoute === 'admin-production' && <AdminProductionView />}
+          {isAdmin && currentRoute === 'admin-system' && <AdminSystemView />}
           {currentRoute === 'dashboard' && (
             <DashboardView
               onNavigate={(r) => setCurrentRoute(r)}

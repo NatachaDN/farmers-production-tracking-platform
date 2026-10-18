@@ -6,6 +6,7 @@ export function TopBar({
   subtitle = "Tuesday, 2 October · Green Acres Farm",
   userName = "Joyce M.",
   userInitials = "JM",
+  avatarUrl = null,
   farmName = "Green Acres Farm",
   onSearch,
   onNotificationClick,
@@ -76,6 +77,7 @@ export function TopBar({
             backgroundColor: '#F4EFE6',
             padding: '2px 6px',
             borderRadius: '4px',
+            whiteSpace: 'nowrap',
             fontFamily: 'inherit'
           }}>
             ⌘ K
@@ -140,9 +142,13 @@ export function TopBar({
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              overflow: 'hidden'
             }}>
-              {userInitials}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" referrerPolicy="no-referrer"
+                  style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : userInitials}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>

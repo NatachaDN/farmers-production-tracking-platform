@@ -1,9 +1,28 @@
 import { apiClient } from '../../../shared/services/apiClient';
+import { googleAuth } from './googleAuth';
 
 const TOKEN_KEY = 'acrea_token';
 const USER_KEY = 'acrea_user';
 
+function persistSession(response) {
+  if (response?.token) {
+    localStorage.setItem(TOKEN_KEY, response.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(response.farmer));
+  }
+}
+
 export const authService = {
+  /** Finishes "Continue with Google" after Google redirects back to the app. */
+  async completeGoogleSignIn() {
+    const response = await googleAuth.complete();
+    persistSession(response);
+    return response;
+  },
+
+  isAdmin(user = this.getStoredUser()) {
+    return user?.role === 'ROLE_ADMIN';
+  },
+
   async register(formData) {
     const response = await apiClient.post('/auth/register', formData);
     if (response?.token) {

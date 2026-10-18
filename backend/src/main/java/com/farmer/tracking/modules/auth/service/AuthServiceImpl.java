@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -45,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Farmer farmer = authMapper.toEntity(request, encodedPassword);
+        farmer.setLastLoginAt(LocalDateTime.now());
         Farmer savedFarmer = farmerRepository.save(farmer);
 
         String token = tokenProvider.generateToken(savedFarmer.getId(), savedFarmer.getEmailOrPhone());
@@ -54,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
 
@@ -64,6 +67,9 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(request.getPassword(), farmer.getPasswordHash())) {
             throw new UnauthorizedException("Invalid email/phone or password.");
         }
+
+        farmer.setLastLoginAt(LocalDateTime.now());
+        farmerRepository.save(farmer);
 
         String token = tokenProvider.generateToken(farmer.getId(), farmer.getEmailOrPhone());
         FarmerProfileResponse profileResponse = authMapper.toProfileResponse(farmer);

@@ -10,12 +10,24 @@ import {
   IconInputs,
   IconReports,
   IconSettings,
-  IconHelp
+  IconHelp,
+  IconUsers,
+  IconPulse,
+  IconServer
 } from './Icons';
 import './Sidebar.css';
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
-  const navItems = [
+const ADMIN_NAV = [
+  { id: 'admin-overview', label: 'Overview', icon: IconDashboard },
+  { id: 'admin-farmers', label: 'Farmers', icon: IconUsers },
+  { id: 'admin-activity', label: 'Activity', icon: IconPulse },
+  { id: 'admin-production', label: 'Production', icon: IconProduction },
+  { id: 'admin-system', label: 'System health', icon: IconServer },
+];
+
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false }) {
+  const adminMode = isAdmin && activeRoute.startsWith('admin-');
+  const farmerNav = [
     { id: 'dashboard', label: 'Dashboard', icon: IconDashboard },
     { id: 'farms', label: 'Farms & Plots', icon: IconFarms },
     { id: 'crops', label: 'Crop Production', icon: IconCrop },
@@ -26,6 +38,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
     { id: 'reports', label: 'Reports', icon: IconReports },
     { id: 'settings', label: 'Settings', icon: IconSettings },
   ];
+  const navItems = adminMode ? ADMIN_NAV : farmerNav;
 
   return (
     <aside className="acrea-sidebar" style={{
@@ -94,6 +107,22 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
       {/* Season Card & Footer */}
       <div>
         {/* Current Season Widget */}
+        {adminMode ? (
+          <div style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '14px',
+            padding: '14px 16px',
+            marginBottom: '20px'
+          }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '4px' }}>
+              Admin console
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.45 }}>
+              Read-only view of every farmer on the platform.
+            </div>
+          </div>
+        ) : (
         <div style={{
           backgroundColor: 'rgba(255, 255, 255, 0.05)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -134,6 +163,23 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
             <span>4 cycles in progress</span>
           </div>
         </div>
+        )}
+
+        {isAdmin && (
+          <button
+            onClick={() => onNavigate && onNavigate(adminMode ? 'dashboard' : 'admin-overview')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
+              padding: '9px 12px', marginBottom: '10px', borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.22)', color: '#FFFFFF',
+              fontSize: '0.8125rem', fontWeight: 600, transition: 'background-color var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            {adminMode ? 'Open farmer workspace' : 'Open admin console'}
+          </button>
+        )}
 
         {/* Help & Support */}
         <button

@@ -3,13 +3,14 @@ import { AuthHeroBanner } from './AuthHeroBanner';
 import { AuthMetaHeader } from './AuthMetaHeader';
 import { IconUser, IconLock, IconEye, IconEyeOff } from '../../shared/components/Icons';
 import { authService } from './services/authService';
+import { GoogleSignInSection } from './GoogleSignInSection';
 
-export function LoginView({ onNavigate, onLoginSuccess }) {
+export function LoginView({ onNavigate, onLoginSuccess, initialError = '' }) {
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -214,6 +215,8 @@ export function LoginView({ onNavigate, onLoginSuccess }) {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <GoogleSignInSection onError={setError} />
 
           {/* Switch to Register */}
           <div style={{

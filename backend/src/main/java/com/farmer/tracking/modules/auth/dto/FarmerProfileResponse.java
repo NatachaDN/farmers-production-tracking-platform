@@ -12,6 +12,8 @@ public class FarmerProfileResponse {
     private FarmType farmType;
     private String role;
     private LocalDateTime createdAt;
+    private String avatarUrl;
+    private String authProvider;
 
     public FarmerProfileResponse() {}
 
@@ -71,6 +73,22 @@ public class FarmerProfileResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
     }
 
     public LocalDateTime getCreatedAt() {
