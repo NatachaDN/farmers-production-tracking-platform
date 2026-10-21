@@ -179,7 +179,7 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
   const totalCultivatedArea = cycles
     .filter(c => (c.status || '').toUpperCase() === 'ACTIVE')
     .reduce((sum, c) => sum + (c.acreage || 0), 0);
-  
+
   const totalExpectedTons = cycles
     .filter(c => (c.status || '').toUpperCase() === 'ACTIVE')
     .reduce((sum, c) => {
