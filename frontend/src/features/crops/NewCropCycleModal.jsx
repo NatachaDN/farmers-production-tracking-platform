@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { cropCycleService } from './services/cropCycleService';
+import { cropService } from './services/cropService';
 import { plotService } from '../farms/services/plotService';
+import { AddCropModal } from './components/AddCropModal';
 import {
   IconClose,
   IconSprout,
@@ -8,26 +10,30 @@ import {
   IconBean,
   IconLeaf,
   IconWarning,
-  IconWheat
+  IconWheat,
+  IconPlus
 } from '../../shared/components/Icons';
 
-const COMMON_CROPS = [
-  { name: 'Maize', icon: IconSprout },
-  { name: 'Tomatoes', icon: IconTomato },
-  { name: 'Beans', icon: IconBean },
-  { name: 'Cassava', icon: IconLeaf },
-  { name: 'Potatoes', icon: IconSprout },
-  { name: 'Rice', icon: IconWheat },
-  { name: 'Coffee', icon: IconLeaf },
-  { name: 'Other', icon: IconSprout }
+const DEFAULT_FALLBACK_CROPS = [
+  { id: 1, name: 'Maize', variety: 'Hybrid 614', displayName: 'Maize (Hybrid 614)' },
+  { id: 2, name: 'Tomatoes', variety: 'Anna F1', displayName: 'Tomatoes (Anna F1)' },
+  { id: 3, name: 'Beans', variety: 'Rosecoco (GLP-2)', displayName: 'Beans (Rosecoco (GLP-2))' },
+  { id: 4, name: 'Cassava', variety: 'Migyera', displayName: 'Cassava (Migyera)' },
+  { id: 5, name: 'Potatoes', variety: 'Shangi', displayName: 'Potatoes (Shangi)' },
+  { id: 6, name: 'Rice', variety: 'Basmati 370', displayName: 'Rice (Basmati 370)' }
 ];
 
 export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 1 }) {
   const [plots, setPlots] = useState([]);
   const [loadingPlots, setLoadingPlots] = useState(false);
 
+  // Registered crops from farmer catalog
+  const [crops, setCrops] = useState([]);
+  const [loadingCrops, setLoadingCrops] = useState(false);
+  const [isAddCropModalOpen, setIsAddCropModalOpen] = useState(false);
+
   const [selectedPlotId, setSelectedPlotId] = useState('');
-  const [selectedCrop, setSelectedCrop] = useState('Maize');
+  const [selectedCrop, setSelectedCrop] = useState('');
   const [customCropName, setCustomCropName] = useState('');
   const [cycleName, setCycleName] = useState('');
   const [plantingDate, setPlantingDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -43,12 +49,49 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Load farmer plots when modal opens
+  // Load farmer plots and registered crops when modal opens
   useEffect(() => {
     if (isOpen && farmerId) {
       loadPlots();
+      loadCrops();
     }
   }, [isOpen, farmerId]);
+
+  const loadCrops = async () => {
+    setLoadingCrops(true);
+    try {
+      const data = await cropService.getCrops(farmerId);
+      if (data && data.length > 0) {
+        setCrops(data);
+        if (!selectedCrop) {
+          const firstCropLabel = data[0].displayName || data[0].name;
+          setSelectedCrop(firstCropLabel);
+        }
+      } else {
+        setCrops(DEFAULT_FALLBACK_CROPS);
+        if (!selectedCrop) {
+          setSelectedCrop(DEFAULT_FALLBACK_CROPS[0].displayName);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load crops from API, using fallback catalog:', err);
+      setCrops(DEFAULT_FALLBACK_CROPS);
+      if (!selectedCrop) {
+        setSelectedCrop(DEFAULT_FALLBACK_CROPS[0].displayName);
+      }
+    } finally {
+      setLoadingCrops(false);
+    }
+  };
+
+  const handleCropAdded = (newCrop) => {
+    setCrops((prev) => {
+      const exists = prev.some((c) => c.id === newCrop.id);
+      return exists ? prev : [newCrop, ...prev];
+    });
+    const label = newCrop.displayName || newCrop.name;
+    setSelectedCrop(label);
+  };
 
   const loadPlots = async () => {
     setLoadingPlots(true);
@@ -91,7 +134,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
     }
   };
 
-  const effectiveCropName = selectedCrop === 'Other' ? customCropName : selectedCrop;
+  const effectiveCropName = selectedCrop === '__CUSTOM__' ? customCropName : selectedCrop;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -322,64 +365,92 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
             </div>
           )}
 
-          {/* Crop Selector Chips */}
+          {/* Crop Selector Dropdown */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
-              Select Crop *
-            </label>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '8px',
-              marginBottom: selectedCrop === 'Other' ? '12px' : '0'
-            }}>
-              {COMMON_CROPS.map((crop) => {
-                const isSelected = selectedCrop === crop.name;
-                const CropIcon = crop.icon;
-                return (
-                  <button
-                    key={crop.name}
-                    type="button"
-                    onClick={() => setSelectedCrop(crop.name)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      padding: '8px 10px',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: '0.8125rem',
-                      fontWeight: isSelected ? 700 : 500,
-                      backgroundColor: isSelected ? 'var(--color-brand-tint)' : '#F9F6F0',
-                      color: isSelected ? 'var(--color-brand-primary)' : 'var(--color-text-secondary)',
-                      border: isSelected ? '1.5px solid var(--color-brand-primary)' : '1px solid var(--color-border-subtle)',
-                      cursor: 'pointer',
-                      transition: 'all var(--transition-fast)'
-                    }}
-                  >
-                    <CropIcon size={16} color="currentColor" />
-                    <span>{crop.name}</span>
-                  </button>
-                );
-              })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label htmlFor="crop-selection-dropdown" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>
+                Select Crop *
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsAddCropModalOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-brand-primary)',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '2px 6px',
+                  borderRadius: '6px',
+                  transition: 'background-color 150ms ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-brand-tint)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <IconPlus size={14} />
+                <span>+ Add New Crop</span>
+              </button>
             </div>
 
-            {selectedCrop === 'Other' && (
-              <input
-                type="text"
-                placeholder="Enter custom crop name (e.g. Sorghum, Carrots)"
-                value={customCropName}
-                onChange={(e) => setCustomCropName(e.target.value)}
-                required={selectedCrop === 'Other'}
+            {loadingCrops ? (
+              <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '10px 0' }}>
+                Loading your registered crops...
+              </div>
+            ) : (
+              <select
+                id="crop-selection-dropdown"
+                value={selectedCrop}
+                onChange={(e) => setSelectedCrop(e.target.value)}
+                required
                 style={{
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--color-border-input)',
                   fontSize: '0.9375rem',
-                  boxSizing: 'border-box'
+                  backgroundColor: '#FFFFFF',
+                  color: 'var(--color-text-primary)',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  cursor: 'pointer'
                 }}
-              />
+              >
+                <option value="" disabled>-- Choose a crop from your personal list --</option>
+                {crops.map((crop) => {
+                  const label = crop.displayName || crop.name;
+                  return (
+                    <option key={crop.id} value={label}>
+                      {label}
+                    </option>
+                  );
+                })}
+                <option value="__CUSTOM__">+ Other / Enter custom crop...</option>
+              </select>
+            )}
+
+            {selectedCrop === '__CUSTOM__' && (
+              <div style={{ marginTop: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="Enter custom crop name (e.g. Sorghum, Carrots)"
+                  value={customCropName}
+                  onChange={(e) => setCustomCropName(e.target.value)}
+                  required={selectedCrop === '__CUSTOM__'}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border-input)',
+                    fontSize: '0.9375rem',
+                    boxSizing: 'border-box',
+                    outline: 'none'
+                  }}
+                />
+              </div>
             )}
           </div>
 
@@ -562,6 +633,16 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
           </div>
         </form>
       </div>
+
+      {/* Quick Add Crop Modal */}
+      {isAddCropModalOpen && (
+        <AddCropModal
+          isOpen={isAddCropModalOpen}
+          onClose={() => setIsAddCropModalOpen(false)}
+          onCropAdded={handleCropAdded}
+          farmerId={farmerId}
+        />
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CropCycleCard } from '../../shared/components/CropCycleCard';
 import { NewCropCycleModal } from './NewCropCycleModal';
 import { PlotDetailsModal } from './components/PlotDetailsModal';
+import { ManageCropsModal } from './components/ManageCropsModal';
 import { cropCycleService } from './services/cropCycleService';
 import {
   IconPlus,
@@ -99,6 +100,7 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
   const [activeTab, setActiveTab] = useState('Active');
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isManageCropsOpen, setIsManageCropsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -316,30 +318,64 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
           })}
         </div>
 
-        {/* New Production Cycle Action */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'var(--color-brand-primary)',
-            color: '#FFFFFF',
-            padding: '10px 18px',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            boxShadow: 'var(--shadow-subtle)',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'background-color var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-hover)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)'}
-        >
-          <IconPlus size={16} />
-          <span>New Production Cycle</span>
-        </button>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Manage Personal Crops Catalog */}
+          <button
+            onClick={() => setIsManageCropsOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: '#FFFFFF',
+              color: 'var(--color-text-primary)',
+              padding: '10px 16px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              boxShadow: 'var(--shadow-subtle)',
+              border: '1px solid var(--color-border-input)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-brand-primary)';
+              e.currentTarget.style.backgroundColor = 'var(--color-brand-tint)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-border-input)';
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+            }}
+          >
+            <IconSprout size={16} color="var(--color-brand-primary)" />
+            <span>Manage Crops</span>
+          </button>
+
+          {/* New Production Cycle Action */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'var(--color-brand-primary)',
+              color: '#FFFFFF',
+              padding: '10px 18px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              boxShadow: 'var(--shadow-subtle)',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background-color var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)'}
+          >
+            <IconPlus size={16} />
+            <span>New Production Cycle</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary Metrics Row (3 Columns) */}
@@ -485,6 +521,13 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
         onGoToActivities={(plotItem) => {
           if (onNavigate) onNavigate('activities');
         }}
+      />
+
+      {/* Manage Personal Crops Modal */}
+      <ManageCropsModal
+        isOpen={isManageCropsOpen}
+        onClose={() => setIsManageCropsOpen(false)}
+        farmerId={farmerId}
       />
     </div>
   );
