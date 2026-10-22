@@ -6,6 +6,12 @@ import com.farmer.tracking.modules.crop.entity.Harvest;
 import com.farmer.tracking.modules.crop.entity.HarvestUnit;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.crop.repository.HarvestRepository;
+import com.farmer.tracking.modules.crop.entity.ActivityType;
+import com.farmer.tracking.modules.crop.entity.Cycle;
+import com.farmer.tracking.modules.crop.entity.CycleActivity;
+import com.farmer.tracking.modules.crop.entity.CycleStatus;
+import com.farmer.tracking.modules.crop.repository.CycleActivityRepository;
+import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +20,7 @@ import java.time.LocalDate;
 /**
  * Seeds initial demo crop cycle and harvest data for development.
  * Only runs when the cycles table is empty to avoid duplicate entries.
+ * Seeds initial demo crop cycle and activity data for development.
  */
 @Component
 public class CropDataInitializer implements CommandLineRunner {
@@ -25,6 +32,11 @@ public class CropDataInitializer implements CommandLineRunner {
                                HarvestRepository harvestRepository) {
         this.cycleRepository = cycleRepository;
         this.harvestRepository = harvestRepository;
+    private final CycleActivityRepository activityRepository;
+
+    public CropDataInitializer(CycleRepository cycleRepository, CycleActivityRepository activityRepository) {
+        this.cycleRepository = cycleRepository;
+        this.activityRepository = activityRepository;
     }
 
     @Override
@@ -58,6 +70,27 @@ public class CropDataInitializer implements CommandLineRunner {
             harvest.setCalculatedYield(Math.round((900.0 / 1.8) * 100.0) / 100.0); // 500.0 kg/ha
             harvest.setNotes("Good season — uniform grain size, minimal pest impact.");
             harvestRepository.save(harvest);
+            Cycle cycle = new Cycle();
+            cycle.setFarmerId(1L);
+            cycle.setName("Maize Production (Field A)");
+            cycle.setStatus(CycleStatus.ACTIVE);
+            cycle.setStartDate(LocalDate.now().minusDays(30));
+            Cycle savedCycle = cycleRepository.save(cycle);
+
+            // Seed sample interventions
+            CycleActivity a1 = new CycleActivity();
+            a1.setCycle(savedCycle);
+            a1.setActivityType(ActivityType.WATERING);
+            a1.setActivityDate(LocalDate.now().minusDays(5));
+            a1.setNotes("Drip irrigation morning cycle - 45 mins");
+            activityRepository.save(a1);
+
+            CycleActivity a2 = new CycleActivity();
+            a2.setCycle(savedCycle);
+            a2.setActivityType(ActivityType.FERTILIZING);
+            a2.setActivityDate(LocalDate.now().minusDays(2));
+            a2.setNotes("Applied NPK 15-15-15 organic blend at row roots");
+            activityRepository.save(a2);
         }
     }
 }
