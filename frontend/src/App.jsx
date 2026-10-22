@@ -5,6 +5,7 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CreateFarmView } from './features/farms/CreateFarmView';
 import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
+import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { authService } from './features/auth/services/authService';
@@ -15,7 +16,6 @@ export function App() {
   const [selectedFarmId, setSelectedFarmId] = useState(null);
 
   useEffect(() => {
-    // If authenticated on mount, refresh current profile
     if (authService.isAuthenticated()) {
       authService.getCurrentUser().then((user) => {
         if (user) setCurrentUser(user);
@@ -39,7 +39,6 @@ export function App() {
     setCurrentRoute('login');
   };
 
-  // Title and subtitle per authenticated route
   const routeHeaders = {
     dashboard: {
       title: 'Dashboard',
@@ -67,7 +66,7 @@ export function App() {
     },
     activities: {
       title: 'Farm Activities',
-      subtitle: 'Schedule and verify daily plot tasks and field work'
+      subtitle: 'Record and track daily farming activities per cycle'
     },
     production: {
       title: 'Production Records',
@@ -87,7 +86,7 @@ export function App() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* Quick Screen Preview Switcher Bar (Pins at bottom for testing all mockups) */}
+      {/* Quick Screen Preview Switcher Bar */}
       <div style={{
         position: 'fixed',
         bottom: '16px',
@@ -114,6 +113,7 @@ export function App() {
           { id: 'farms-create', label: '+ Create Farm' },
           { id: 'farm-details', label: 'Farm Details' },
           { id: 'crops', label: 'Crop Cycles' },
+          { id: 'activities', label: 'Activities' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' }
         ].map((screen) => (
@@ -186,7 +186,10 @@ export function App() {
             />
           )}
           {currentRoute === 'crops' && <CropProductionView />}
-          {['livestock', 'activities', 'production', 'reports', 'settings'].includes(currentRoute) && (
+          {currentRoute === 'activities' && (
+            <CycleActivitiesPage farmerId={currentUser?.id} />
+          )}
+          {['livestock', 'production', 'reports', 'settings'].includes(currentRoute) && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',

@@ -71,6 +71,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Dotenv support to load .env variables seamlessly -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
+		</dependency>
+
 		<!-- Swagger / OpenAPI 3 UI Documentation -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
