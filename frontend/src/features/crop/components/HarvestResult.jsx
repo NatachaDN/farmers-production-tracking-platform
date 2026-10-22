@@ -1,5 +1,13 @@
 import React from 'react';
 import './HarvestResult.css';
+import {
+  IconCheckCircle,
+  IconCalendar,
+  IconScale,
+  IconLocation,
+  IconTrendingUp,
+  IconFileText
+} from '../../../shared/components/Icons';
 
 const UNIT_LABELS = { KG: 'kg', BAGS: 'bags', TONS: 'tons' };
 
@@ -29,6 +37,9 @@ export function HarvestResult({ harvest }) {
       {/* Completed badge */}
       <div className="result-header">
         <div className="completed-badge">
+          <span className="completed-icon">
+            <IconCheckCircle size={16} color="currentColor" />
+          </span>
           <span className="completed-icon">✅</span>
           <span>Cycle Completed</span>
         </div>
@@ -50,6 +61,9 @@ export function HarvestResult({ harvest }) {
       {/* Detail grid */}
       <div className="result-detail-grid">
         <div className="detail-card">
+          <span className="detail-card-icon">
+            <IconCalendar size={18} color="var(--color-brand-primary, #164230)" />
+          </span>
           <span className="detail-card-icon">📅</span>
           <div>
             <div className="detail-card-label">Harvest Date</div>
@@ -58,6 +72,9 @@ export function HarvestResult({ harvest }) {
         </div>
 
         <div className="detail-card">
+          <span className="detail-card-icon">
+            <IconScale size={18} color="var(--color-brand-primary, #164230)" />
+          </span>
           <span className="detail-card-icon">⚖️</span>
           <div>
             <div className="detail-card-label">Unit of Measure</div>
@@ -67,6 +84,9 @@ export function HarvestResult({ harvest }) {
 
         {harvest.acreage && (
           <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconLocation size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
             <span className="detail-card-icon">🗺️</span>
             <div>
               <div className="detail-card-label">Acreage</div>
@@ -76,6 +96,9 @@ export function HarvestResult({ harvest }) {
         )}
 
         <div className="detail-card">
+          <span className="detail-card-icon">
+            <IconTrendingUp size={18} color="var(--color-brand-primary, #164230)" />
+          </span>
           <span className="detail-card-icon">📈</span>
           <div>
             <div className="detail-card-label">Calculated Yield</div>
@@ -87,6 +110,10 @@ export function HarvestResult({ harvest }) {
       {/* Notes */}
       {harvest.notes && (
         <div className="result-notes">
+          <div className="result-notes-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <IconFileText size={15} color="currentColor" />
+            <span>Harvest Notes</span>
+          </div>
           <div className="result-notes-label">📝 Harvest Notes</div>
           <div className="result-notes-text">{harvest.notes}</div>
         </div>

@@ -7,6 +7,8 @@ import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
+import { HarvestPage } from './features/crop/pages/HarvestPage';
+import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { authService } from './features/auth/services/authService';
@@ -73,6 +75,10 @@ export function App() {
       title: 'Harvest & Production Records',
       subtitle: 'Harvest tallies, batch weighings, and yield logs'
     },
+    inputs: {
+      title: 'Farm Inputs',
+      subtitle: 'Track seeds, fertilizers, and pesticides — stock & costs'
+    },
     reports: {
       title: 'Reports & Analytics',
       subtitle: 'Seasonal output forecasts and historical performance'
@@ -116,6 +122,8 @@ export function App() {
           { id: 'crops', label: 'Crop Cycles' },
           { id: 'production', label: 'Harvest / Production' },
           { id: 'activities', label: 'Activities' },
+          { id: 'production', label: 'Harvest / Production' },
+          { id: 'inputs', label: 'Farm Inputs' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' }
         ].map((screen) => (
@@ -163,6 +171,13 @@ export function App() {
               user={currentUser}
             />
           )}
+          {currentRoute === 'farms' && <FarmsAndPlotsView />}
+          {currentRoute === 'crops' && (
+            <CropProductionView
+              farmerId={currentUser?.id || 1}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
           {currentRoute === 'farms' && (
             <FarmsAndPlotsView
               onNavigate={(r) => setCurrentRoute(r)}
@@ -195,7 +210,39 @@ export function App() {
           {currentRoute === 'activities' && (
             <CycleActivitiesPage farmerId={currentUser?.id} />
           )}
-          {['livestock', 'production', 'reports', 'settings'].includes(currentRoute) && (
+          {currentRoute === 'production' && (
+            <HarvestPage farmerId={currentUser?.id} />
+          )}
+          {currentRoute === 'inputs' && (
+            <FarmInputsView farmerId={currentUser?.id || 1} />
+          )}
+          {['livestock', 'reports', 'settings'].includes(currentRoute) && (
+          {currentRoute === 'farms' && (
+            <FarmsAndPlotsView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onSelectFarm={(id) => {
+                setSelectedFarmId(id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farms-create' && (
+            <CreateFarmView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onFarmCreated={(newFarm) => {
+                setSelectedFarmId(newFarm.id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farm-details' && (
+            <FarmDetailsView
+              farmId={selectedFarmId}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
+          {currentRoute === 'crops' && <CropProductionView />}
+          {['livestock', 'activities', 'production', 'reports', 'settings'].includes(currentRoute) && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',

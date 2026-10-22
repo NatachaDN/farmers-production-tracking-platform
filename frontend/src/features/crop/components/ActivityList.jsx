@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
 import './ActivityList.css';
+import {
+  IconDroplets,
+  IconShieldAlert,
+  IconSprout,
+  IconWheat,
+  IconClipboard,
+  IconPin,
+  IconEye,
+  IconPencil,
+  IconTrash2,
+  IconClose
+} from '../../../shared/components/Icons';
 
 const TYPE_CONFIG = {
   WATERING: {
     label: 'Watering',
-    icon: '💧',
+    icon: IconDroplets,
     badgeClass: 'badge-watering',
   },
   TREATMENT: {
     label: 'Treatment',
-    icon: '🛡️',
+    icon: IconShieldAlert,
     badgeClass: 'badge-treatment',
   },
   FERTILIZING: {
     label: 'Fertilizing',
-    icon: '🌱',
+    icon: IconSprout,
     badgeClass: 'badge-fertilizing',
   },
   WEEDING: {
     label: 'Weeding',
-    icon: '🌾',
+    icon: IconWheat,
     badgeClass: 'badge-weeding',
   },
 };
@@ -74,14 +86,17 @@ export function ActivityList({
           </button>
           {Object.keys(TYPE_CONFIG).map((type) => {
             const count = activities.filter((a) => a.activityType === type).length;
+            const IconComp = TYPE_CONFIG[type].icon;
             return (
               <button
                 type="button"
                 key={type}
                 className={`filter-btn ${filterType === type ? 'active' : ''}`}
                 onClick={() => setFilterType(type)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                {TYPE_CONFIG[type].icon} {TYPE_CONFIG[type].label} ({count})
+                <IconComp size={14} color="currentColor" />
+                <span>{TYPE_CONFIG[type].label} ({count})</span>
               </button>
             );
           })}
@@ -97,7 +112,9 @@ export function ActivityList({
       ) : filteredActivities.length === 0 ? (
         /* Empty State */
         <div className="list-empty-state">
-          <span className="empty-icon">📋</span>
+          <span className="empty-icon">
+            <IconClipboard size={36} color="var(--color-text-muted, #788680)" />
+          </span>
           <h4>No activities recorded yet</h4>
           <p>
             {filterType === 'ALL'
@@ -122,9 +139,10 @@ export function ActivityList({
               {filteredActivities.map((act) => {
                 const config = TYPE_CONFIG[act.activityType] || {
                   label: act.activityType,
-                  icon: '📌',
+                  icon: IconPin,
                   badgeClass: 'badge-default',
                 };
+                const IconComp = config.icon;
 
                 return (
                   <tr key={act.id} className="activity-row">
@@ -136,7 +154,9 @@ export function ActivityList({
                     {/* Type */}
                     <td className="cell-type">
                       <span className={`type-badge ${config.badgeClass}`}>
-                        <span className="badge-icon">{config.icon}</span>
+                        <span className="badge-icon">
+                          <IconComp size={14} color="currentColor" />
+                        </span>
                         <span>{config.label}</span>
                       </span>
                     </td>
@@ -166,7 +186,7 @@ export function ActivityList({
                           title="View Details"
                           onClick={() => setSelectedActivity(act)}
                         >
-                          👁️
+                          <IconEye size={15} color="currentColor" />
                         </button>
                         {onEdit && (
                           <button
@@ -175,7 +195,7 @@ export function ActivityList({
                             title="Edit"
                             onClick={() => onEdit(act)}
                           >
-                            ✏️
+                            <IconPencil size={15} color="currentColor" />
                           </button>
                         )}
                         {onDelete && (
@@ -185,7 +205,7 @@ export function ActivityList({
                             title="Delete"
                             onClick={() => onDelete(act.id)}
                           >
-                            🗑️
+                            <IconTrash2 size={15} color="currentColor" />
                           </button>
                         )}
                       </div>
@@ -198,7 +218,7 @@ export function ActivityList({
         </div>
       )}
 
-      {/* Detail Modal (Acceptance criteria: viewing date, type, notes) */}
+      {/* Detail Modal */}
       {selectedActivity && (
         <div className="modal-backdrop" onClick={() => setSelectedActivity(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -209,14 +229,18 @@ export function ActivityList({
                 className="modal-close-btn"
                 onClick={() => setSelectedActivity(null)}
               >
-                ✕
+                <IconClose size={16} color="currentColor" />
               </button>
             </div>
             <div className="modal-body">
               <div className="detail-row">
                 <span className="detail-label">Intervention Type:</span>
                 <span className={`type-badge ${TYPE_CONFIG[selectedActivity.activityType]?.badgeClass || ''}`}>
-                  {TYPE_CONFIG[selectedActivity.activityType]?.icon} {TYPE_CONFIG[selectedActivity.activityType]?.label || selectedActivity.activityType}
+                  {(() => {
+                    const IconComp = TYPE_CONFIG[selectedActivity.activityType]?.icon || IconPin;
+                    return <IconComp size={14} color="currentColor" style={{ marginRight: '4px' }} />;
+                  })()}
+                  {TYPE_CONFIG[selectedActivity.activityType]?.label || selectedActivity.activityType}
                 </span>
               </div>
               <div className="detail-row">

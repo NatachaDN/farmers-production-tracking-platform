@@ -7,10 +7,12 @@ import {
   IconLivestock,
   IconActivities,
   IconProduction,
+  IconInputs,
   IconReports,
   IconSettings,
   IconHelp
 } from './Icons';
+import './Sidebar.css';
 
 export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
   const navItems = [
@@ -20,30 +22,22 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate }) {
     { id: 'livestock', label: 'Livestock', icon: IconLivestock },
     { id: 'activities', label: 'Activities', icon: IconActivities },
     { id: 'production', label: 'Production', icon: IconProduction },
+    { id: 'inputs', label: 'Farm Inputs', icon: IconInputs },
     { id: 'reports', label: 'Reports', icon: IconReports },
     { id: 'settings', label: 'Settings', icon: IconSettings },
   ];
 
   return (
-    <aside style={{
-      width: '240px',
-      backgroundColor: 'var(--color-sidebar-bg)',
+    <aside className="acrea-sidebar" style={{
       color: '#FFFFFF',
-      height: '100vh',
-      position: 'sticky',
-      top: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
       padding: '24px 16px',
-      boxSizing: 'border-box',
-      flexShrink: 0
+      justifyContent: 'space-between',
     }}>
       {/* Brand & Navigation */}
       <div>
         {/* Brand Header */}
-        <div style={{ padding: '0 8px', marginBottom: '32px' }}>
-          <AcreaLogo size={32} />
+        <div style={{ padding: '0 4px', marginBottom: '28px' }}>
+          <AcreaLogo size={38} />
         </div>
 
         {/* Navigation List */}

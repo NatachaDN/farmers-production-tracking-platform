@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './ActivityForm.css';
+import {
+  IconDroplets,
+  IconShieldAlert,
+  IconSprout,
+  IconWheat
+} from '../../../shared/components/Icons';
 
 const ACTIVITY_TYPES = [
-  { value: 'WATERING', label: 'Watering', icon: '💧', color: '#3A86C8' },
-  { value: 'TREATMENT', label: 'Treatment', icon: '🛡️', color: '#E06D53' },
-  { value: 'FERTILIZING', label: 'Fertilizing', icon: '🌱', color: '#4F8A64' },
-  { value: 'WEEDING', label: 'Weeding', icon: '🌾', color: '#D6A23C' },
+  { value: 'WATERING', label: 'Watering', icon: IconDroplets, color: '#3A86C8' },
+  { value: 'TREATMENT', label: 'Treatment', icon: IconShieldAlert, color: '#E06D53' },
+  { value: 'FERTILIZING', label: 'Fertilizing', icon: IconSprout, color: '#4F8A64' },
+  { value: 'WEEDING', label: 'Weeding', icon: IconWheat, color: '#D6A23C' },
 ];
 
 export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCancel }) {
@@ -19,7 +25,7 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
 
   const [errors, setErrors] = useState({});
 
-  // Synchronize form fields whenever initialData changes (e.g. when clicking ✏️)
+  // Synchronize form fields whenever initialData changes
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -102,6 +108,7 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
         <div className="activity-type-grid">
           {ACTIVITY_TYPES.map((type) => {
             const isSelected = formData.activityType === type.value;
+            const IconComp = type.icon;
             return (
               <button
                 type="button"
@@ -109,7 +116,9 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
                 className={`type-pill ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleTypeSelect(type.value)}
               >
-                <span className="type-pill-icon">{type.icon}</span>
+                <span className="type-pill-icon">
+                  <IconComp size={16} color="currentColor" />
+                </span>
                 <span className="type-pill-label">{type.label}</span>
               </button>
             );

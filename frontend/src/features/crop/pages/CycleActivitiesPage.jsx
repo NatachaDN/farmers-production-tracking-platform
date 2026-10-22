@@ -8,7 +8,8 @@ import {
   IconCrop,
   IconSprout,
   IconWater,
-  IconCheck
+  IconCheck,
+  IconClose
 } from '../../../shared/components/Icons';
 import { MetricCard } from '../../../shared/components/MetricCard';
 
@@ -101,7 +102,7 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
             formData
           );
           setActivities((prev) =>
-            prev.map((a) => (a.id === editingActivity.id ? updated : a))
+            prev.map((a) => (a.id === editingActivity.id ? { ...a, ...updated } : a))
           );
         } catch {
           setActivities((prev) =>
@@ -112,7 +113,9 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
             )
           );
         }
-        showToast('Activity record updated successfully!');
+        showToast('Activity intervention updated successfully.');
+        setEditingActivity(null);
+        setShowForm(false);
       } else {
         try {
           const created = await cycleActivityService.createActivity(
@@ -122,18 +125,21 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
           );
           setActivities((prev) => [created, ...prev]);
         } catch {
-          const newEntry = {
+          const localNew = {
             id: Date.now(),
             cycleId: selectedCycleId,
-            ...formData,
+            activityType: formData.activityType,
+            activityDate: formData.activityDate,
+            notes: formData.notes,
             createdAt: new Date().toISOString(),
           };
-          setActivities((prev) => [newEntry, ...prev]);
+          setActivities((prev) => [localNew, ...prev]);
         }
-        showToast('New activity recorded successfully!');
+        showToast('New activity intervention logged successfully.');
+        setShowForm(false);
       }
-      setShowForm(false);
-      setEditingActivity(null);
+    } catch (err) {
+      showToast(err?.message || 'Failed to save activity.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -141,36 +147,41 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
 
   // Handle Delete
   const handleDeleteActivity = async (activityId) => {
-    if (!window.confirm('Are you sure you want to delete this activity record?')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to delete this activity record?')) return;
     try {
       try {
         await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityId);
       } catch {
-        // Fallback
+        // fallback local
       }
       setActivities((prev) => prev.filter((a) => a.id !== activityId));
-      showToast('Activity removed.', 'info');
-    } catch {
-      showToast('Failed to delete activity.', 'error');
+      showToast('Activity deleted successfully.');
+      if (editingActivity?.id === activityId) {
+        setEditingActivity(null);
+        setShowForm(false);
+      }
+    } catch (err) {
+      showToast(err?.message || 'Failed to delete activity.', 'error');
     }
   };
 
-  const handleStartEdit = (activity) => {
+  // Handle Edit Trigger
+  const handleEditTrigger = (activity) => {
     setEditingActivity(activity);
     setShowForm(true);
-    setTimeout(() => {
-      const formEl = document.getElementById('activity-form-container');
-      if (formEl) {
-        formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 60);
+    const formElement = document.getElementById('activity-form-container');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
-  const wateringCount = activities.filter((a) => a.activityType === 'WATERING').length;
-  const treatmentCount = activities.filter((a) => a.activityType === 'TREATMENT').length;
-  const fertilizingCount = activities.filter((a) => a.activityType === 'FERTILIZING').length;
+  // KPI Calculations
+  const cycleActivities = activities.filter((a) => a.cycleId === selectedCycleId);
+  const totalCount = cycleActivities.length;
+  const wateringCount = cycleActivities.filter((a) => a.activityType === 'WATERING').length;
+  const treatmentCount = cycleActivities.filter((a) => a.activityType === 'TREATMENT').length;
+  const fertilizingCount = cycleActivities.filter((a) => a.activityType === 'FERTILIZING').length;
+  const lastIntervention = cycleActivities.length > 0 ? cycleActivities[0].activityDate : 'None';
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -192,9 +203,9 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            style={{ fontSize: '1rem', color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            ✕
+            <IconClose size={16} color="currentColor" />
           </button>
         </div>
       )}
@@ -254,7 +265,10 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
           }}
         >
           {showForm && !editingActivity ? (
-            <span>✕ Close Form</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <IconClose size={16} color="currentColor" />
+              <span>Close Form</span>
+            </span>
           ) : (
             <>
               <IconPlus size={16} />
@@ -279,38 +293,37 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
         />
         <MetricCard
           label="Total Interventions"
-          value={activities.length.toString()}
-          subtext="Recorded to date"
-          icon={<IconActivities size={20} color="#2D7A52" />}
-          iconBg="#E8F5E9"
+          value={totalCount}
+          subtext={`Last: ${lastIntervention}`}
+          icon={<IconActivities size={20} color="#0D9488" />}
+          iconBg="#E6F6F4"
         />
         <MetricCard
-          label="Watering Logs"
-          value={wateringCount.toString()}
-          subtext="Irrigation cycles"
-          icon={<IconWater size={20} color="#2563EB" />}
-          iconBg="#EFF6FF"
+          label="Watering & Nutrients"
+          value={`${wateringCount + fertilizingCount} logs`}
+          subtext={`${wateringCount} irrigation · ${fertilizingCount} feeding`}
+          icon={<IconWater size={20} color="#3A86C8" />}
+          iconBg="#EBF3FA"
         />
         <MetricCard
-          label="Treatments & Fert."
-          value={(treatmentCount + fertilizingCount).toString()}
-          subtext={`${treatmentCount} treatments · ${fertilizingCount} fertilizers`}
+          label="Crop Treatments"
+          value={`${treatmentCount} applied`}
+          subtext="Pest & disease controls"
           icon={<IconCrop size={20} color="#D97706" />}
           iconBg="#FEF3C7"
         />
       </div>
 
-      {/* Form Drawer / Section */}
+      {/* Form Drawer / Container */}
       {showForm && (
-        <div className="fade-in" style={{
+        <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--radius-xl)',
           border: '1px solid var(--color-card-border)',
-          padding: '24px',
+          padding: '32px',
           boxShadow: 'var(--shadow-card)'
         }}>
           <ActivityForm
-            key={editingActivity ? `edit-${editingActivity.id}` : 'new-activity'}
             onSubmit={handleSaveActivity}
             isSubmitting={isSubmitting}
             initialData={editingActivity}
@@ -322,18 +335,18 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
         </div>
       )}
 
-      {/* Activities History Section */}
+      {/* Activities Timeline & History List */}
       <div style={{
         backgroundColor: '#FFFFFF',
         borderRadius: 'var(--radius-xl)',
         border: '1px solid var(--color-card-border)',
-        padding: '24px',
+        padding: '24px 32px',
         boxShadow: 'var(--shadow-card)'
       }}>
         <ActivityList
-          activities={activities}
+          activities={cycleActivities}
           isLoading={isLoading}
-          onEdit={handleStartEdit}
+          onEdit={handleEditTrigger}
           onDelete={handleDeleteActivity}
         />
       </div>
