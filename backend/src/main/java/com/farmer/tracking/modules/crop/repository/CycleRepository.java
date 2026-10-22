@@ -10,12 +10,16 @@ import java.util.Optional;
 
 /**
  * Repository for Cycle entity operations.
+ * Database access for {@link Cycle} entities.
  */
 @Repository
 public interface CycleRepository extends JpaRepository<Cycle, Long> {
 
     /** Find all cycles belonging to a specific farmer ordered by creation date descending. */
     List<Cycle> findByFarmerIdOrderByCreatedAtDesc(Long farmerId);
+    List<Cycle> findByFarmerId(Long farmerId);
+
+    List<Cycle> findByFarmerIdAndStatus(Long farmerId, CycleStatus status);
 
     /** Find all cycles belonging to a specific farmer. */
     List<Cycle> findByFarmerId(Long farmerId);

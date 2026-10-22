@@ -12,6 +12,11 @@ const UNIT_OPTIONS = [
   { value: 'KG',   label: 'Kilograms (kg)', icon: IconScale },
   { value: 'BAGS', label: 'Bags',            icon: IconShoppingBag },
   { value: 'TONS', label: 'Tons',            icon: IconTruck },
+
+const UNIT_OPTIONS = [
+  { value: 'KG',   label: 'Kilograms (kg)', icon: '⚖️' },
+  { value: 'BAGS', label: 'Bags',            icon: '🛍️' },
+  { value: 'TONS', label: 'Tons',            icon: '🚛' },
 ];
 
 /**
@@ -135,6 +140,17 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
               </button>
             );
           })}
+          {UNIT_OPTIONS.map((opt) => (
+            <button
+              type="button"
+              key={opt.value}
+              className={`unit-pill ${formData.unit === opt.value ? 'selected' : ''}`}
+              onClick={() => handleUnitSelect(opt.value)}
+            >
+              <span className="unit-pill-icon">{opt.icon}</span>
+              <span className="unit-pill-label">{opt.label}</span>
+            </button>
+          ))}
         </div>
         {errors.unit && <span className="field-error">{errors.unit}</span>}
       </div>
@@ -181,6 +197,7 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
         <span className="warning-icon">
           <IconWarning size={16} color="var(--color-warning, #D97706)" />
         </span>
+        <span className="warning-icon">⚠️</span>
         <span>Recording a harvest will mark this cycle as <strong>Completed</strong> and cannot be undone.</span>
       </div>
 
@@ -194,6 +211,7 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
               <IconWheat size={18} color="currentColor" />
               <span>Record Harvest &amp; Complete Cycle</span>
             </span>
+            <span>🌾 Record Harvest &amp; Complete Cycle</span>
           )}
         </button>
       </div>

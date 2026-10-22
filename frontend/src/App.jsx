@@ -5,6 +5,7 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CreateFarmView } from './features/farms/CreateFarmView';
 import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
+import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
@@ -119,6 +120,7 @@ export function App() {
           { id: 'farms-create', label: '+ Create Farm' },
           { id: 'farm-details', label: 'Farm Details' },
           { id: 'crops', label: 'Crop Cycles' },
+          { id: 'production', label: 'Harvest / Production' },
           { id: 'activities', label: 'Activities' },
           { id: 'production', label: 'Harvest / Production' },
           { id: 'inputs', label: 'Farm Inputs' },
@@ -176,6 +178,35 @@ export function App() {
               onNavigate={(r) => setCurrentRoute(r)}
             />
           )}
+          {currentRoute === 'farms' && (
+            <FarmsAndPlotsView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onSelectFarm={(id) => {
+                setSelectedFarmId(id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farms-create' && (
+            <CreateFarmView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onFarmCreated={(newFarm) => {
+                setSelectedFarmId(newFarm.id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farm-details' && (
+            <FarmDetailsView
+              farmId={selectedFarmId}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
+          {currentRoute === 'crops' && <CropProductionView />}
+          {currentRoute === 'production' && (
+            <HarvestPage farmerId={currentUser?.id} />
+          )}
+          {['livestock', 'activities', 'reports', 'settings'].includes(currentRoute) && (
           {currentRoute === 'activities' && (
             <CycleActivitiesPage farmerId={currentUser?.id} />
           )}

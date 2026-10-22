@@ -703,6 +703,53 @@ export function FarmsAndPlotsView({ onNavigate, onSelectFarm }) {
             <IconPlus size={16} />
             <span>Create New Farm</span>
           </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => {
+                if (onSelectFarm) onSelectFarm(mainFarm.id);
+                else if (onNavigate) onNavigate('farm-details');
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: '#FFFFFF',
+                color: 'var(--color-brand-primary)',
+                border: '1px solid var(--color-brand-primary)',
+                padding: '10px 16px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              View Farm Details →
+            </button>
+
+            <button
+              onClick={() => onNavigate && onNavigate('farms-create')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: 'var(--color-brand-primary)',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                boxShadow: 'var(--shadow-subtle)',
+                cursor: 'pointer',
+                transition: 'background-color var(--transition-fast)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)'}
+            >
+              <IconPlus size={16} />
+              <span>Add New Farm</span>
+            </button>
+          </div>
         </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
