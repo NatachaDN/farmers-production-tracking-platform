@@ -3,6 +3,9 @@ package com.farmer.tracking.modules.crop.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+/**
+ * Represents a crop production cycle.
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +40,9 @@ public class Cycle {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private CycleStatus status = CycleStatus.ACTIVE;
+
+    @Column(name = "acreage")
+    private Double acreage;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -98,6 +104,14 @@ public class Cycle {
 
     public void setStatus(CycleStatus status) {
         this.status = status;
+    }
+
+    public Double getAcreage() {
+        return acreage;
+    }
+
+    public void setAcreage(Double acreage) {
+        this.acreage = acreage;
     }
 
     public LocalDate getStartDate() {

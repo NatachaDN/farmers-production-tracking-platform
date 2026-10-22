@@ -5,6 +5,7 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CreateFarmView } from './features/farms/CreateFarmView';
 import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
+import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
@@ -69,7 +70,7 @@ export function App() {
       subtitle: 'Record and track daily farming activities per cycle'
     },
     production: {
-      title: 'Production Records',
+      title: 'Harvest & Production Records',
       subtitle: 'Harvest tallies, batch weighings, and yield logs'
     },
     reports: {
@@ -113,6 +114,7 @@ export function App() {
           { id: 'farms-create', label: '+ Create Farm' },
           { id: 'farm-details', label: 'Farm Details' },
           { id: 'crops', label: 'Crop Cycles' },
+          { id: 'production', label: 'Harvest / Production' },
           { id: 'activities', label: 'Activities' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' }
@@ -186,6 +188,10 @@ export function App() {
             />
           )}
           {currentRoute === 'crops' && <CropProductionView />}
+          {currentRoute === 'production' && (
+            <HarvestPage farmerId={currentUser?.id} />
+          )}
+          {['livestock', 'activities', 'reports', 'settings'].includes(currentRoute) && (
           {currentRoute === 'activities' && (
             <CycleActivitiesPage farmerId={currentUser?.id} />
           )}
