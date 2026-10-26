@@ -1,11 +1,14 @@
 package com.farmer.tracking.modules.auth;
 
 import com.farmer.tracking.common.exception.ConflictException;
+import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.exception.UnauthorizedException;
 import com.farmer.tracking.common.security.JwtTokenProvider;
 import com.farmer.tracking.modules.auth.dto.AuthResponse;
+import com.farmer.tracking.modules.auth.dto.FarmerProfileResponse;
 import com.farmer.tracking.modules.auth.dto.LoginRequest;
 import com.farmer.tracking.modules.auth.dto.RegisterRequest;
+import com.farmer.tracking.modules.auth.dto.UpdateProfileRequest;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.Farmer;
@@ -125,5 +128,80 @@ class AuthServiceTest {
 
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
         verify(tokenProvider, never()).generateToken(any(), anyString());
+    }
+
+    @Test
+    void updateProfile_Success() {
+        Farmer existingFarmer = new Farmer();
+        existingFarmer.setId(1L);
+        existingFarmer.setFullName("Joyce Muthoni");
+        existingFarmer.setEmailOrPhone("joyce@example.com");
+        existingFarmer.setLocation("Nakuru");
+        existingFarmer.setFarmType(FarmType.MIXED);
+        existingFarmer.setFarmName("Old Farm");
+        existingFarmer.setCropsGrown("Maize");
+        existingFarmer.setTotalArea(5.0);
+        existingFarmer.setAvatarUrl("https://example.com/old.jpg");
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setFullName("Joyce M. Updated");
+        request.setFarmName("Green Acres Farm");
+        request.setCropsGrown("Maize, Tomatoes, Beans");
+        request.setTotalArea(8.7);
+        request.setAvatarUrl("https://example.com/new-avatar.jpg");
+        request.setLocation("Nakuru County, Kenya");
+        request.setFarmType(FarmType.CROP);
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(existingFarmer));
+        when(farmerRepository.save(any(Farmer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FarmerProfileResponse response = authService.updateProfile("joyce@example.com", request);
+
+        assertNotNull(response);
+        assertEquals("Joyce M. Updated", response.getFullName());
+        assertEquals("Green Acres Farm", response.getFarmName());
+        assertEquals("Maize, Tomatoes, Beans", response.getCropsGrown());
+        assertEquals(8.7, response.getTotalArea());
+        assertEquals("https://example.com/new-avatar.jpg", response.getAvatarUrl());
+        assertEquals("Nakuru County, Kenya", response.getLocation());
+        assertEquals(FarmType.CROP, response.getFarmType());
+        verify(farmerRepository, times(1)).save(existingFarmer);
+    }
+
+    @Test
+    void updateProfile_ThrowsIllegalArgumentException_WhenNegativeArea() {
+        Farmer existingFarmer = new Farmer();
+        existingFarmer.setId(1L);
+        existingFarmer.setEmailOrPhone("joyce@example.com");
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setTotalArea(-3.5);
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(existingFarmer));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                authService.updateProfile("joyce@example.com", request));
+
+        assertTrue(ex.getMessage().contains("negative"));
+        verify(farmerRepository, never()).save(any(Farmer.class));
+    }
+
+    @Test
+    void updateProfile_ThrowsResourceNotFound_WhenFarmerNotFound() {
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setFarmName("New Farm");
+
+        when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                authService.updateProfile("unknown@example.com", request));
+        verify(farmerRepository, never()).save(any(Farmer.class));
+    }
+
+    @Test
+    void updateProfile_ThrowsUnauthorized_WhenEmailBlank() {
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        assertThrows(UnauthorizedException.class, () ->
+                authService.updateProfile("   ", request));
     }
 }

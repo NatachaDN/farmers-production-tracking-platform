@@ -18,6 +18,9 @@ import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
 import './features/admin/admin.css';
 
+import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
+import { EditProfileModal } from './features/farmer/components/EditProfileModal';
+
 const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
 
 const todayLabel = () =>
@@ -30,6 +33,7 @@ export function App() {
     return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
   });
   const [loginError, setLoginError] = useState('');
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentRoute !== 'google-callback') return;
@@ -109,8 +113,8 @@ export function App() {
       subtitle: 'Seasonal output forecasts and historical performance'
     },
     settings: {
-      title: 'Farm Settings',
-      subtitle: 'Configure acreage units, team members, and farm profiles'
+      title: 'Farm & Profile Settings',
+      subtitle: 'Configure farm holdings, crops grown, total area, and profile details'
     }
   };
 
@@ -152,6 +156,7 @@ export function App() {
           { id: 'activities', label: 'Activities' },
           { id: 'production', label: 'Harvest / Production' },
           { id: 'inputs', label: 'Farm Inputs' },
+          { id: 'settings', label: 'Profile Settings' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' }
         ].map((screen) => (
@@ -193,6 +198,7 @@ export function App() {
           subtitle={currentHeader.subtitle}
           user={currentUser}
           onLogout={handleLogout}
+          onEditProfile={() => setIsEditProfileModalOpen(true)}
         >
           {isAdminRoute && !isAdmin && (
             <div style={{
@@ -232,7 +238,15 @@ export function App() {
           {currentRoute === 'inputs' && (
             <FarmInputsView farmerId={currentUser?.id || 1} />
           )}
-          {['livestock', 'reports', 'settings'].includes(currentRoute) && (
+          {currentRoute === 'settings' && (
+            <FarmerProfileSettingsView
+              user={currentUser}
+              onProfileUpdated={(updated) => {
+                setCurrentUser(updated);
+              }}
+            />
+          )}
+          {['livestock', 'reports'].includes(currentRoute) && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',
@@ -248,6 +262,16 @@ export function App() {
               </p>
             </div>
           )}
+
+          {/* Quick Edit Profile Modal */}
+          <EditProfileModal
+            isOpen={isEditProfileModalOpen}
+            onClose={() => setIsEditProfileModalOpen(false)}
+            user={currentUser}
+            onProfileUpdated={(updated) => {
+              setCurrentUser(updated);
+            }}
+          />
         </AppLayout>
       )}
     </div>

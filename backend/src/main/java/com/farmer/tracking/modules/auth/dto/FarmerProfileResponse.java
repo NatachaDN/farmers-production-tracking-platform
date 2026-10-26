@@ -14,6 +14,9 @@ public class FarmerProfileResponse {
     private LocalDateTime createdAt;
     private String avatarUrl;
     private String authProvider;
+    private String farmName;
+    private String cropsGrown;
+    private Double totalArea;
 
     public FarmerProfileResponse() {}
 
@@ -89,6 +92,30 @@ public class FarmerProfileResponse {
 
     public void setAuthProvider(String authProvider) {
         this.authProvider = authProvider;
+    }
+
+    public String getFarmName() {
+        return farmName;
+    }
+
+    public void setFarmName(String farmName) {
+        this.farmName = farmName;
+    }
+
+    public String getCropsGrown() {
+        return cropsGrown;
+    }
+
+    public void setCropsGrown(String cropsGrown) {
+        this.cropsGrown = cropsGrown;
+    }
+
+    public Double getTotalArea() {
+        return totalArea;
+    }
+
+    public void setTotalArea(Double totalArea) {
+        this.totalArea = totalArea;
     }
 
     public LocalDateTime getCreatedAt() {

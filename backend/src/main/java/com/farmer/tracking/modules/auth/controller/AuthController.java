@@ -21,6 +21,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import com.farmer.tracking.common.exception.UnauthorizedException;
+import com.farmer.tracking.modules.auth.dto.UpdateProfileRequest;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "Endpoints for farmer registration, login (password or Google) and session retrieval")
@@ -89,7 +92,22 @@ public class AuthController {
     @GetMapping("/me")
     @Operation(summary = "Get currently authenticated farmer profile")
     public ResponseEntity<FarmerProfileResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
         FarmerProfileResponse profile = authService.getCurrentFarmer(userDetails.getUsername());
+        return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping({"/me", "/profile"})
+    @Operation(summary = "Update authenticated farmer profile information (farm, crops grown, total area, photo)")
+    public ResponseEntity<FarmerProfileResponse> updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+        FarmerProfileResponse profile = authService.updateProfile(userDetails.getUsername(), request);
         return ResponseEntity.ok(profile);
     }
 }

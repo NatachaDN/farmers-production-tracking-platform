@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+import com.farmer.tracking.modules.auth.dto.UpdateProfileRequest;
+
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -84,5 +86,46 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
 
         return authMapper.toProfileResponse(farmer);
+    }
+
+    @Override
+    @Transactional
+    public FarmerProfileResponse updateProfile(String emailOrPhone, UpdateProfileRequest request) {
+        if (emailOrPhone == null || emailOrPhone.isBlank()) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+
+        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
+
+        if (request != null) {
+            if (request.getFullName() != null) {
+                farmer.setFullName(request.getFullName().trim());
+            }
+            if (request.getFarmName() != null) {
+                farmer.setFarmName(request.getFarmName().trim());
+            }
+            if (request.getCropsGrown() != null) {
+                farmer.setCropsGrown(request.getCropsGrown().trim());
+            }
+            if (request.getTotalArea() != null) {
+                if (request.getTotalArea() < 0) {
+                    throw new IllegalArgumentException("Total area cannot be negative");
+                }
+                farmer.setTotalArea(request.getTotalArea());
+            }
+            if (request.getAvatarUrl() != null) {
+                farmer.setAvatarUrl(request.getAvatarUrl().trim());
+            }
+            if (request.getLocation() != null) {
+                farmer.setLocation(request.getLocation().trim());
+            }
+            if (request.getFarmType() != null) {
+                farmer.setFarmType(request.getFarmType());
+            }
+        }
+
+        Farmer savedFarmer = farmerRepository.save(farmer);
+        return authMapper.toProfileResponse(savedFarmer);
     }
 }

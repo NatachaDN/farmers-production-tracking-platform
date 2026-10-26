@@ -104,13 +104,73 @@
   "location": "Nakuru County, Kenya",
   "farmType": "MIXED",
   "role": "ROLE_FARMER",
+  "farmName": "Green Acres Farm",
+  "cropsGrown": "Maize, Tomatoes, Beans, Cassava",
+  "totalArea": 8.7,
+  "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80",
   "createdAt": "2026-10-06T12:00:00"
 }
 ```
 
 ---
 
-## 3. Sign in with Google
+## 4. Update Current Authenticated Profile
+
+- **Endpoint:** `PUT /api/v1/auth/me` (alias: `PUT /api/v1/auth/profile`)
+- **Auth required:** Bearer JWT Token (`Authorization: Bearer <token>`)
+- **Request Body:**
+```json
+{
+  "fullName": "Joyce Muthoni",
+  "farmName": "Green Acres Farm",
+  "cropsGrown": "Maize, Tomatoes, Beans, Cassava",
+  "totalArea": 8.7,
+  "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80",
+  "location": "Nakuru County, Kenya",
+  "farmType": "MIXED"
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "id": 1,
+  "fullName": "Joyce Muthoni",
+  "emailOrPhone": "joyce@example.com",
+  "location": "Nakuru County, Kenya",
+  "farmType": "MIXED",
+  "role": "ROLE_FARMER",
+  "farmName": "Green Acres Farm",
+  "cropsGrown": "Maize, Tomatoes, Beans, Cassava",
+  "totalArea": 8.7,
+  "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80",
+  "createdAt": "2026-10-06T12:00:00"
+}
+```
+- **Error Response (400 Bad Request — e.g. Negative Area):**
+```json
+{
+  "status": 400,
+  "error": "Validation Failed",
+  "message": "Input payload contains invalid fields",
+  "path": "/api/v1/auth/me",
+  "validationErrors": {
+    "totalArea": "Total area cannot be negative"
+  }
+}
+```
+- **Error Response (401 Unauthorized):**
+```json
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Authentication required.",
+  "path": "/api/v1/auth/me"
+}
+```
+
+---
+
+## 5. Sign in with Google
 
 Google OAuth 2.0 authorization-code flow (with PKCE). The browser redirects to Google, Google redirects back to
 `{frontend}/auth/google/callback?code=...&state=...`, and the frontend sends the code to the backend, which exchanges it

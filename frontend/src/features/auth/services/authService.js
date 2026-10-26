@@ -68,6 +68,14 @@ export const authService = {
     return Boolean(localStorage.getItem(TOKEN_KEY));
   },
 
+  async updateProfile(profileData) {
+    const updated = await apiClient.put('/auth/me', profileData);
+    if (updated) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+    return updated;
+  },
+
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

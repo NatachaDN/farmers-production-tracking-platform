@@ -9,6 +9,7 @@ export function AppLayout({
   subtitle,
   user,
   onLogout,
+  onEditProfile,
   children
 }) {
   const initials = user?.fullName
@@ -27,9 +28,10 @@ export function AppLayout({
           subtitle={subtitle}
           userName={user?.fullName || "Joyce M."}
           userInitials={initials}
-          farmName={user?.role === 'ROLE_ADMIN' ? 'Administrator' : (user?.location || "Green Acres Farm")}
+          farmName={user?.role === 'ROLE_ADMIN' ? 'Administrator' : (user?.farmName || user?.location || "Green Acres Farm")}
           avatarUrl={user?.avatarUrl}
           onLogout={onLogout}
+          onEditProfile={onEditProfile}
         />
         <main style={{ padding: '0 36px 36px 36px', flex: 1 }}>
           {children}

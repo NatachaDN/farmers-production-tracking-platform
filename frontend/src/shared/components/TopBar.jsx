@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconSearch, IconBell, IconChevronDown } from './Icons';
+import { IconSearch, IconBell, IconChevronDown, IconSettings } from './Icons';
 
 export function TopBar({
   title = "Dashboard",
@@ -10,7 +10,8 @@ export function TopBar({
   farmName = "Green Acres Farm",
   onSearch,
   onNotificationClick,
-  onLogout
+  onLogout,
+  onEditProfile
 }) {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   return (
@@ -184,6 +185,33 @@ export function TopBar({
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{farmName}</div>
               </div>
               <button
+                id="topbar-edit-profile-btn"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  if (onEditProfile) onEditProfile();
+                }}
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-primary, #19201C)',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 150ms'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <IconSettings size={15} color="var(--color-brand-primary, #164230)" />
+                <span>Edit Profile</span>
+              </button>
+              <button
                 onClick={() => {
                   setDropdownOpen(false);
                   if (onLogout) onLogout();
@@ -195,6 +223,9 @@ export function TopBar({
                   color: '#DC2626',
                   borderRadius: '6px',
                   fontWeight: 500,
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
                   transition: 'background-color 150ms'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEE2E2'}
