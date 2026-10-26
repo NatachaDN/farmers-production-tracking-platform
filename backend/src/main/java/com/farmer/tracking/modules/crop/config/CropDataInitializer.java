@@ -1,5 +1,11 @@
 package com.farmer.tracking.modules.crop.config;
 
+import com.farmer.tracking.modules.crop.entity.Cycle;
+import com.farmer.tracking.modules.crop.entity.CycleStatus;
+import com.farmer.tracking.modules.crop.entity.Harvest;
+import com.farmer.tracking.modules.crop.entity.HarvestUnit;
+import com.farmer.tracking.modules.crop.repository.CycleRepository;
+import com.farmer.tracking.modules.crop.repository.HarvestRepository;
 import com.farmer.tracking.modules.crop.entity.ActivityType;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleActivity;
@@ -17,11 +23,20 @@ import java.time.LocalDate;
 /**
  * Seeds initial demo crop cycle, activity, and harvest data for development.
  * Only runs when the cycles table is empty.
+ * Seeds initial demo crop cycle and harvest data for development.
+ * Only runs when the cycles table is empty to avoid duplicate entries.
+ * Seeds initial demo crop cycle and activity data for development.
  */
 @Component
 public class CropDataInitializer implements CommandLineRunner {
 
     private final CycleRepository cycleRepository;
+    private final HarvestRepository harvestRepository;
+
+    public CropDataInitializer(CycleRepository cycleRepository,
+                               HarvestRepository harvestRepository) {
+        this.cycleRepository = cycleRepository;
+        this.harvestRepository = harvestRepository;
     private final CycleActivityRepository activityRepository;
     private final HarvestRepository harvestRepository;
     private final com.farmer.tracking.modules.crop.repository.CropRepository cropRepository;
@@ -50,6 +65,8 @@ public class CropDataInitializer implements CommandLineRunner {
 
         if (cycleRepository.count() == 0) {
             // --- Seed 1: ACTIVE cycle (for activity tracking & harvesting) ---
+
+            // --- Seed 1: ACTIVE cycle (ready to be harvested) ---
             Cycle activeCycle = new Cycle();
             activeCycle.setFarmerId(1L);
             activeCycle.setName("Maize Production (Field A)");
@@ -59,6 +76,34 @@ public class CropDataInitializer implements CommandLineRunner {
             Cycle savedActive = cycleRepository.save(activeCycle);
 
             // Seed sample interventions on active cycle
+            cycleRepository.save(activeCycle);
+
+            // --- Seed 2: COMPLETED cycle with a harvest record ---
+            Cycle completedCycle = new Cycle();
+            completedCycle.setFarmerId(1L);
+            completedCycle.setName("Rice Season 2025 (Field B)");
+            completedCycle.setStatus(CycleStatus.COMPLETED);
+            completedCycle.setAcreage(1.8);
+            completedCycle.setStartDate(LocalDate.now().minusDays(180));
+            completedCycle.setEndDate(LocalDate.now().minusDays(10));
+            Cycle savedCompleted = cycleRepository.save(completedCycle);
+
+            Harvest harvest = new Harvest();
+            harvest.setCycle(savedCompleted);
+            harvest.setQuantity(900.0);
+            harvest.setUnit(HarvestUnit.KG);
+            harvest.setHarvestDate(LocalDate.now().minusDays(10));
+            harvest.setCalculatedYield(Math.round((900.0 / 1.8) * 100.0) / 100.0); // 500.0 kg/ha
+            harvest.setNotes("Good season — uniform grain size, minimal pest impact.");
+            harvestRepository.save(harvest);
+            Cycle cycle = new Cycle();
+            cycle.setFarmerId(1L);
+            cycle.setName("Maize Production (Field A)");
+            cycle.setStatus(CycleStatus.ACTIVE);
+            cycle.setStartDate(LocalDate.now().minusDays(30));
+            Cycle savedCycle = cycleRepository.save(cycle);
+
+            // Seed sample interventions
             CycleActivity a1 = new CycleActivity();
             a1.setCycle(savedActive);
             a1.setActivityType(ActivityType.WATERING);

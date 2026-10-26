@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
+import { CreateFarmView } from './features/farms/CreateFarmView';
+import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
@@ -34,6 +36,7 @@ export function App() {
     return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
   });
   const [loginError, setLoginError] = useState('');
+  const [selectedFarmId, setSelectedFarmId] = useState(null);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   useEffect(() => {
@@ -88,6 +91,14 @@ export function App() {
     farms: {
       title: 'Farms & Plots',
       subtitle: 'Organize land, plots and active production cycles'
+    },
+    'farms-create': {
+      title: 'Create Farm Wizard',
+      subtitle: 'Setup a new farm structure'
+    },
+    'farm-details': {
+      title: 'Farm Details View',
+      subtitle: 'Monitor and manage all aspects of your farm'
     },
     crops: {
       title: 'Crop Production Cycles',
@@ -153,6 +164,8 @@ export function App() {
         {[
           { id: 'dashboard', label: 'Dashboard' },
           { id: 'farms', label: 'Farms & Plots' },
+          { id: 'farms-create', label: '+ Create Farm' },
+          { id: 'farm-details', label: 'Farm Details' },
           { id: 'crops', label: 'Crop Cycles' },
           { id: 'activities', label: 'Activities' },
           { id: 'production', label: 'Harvest / Production' },
@@ -198,7 +211,7 @@ export function App() {
         />
       ) : (
         <AppLayout
-          activeRoute={currentRoute}
+          activeRoute={currentRoute === 'farms-create' || currentRoute === 'farm-details' ? 'farms' : currentRoute}
           onNavigate={(r) => setCurrentRoute(r)}
           title={currentHeader.title}
           subtitle={currentHeader.subtitle}
@@ -228,7 +241,30 @@ export function App() {
               user={currentUser}
             />
           )}
-          {currentRoute === 'farms' && <FarmsAndPlotsView />}
+          {currentRoute === 'farms' && (
+            <FarmsAndPlotsView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onSelectFarm={(id) => {
+                setSelectedFarmId(id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farms-create' && (
+            <CreateFarmView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onFarmCreated={(newFarm) => {
+                setSelectedFarmId(newFarm.id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farm-details' && (
+            <FarmDetailsView
+              farmId={selectedFarmId}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
           {currentRoute === 'crops' && (
             <CropProductionView
               farmerId={currentUser?.id || 1}
