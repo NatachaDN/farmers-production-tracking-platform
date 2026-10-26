@@ -131,7 +131,9 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '' }) {
                   Password
                 </label>
                 <button
+                  id="forgot-password-link"
                   type="button"
+                  onClick={() => onNavigate && onNavigate('forgot-password')}
                   style={{
                     fontSize: '0.8125rem',
                     color: 'var(--color-brand-primary)',

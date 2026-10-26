@@ -8,6 +8,7 @@ import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
+import { ForgotPasswordView } from './features/auth/ForgotPasswordView';
 import { authService } from './features/auth/services/authService';
 import { googleAuth } from './features/auth/services/googleAuth';
 import { GoogleCallbackView } from './features/auth/GoogleCallbackView';
@@ -158,7 +159,8 @@ export function App() {
           { id: 'inputs', label: 'Farm Inputs' },
           { id: 'settings', label: 'Profile Settings' },
           { id: 'login', label: 'Login' },
-          { id: 'register', label: 'Register' }
+          { id: 'register', label: 'Register' },
+          { id: 'forgot-password', label: 'Forgot Password' }
         ].map((screen) => (
           <button
             key={screen.id}
@@ -189,6 +191,10 @@ export function App() {
         <RegisterView
           onNavigate={(r) => setCurrentRoute(r)}
           onRegisterSuccess={handleRegisterSuccess}
+        />
+      ) : currentRoute === 'forgot-password' ? (
+        <ForgotPasswordView
+          onNavigate={(r) => setCurrentRoute(r)}
         />
       ) : (
         <AppLayout
