@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   IconClose,
   IconSprout,
@@ -13,9 +13,11 @@ import {
   IconChevronRight,
   IconFarms,
   IconZap,
-  IconActivities
+  IconActivities,
+  IconInputs
 } from '../../../shared/components/Icons';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
+import { RecordCycleInputModal } from './RecordCycleInputModal';
 
 function getCropIcon(cropName) {
   const name = (cropName || '').toLowerCase();
@@ -39,7 +41,9 @@ function formatDate(dateStr) {
   }
 }
 
-export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities }) {
+export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId = 1 }) {
+  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+
   if (!isOpen || !plot) return null;
 
   const cropName = plot.cropName || plot.crop || plot.title || 'Maize';
@@ -359,31 +363,61 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities }) {
             justifyContent: 'space-between',
             alignItems: 'center',
             paddingTop: '16px',
-            borderTop: '1px solid #F4EFE6'
+            borderTop: '1px solid #F4EFE6',
+            gap: '10px',
+            flexWrap: 'wrap'
           }}>
-            <button
-              onClick={() => {
-                onClose();
-                if (onGoToActivities) onGoToActivities(plot);
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 18px',
-                borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'var(--color-brand-tint, #EAF4ED)',
-                color: 'var(--color-brand-primary, #164230)',
-                border: '1px solid #C8E2D0',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <IconActivities size={16} />
-              <span>Go to Cycle Activities & Logs →</span>
-            </button>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  onClose();
+                  if (onGoToActivities) onGoToActivities(plot);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 18px',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  backgroundColor: 'var(--color-brand-tint, #EAF4ED)',
+                  color: 'var(--color-brand-primary, #164230)',
+                  border: '1px solid #C8E2D0',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <IconActivities size={16} />
+                <span>Activities & Logs →</span>
+              </button>
+
+              {(plot.status || '').toUpperCase() === 'ACTIVE' && (
+                <button
+                  id="record-input-usage-btn"
+                  onClick={() => setIsInputModalOpen(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: 'var(--radius-md, 8px)',
+                    backgroundColor: '#FFFBEB',
+                    color: '#92400E',
+                    border: '1px solid #FDE68A',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEF3C7'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFBEB'; }}
+                >
+                  <IconInputs size={16} color="#92400E" />
+                  <span>Record Input Usage</span>
+                </button>
+              )}
+            </div>
 
             <button
               onClick={onClose}
@@ -401,6 +435,15 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities }) {
               Close
             </button>
           </div>
+
+          {/* Record Input Usage Modal */}
+          <RecordCycleInputModal
+            isOpen={isInputModalOpen}
+            onClose={() => setIsInputModalOpen(false)}
+            farmerId={farmerId}
+            cycleId={plot.id}
+            cycleName={`${plot.cropName || plot.crop || 'Cycle'} · ${plot.plotName || 'Plot'}`}
+          />
 
         </div>
       </div>

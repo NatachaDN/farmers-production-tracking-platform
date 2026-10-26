@@ -518,6 +518,7 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
           setSelectedPlotDetails(null);
         }}
         plot={selectedPlotDetails}
+        farmerId={farmerId}
         onGoToActivities={(plotItem) => {
           if (onNavigate) onNavigate('activities');
         }}
