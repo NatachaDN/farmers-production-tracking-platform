@@ -2,48 +2,62 @@ import { apiClient } from '../../../shared/services/apiClient';
 
 /**
  * Service to manage Farm creation, retrieval, and updates.
+ * Supports both scoped (/farmers/:farmerId/farms) and direct (/farms) patterns.
  */
 export const farmService = {
   /**
    * List all farms for a farmer.
-   * @param {number} farmerId
+   * @param {number|string} [farmerId=1]
    */
-  async getFarms(farmerId) {
-    return await apiClient.get(`/farmers/${farmerId}/farms`);
+  async getFarms(farmerId = 1) {
+    try {
+      return await apiClient.get(`/farmers/${farmerId}/farms`);
+    } catch {
+      return await apiClient.get('/farms');
+    }
   },
 
   /**
    * Get farm details by ID.
-   * @param {number} farmerId
-   * @param {number} farmId
+   * @param {number|string} farmerId
+   * @param {number|string} [farmId]
    */
   async getFarmById(farmerId, farmId) {
+    if (farmId === undefined) {
+      return await apiClient.get(`/farms/${farmerId}`);
+    }
     return await apiClient.get(`/farmers/${farmerId}/farms/${farmId}`);
   },
 
   /**
    * Create a new farm.
-   * @param {number} farmerId
-   * @param {Object} data - { name: string, location?: string, description?: string, isDefault?: boolean }
+   * @param {number|string|Object} farmerIdOrData
+   * @param {Object} [data]
    */
-  async createFarm(farmerId, data) {
-    return await apiClient.post(`/farmers/${farmerId}/farms`, data);
+  async createFarm(farmerIdOrData, data) {
+    if (data !== undefined) {
+      return await apiClient.post(`/farmers/${farmerIdOrData}/farms`, data);
+    }
+    return await apiClient.post('/farms', farmerIdOrData);
   },
 
   /**
    * Update an existing farm.
-   * @param {number} farmerId
-   * @param {number} farmId
-   * @param {Object} data - { name: string, location?: string, description?: string, isDefault?: boolean }
+   * @param {number|string} farmerIdOrFarmId
+   * @param {number|string|Object} farmIdOrData
+   * @param {Object} [data]
    */
-  async updateFarm(farmerId, farmId, data) {
-    return await apiClient.put(`/farmers/${farmerId}/farms/${farmId}`, data);
+  async updateFarm(farmerIdOrFarmId, farmIdOrData, data) {
+    if (data !== undefined) {
+      return await apiClient.put(`/farmers/${farmerIdOrFarmId}/farms/${farmIdOrData}`, data);
+    }
+    return await apiClient.put(`/farms/${farmerIdOrFarmId}`, farmIdOrData);
   },
 
   /**
    * Set a farm as the default container.
-   * @param {number} farmerId
-   * @param {number} farmId
+   * @param {number|string} farmerId
+   * @param {number|string} farmId
    */
   async setDefaultFarm(farmerId, farmId) {
     return await apiClient.patch(`/farmers/${farmerId}/farms/${farmId}/default`);
@@ -51,52 +65,13 @@ export const farmService = {
 
   /**
    * Delete a farm.
-   * @param {number} farmerId
-   * @param {number} farmId
+   * @param {number|string} farmerId
+   * @param {number|string} [farmId]
    */
   async deleteFarm(farmerId, farmId) {
+    if (farmId === undefined) {
+      return await apiClient.delete(`/farms/${farmerId}`);
+    }
     return await apiClient.delete(`/farmers/${farmerId}/farms/${farmId}`);
-export const farmService = {
-
-  /**
-   * Fetch all farms owned by the logged-in farmer.
-   */
-  getFarms: async () => {
-    try {
-      const data = await apiClient.get('/farms');
-      return data;
-    } catch (error) {
-      console.warn('Failed to fetch farms from server, using fallback/local state:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Fetch details for a specific farm by ID.
-   */
-  getFarmById: async (id) => {
-    try {
-      const data = await apiClient.get(`/farms/${id}`);
-      return data;
-    } catch (error) {
-      console.warn(`Failed to fetch farm #${id} from server:`, error);
-      throw error;
-    }
-  },
-
-  /**
-   * Create a new farm record for the authenticated user.
-   */
-  createFarm: async (farmData) => {
-    const data = await apiClient.post('/farms', farmData);
-    return data;
-  },
-
-  /**
-   * Update an existing farm record (owner verified server-side).
-   */
-  updateFarm: async (id, farmData) => {
-    const data = await apiClient.put(`/farms/${id}`, farmData);
-    return data;
   }
 };

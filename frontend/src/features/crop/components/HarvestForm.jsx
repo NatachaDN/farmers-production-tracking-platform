@@ -12,11 +12,6 @@ const UNIT_OPTIONS = [
   { value: 'KG',   label: 'Kilograms (kg)', icon: IconScale },
   { value: 'BAGS', label: 'Bags',            icon: IconShoppingBag },
   { value: 'TONS', label: 'Tons',            icon: IconTruck },
-
-const UNIT_OPTIONS = [
-  { value: 'KG',   label: 'Kilograms (kg)', icon: '⚖️' },
-  { value: 'BAGS', label: 'Bags',            icon: '🛍️' },
-  { value: 'TONS', label: 'Tons',            icon: '🚛' },
 ];
 
 /**
@@ -197,7 +192,6 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
         <span className="warning-icon">
           <IconWarning size={16} color="var(--color-warning, #D97706)" />
         </span>
-        <span className="warning-icon">⚠️</span>
         <span>Recording a harvest will mark this cycle as <strong>Completed</strong> and cannot be undone.</span>
       </div>
 
@@ -211,7 +205,6 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
               <IconWheat size={18} color="currentColor" />
               <span>Record Harvest &amp; Complete Cycle</span>
             </span>
-            <span>🌾 Record Harvest &amp; Complete Cycle</span>
           )}
         </button>
       </div>
