@@ -1,5 +1,6 @@
 package com.farmer.tracking.modules.plot.controller;
 
+import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.GlobalExceptionHandler;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.modules.plot.api.PlotRequest;
@@ -22,9 +23,8 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PlotController.class)
@@ -123,5 +123,75 @@ class PlotControllerTest {
         mockMvc.perform(get("/api/v1/farmers/{farmerId}/plots/{plotId}", farmerId, 999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/farmers/{farmerId}/plots/{plotId} updates plot and returns 200 OK")
+    void shouldUpdatePlotAndReturn200() throws Exception {
+        PlotRequest request = new PlotRequest("Plot A — Updated", 3.0, "South Field", "Wheat", "Flowering");
+        PlotResponse updatedResponse = new PlotResponse(
+                plotId, farmerId, "Plot A — Updated", 3.0, "South Field",
+                "Wheat", "Flowering", LocalDateTime.now(), LocalDateTime.now()
+        );
+
+        when(plotService.updatePlot(eq(farmerId), eq(plotId), any(PlotRequest.class)))
+                .thenReturn(updatedResponse);
+
+        mockMvc.perform(put("/api/v1/farmers/{farmerId}/plots/{plotId}", farmerId, plotId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(plotId))
+                .andExpect(jsonPath("$.name").value("Plot A — Updated"))
+                .andExpect(jsonPath("$.area").value(3.0))
+                .andExpect(jsonPath("$.cropType").value("Wheat"));
+    }
+
+    @Test
+    @DisplayName("PUT with negative area returns 400 Bad Request with validation error")
+    void shouldReturn400WhenUpdatingWithNegativeArea() throws Exception {
+        PlotRequest invalidRequest = new PlotRequest("Plot B", -5.0, "East Field");
+
+        mockMvc.perform(put("/api/v1/farmers/{farmerId}/plots/{plotId}", farmerId, plotId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.validationErrors.area").exists());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/farmers/{farmerId}/plots/{plotId} returns 204 No Content")
+    void shouldDeletePlotAndReturn204() throws Exception {
+        doNothing().when(plotService).deletePlot(farmerId, plotId, false);
+
+        mockMvc.perform(delete("/api/v1/farmers/{farmerId}/plots/{plotId}", farmerId, plotId))
+                .andExpect(status().isNoContent());
+
+        verify(plotService).deletePlot(farmerId, plotId, false);
+    }
+
+    @Test
+    @DisplayName("DELETE returns 409 Conflict when active cycle exists and force is false")
+    void shouldReturn409WhenDeletingPlotWithActiveCycle() throws Exception {
+        doThrow(new ConflictException("Cannot delete plot linked to active cycle"))
+                .when(plotService).deletePlot(farmerId, plotId, false);
+
+        mockMvc.perform(delete("/api/v1/farmers/{farmerId}/plots/{plotId}", farmerId, plotId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value("Cannot delete plot linked to active cycle"));
+    }
+
+    @Test
+    @DisplayName("DELETE with ?force=true deletes plot and returns 204 No Content")
+    void shouldDeletePlotWithForceTrueAndReturn204() throws Exception {
+        doNothing().when(plotService).deletePlot(farmerId, plotId, true);
+
+        mockMvc.perform(delete("/api/v1/farmers/{farmerId}/plots/{plotId}", farmerId, plotId)
+                        .param("force", "true"))
+                .andExpect(status().isNoContent());
+
+        verify(plotService).deletePlot(farmerId, plotId, true);
     }
 }

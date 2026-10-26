@@ -3,6 +3,7 @@ import { PlotCard } from '../../shared/components/PlotCard';
 import { AddPlotModal } from './components/AddPlotModal';
 import { NewFarmModal } from './components/NewFarmModal';
 import { EditFarmModal } from './components/EditFarmModal';
+import { EditPlotModal } from './components/EditPlotModal';
 import { PlotDetailsModal } from '../crops/components/PlotDetailsModal';
 import { plotService } from './services/plotService';
 import { farmService } from './services/farmService';
@@ -88,6 +89,8 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
   
   // Modals
   const [isAddPlotModalOpen, setIsAddPlotModalOpen] = useState(false);
+  const [isEditPlotModalOpen, setIsEditPlotModalOpen] = useState(false);
+  const [plotToEdit, setPlotToEdit] = useState(null);
   const [isNewFarmModalOpen, setIsNewFarmModalOpen] = useState(false);
   const [isEditFarmModalOpen, setIsEditFarmModalOpen] = useState(false);
   const [farmToEdit, setFarmToEdit] = useState(null);
@@ -98,6 +101,8 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
 
   const [plotToDelete, setPlotToDelete] = useState(null);
   const [isDeletingPlot, setIsDeletingPlot] = useState(false);
+  const [deletePlotConflictError, setDeletePlotConflictError] = useState(null);
+  const [forceDeletePlotConfirm, setForceDeletePlotConfirm] = useState(false);
 
   // Plot Details Pop-up Modal State
   const [selectedPlotDetails, setSelectedPlotDetails] = useState(null);
@@ -218,15 +223,57 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
     if (!plotToDelete) return;
     setIsDeletingPlot(true);
     try {
-      await plotService.deletePlot(farmerId, plotToDelete.id);
+      await plotService.deletePlot(farmerId, plotToDelete.id, forceDeletePlotConfirm);
+      setPlots((prev) => prev.filter((p) => p.id !== plotToDelete.id));
+      showNotification(`Plot "${plotToDelete.title}" was deleted successfully.`);
+      setPlotToDelete(null);
+      setDeletePlotConflictError(null);
+      setForceDeletePlotConfirm(false);
     } catch (err) {
-      console.warn('Backend delete plot failed, removing locally:', err);
+      console.warn('Backend delete plot failed:', err);
+      const status = err.response?.status || err.status;
+      const message = err.response?.data?.message || err.message || 'Cannot delete plot because it is linked to an active production cycle.';
+      if (status === 409 || message.toLowerCase().includes('active') || message.toLowerCase().includes('cycle')) {
+        setDeletePlotConflictError(message);
+      } else {
+        setDeletePlotConflictError(message);
+      }
+    } finally {
+      setIsDeletingPlot(false);
+    }
+  };
+
+  const handlePlotUpdated = async (updatedPlotData) => {
+    let savedPlot;
+    try {
+      savedPlot = await plotService.updatePlot(farmerId, updatedPlotData.id, updatedPlotData);
+    } catch (err) {
+      console.warn('Backend update plot failed, updating in local state:', err);
     }
 
-    setPlots(prev => prev.filter(p => p.id !== plotToDelete.id));
-    showNotification(`Plot "${plotToDelete.title}" was deleted successfully.`);
-    setPlotToDelete(null);
-    setIsDeletingPlot(false);
+    setPlots((prev) =>
+      prev.map((p) => {
+        if (p.id === updatedPlotData.id) {
+          return {
+            ...p,
+            title: updatedPlotData.name,
+            crop: updatedPlotData.cropType || p.crop,
+            areaVal: updatedPlotData.area,
+            area: `${updatedPlotData.area} ha cultivated area`,
+            stage: updatedPlotData.stage || p.stage,
+            location: updatedPlotData.location,
+            farmId: updatedPlotData.farmId || p.farmId,
+            progress: updatedPlotData.stage === 'Flowering' ? 74 : updatedPlotData.stage === 'Vegetative growth' ? 62 : updatedPlotData.stage === 'Maturing' ? 84 : 29,
+            icon: getIconForCrop(updatedPlotData.cropType || updatedPlotData.name)
+          };
+        }
+        return p;
+      })
+    );
+
+    showNotification(`Plot "${updatedPlotData.name}" was updated successfully.`);
+    setPlotToEdit(null);
+    setIsEditPlotModalOpen(false);
   };
 
   const handleAddPlot = async (plotData) => {
@@ -465,17 +512,17 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
                 width: '44px',
                 height: '44px',
                 borderRadius: '12px',
-                backgroundColor: '#FEE2E2',
+                backgroundColor: deletePlotConflictError ? '#FEF3C7' : '#FEE2E2',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <IconWarning size={22} color="#DC2626" />
+                <IconWarning size={22} color={deletePlotConflictError ? '#D97706' : '#DC2626'} />
               </div>
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-                  Delete Land Plot?
+                  {deletePlotConflictError ? 'Active Cycle Warning' : 'Delete Land Plot?'}
                 </h3>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '6px', margin: 0, lineHeight: 1.5 }}>
                   Are you sure you want to delete <strong style={{ color: 'var(--color-text-primary)' }}>"{plotToDelete.title}"</strong>?
@@ -483,6 +530,38 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
                 </p>
               </div>
             </div>
+
+            {/* Conflict Warning / Confirmation Callout */}
+            {deletePlotConflictError && (
+              <div style={{
+                backgroundColor: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                borderRadius: 'var(--radius-md, 8px)',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                fontSize: '0.8125rem',
+                color: '#92400E'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <IconWarning size={16} color="#D97706" />
+                  <span>Action Blocked: Active Crop Production Cycle Linked</span>
+                </div>
+                <p style={{ margin: 0, lineHeight: 1.45 }}>
+                  {deletePlotConflictError}
+                </p>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', cursor: 'pointer', fontWeight: 600, color: '#78350F' }}>
+                  <input
+                    type="checkbox"
+                    checked={forceDeletePlotConfirm}
+                    onChange={(e) => setForceDeletePlotConfirm(e.target.checked)}
+                    style={{ accentColor: '#DC2626', width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <span>Confirm forced deletion (cycles referencing this plot will be unlinked)</span>
+                </label>
+              </div>
+            )}
 
             <div style={{
               display: 'flex',
@@ -493,7 +572,11 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
             }}>
               <button
                 type="button"
-                onClick={() => setPlotToDelete(null)}
+                onClick={() => {
+                  setPlotToDelete(null);
+                  setDeletePlotConflictError(null);
+                  setForceDeletePlotConfirm(false);
+                }}
                 style={{
                   padding: '10px 18px',
                   borderRadius: 'var(--radius-md)',
@@ -510,7 +593,7 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
               <button
                 type="button"
                 onClick={confirmDeletePlot}
-                disabled={isDeletingPlot}
+                disabled={isDeletingPlot || (Boolean(deletePlotConflictError) && !forceDeletePlotConfirm)}
                 style={{
                   padding: '10px 20px',
                   borderRadius: 'var(--radius-md)',
@@ -519,15 +602,15 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
                   border: 'none',
                   fontWeight: 600,
                   fontSize: '0.875rem',
-                  cursor: isDeletingPlot ? 'not-allowed' : 'pointer',
-                  opacity: isDeletingPlot ? 0.7 : 1,
+                  cursor: (isDeletingPlot || (deletePlotConflictError && !forceDeletePlotConfirm)) ? 'not-allowed' : 'pointer',
+                  opacity: (isDeletingPlot || (deletePlotConflictError && !forceDeletePlotConfirm)) ? 0.6 : 1,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}
               >
                 <IconTrash size={16} />
-                <span>{isDeletingPlot ? 'Deleting...' : 'Delete Plot'}</span>
+                <span>{isDeletingPlot ? 'Deleting...' : (deletePlotConflictError ? 'Confirm Forced Deletion' : 'Delete Plot')}</span>
               </button>
             </div>
           </div>
@@ -1171,7 +1254,15 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
                       setSelectedPlotDetails(plot);
                       setIsDetailsModalOpen(true);
                     }}
-                    onDeletePlot={() => setPlotToDelete(plot)}
+                    onEditPlot={() => {
+                      setPlotToEdit(plot);
+                      setIsEditPlotModalOpen(true);
+                    }}
+                    onDeletePlot={() => {
+                      setPlotToDelete(plot);
+                      setDeletePlotConflictError(null);
+                      setForceDeletePlotConfirm(false);
+                    }}
                   />
                 ))}
               </div>
@@ -1187,6 +1278,17 @@ export function FarmsAndPlotsView({ farmerId = 1 }) {
           setSelectedPlotDetails(null);
         }}
         plot={selectedPlotDetails}
+      />
+      {/* Edit Plot Modal */}
+      <EditPlotModal
+        isOpen={isEditPlotModalOpen}
+        onClose={() => {
+          setIsEditPlotModalOpen(false);
+          setPlotToEdit(null);
+        }}
+        plot={plotToEdit}
+        farms={farms}
+        onPlotUpdated={handlePlotUpdated}
       />
     </div>
   );

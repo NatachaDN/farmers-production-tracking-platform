@@ -212,3 +212,61 @@ All endpoints are under `/api/v1/admin` and return `403` for non-admin tokens. T
 | `GET /admin/telemetry` | JVM and database health, API traffic since the last restart (requests, errors, latency, per-route stats) |
 
 Tons are converted to kg in totals; bags are reported separately because their weight is unknown.
+
+---
+
+## 5. Plots Module (`/api/v1/farmers/{farmerId}/plots`)
+
+All plot endpoints require an authenticated user with a valid Bearer token. Ownership is enforced via `farmerId`.
+
+### 5.1 Register a Plot
+- **Endpoint:** `POST /api/v1/farmers/{farmerId}/plots`
+- **Request Body:**
+```json
+{
+  "name": "Plot A — Maize",
+  "area": 2.5,
+  "location": "North Field, Block 1",
+  "cropType": "Maize",
+  "stage": "Vegetative growth",
+  "farmId": 1
+}
+```
+- **Response (201 Created):**
+```json
+{
+  "id": 10,
+  "farmerId": 1,
+  "name": "Plot A — Maize",
+  "area": 2.5,
+  "location": "North Field, Block 1",
+  "cropType": "Maize",
+  "stage": "Vegetative growth",
+  "createdAt": "2026-10-26T08:30:00",
+  "updatedAt": "2026-10-26T08:30:00"
+}
+```
+- **Error (400 Bad Request):** If `area` <= 0 or missing `name` / `location`.
+
+### 5.2 Update an Existing Plot
+- **Endpoint:** `PUT /api/v1/farmers/{farmerId}/plots/{plotId}`
+- **Request Body:** Same shape as `POST` (requires `name`, `area` > 0, `location`).
+- **Response (200 OK):** Updated plot object.
+- **Error (400 Bad Request):** If `area` is negative or missing required fields.
+- **Error (404 Not Found):** If plot does not exist or does not belong to farmer.
+
+### 5.3 Delete a Plot
+- **Endpoint:** `DELETE /api/v1/farmers/{farmerId}/plots/{plotId}?force=false`
+- **Query Parameter:** `force` (`boolean`, optional, default `false`).
+- **Response (204 No Content):** Plot successfully deleted.
+- **Error (409 Conflict):** If plot is linked to an active production cycle and `force=false`.
+```json
+{
+  "timestamp": "2026-10-26T08:35:00",
+  "status": 409,
+  "error": "Conflict",
+  "message": "Cannot delete plot 'Plot A' because it is linked to active production cycle 'Maize Season 2026'. Complete or cancel the cycle first, or confirm forced deletion.",
+  "path": "/api/v1/farmers/1/plots/10"
+}
+```
+- **Forced Deletion:** When called with `?force=true`, any linked cycles are unlinked from the plot and the plot is deleted.

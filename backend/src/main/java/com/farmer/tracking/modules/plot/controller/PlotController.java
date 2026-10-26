@@ -81,19 +81,41 @@ public class PlotController {
     }
 
     // ------------------------------------------------------------------ //
+    //  PUT /api/v1/farmers/{farmerId}/plots/{plotId}                       //
+    // ------------------------------------------------------------------ //
+    @PutMapping("/{plotId}")
+    @Operation(
+            summary = "Update an existing plot",
+            description = "Updates plot details such as name, area, location, crop type, and stage."
+    )
+    @ApiResponse(responseCode = "200", description = "Plot successfully updated")
+    @ApiResponse(responseCode = "400", description = "Validation error (e.g. negative area, missing name)")
+    @ApiResponse(responseCode = "404", description = "Plot not found")
+    public ResponseEntity<PlotResponse> updatePlot(
+            @Parameter(description = "Farmer ID — enforces ownership") @PathVariable Long farmerId,
+            @Parameter(description = "Plot ID") @PathVariable Long plotId,
+            @Valid @RequestBody PlotRequest request) {
+        PlotResponse response = plotService.updatePlot(farmerId, plotId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // ------------------------------------------------------------------ //
     //  DELETE /api/v1/farmers/{farmerId}/plots/{plotId}                    //
     // ------------------------------------------------------------------ //
     @DeleteMapping("/{plotId}")
     @Operation(
             summary = "Delete a plot",
-            description = "Deletes a plot belonging to the farmer."
+            description = "Deletes a plot belonging to the farmer. Fails with 409 if active production cycles are linked unless force=true."
     )
     @ApiResponse(responseCode = "204", description = "Plot successfully deleted")
     @ApiResponse(responseCode = "404", description = "Plot not found")
+    @ApiResponse(responseCode = "409", description = "Plot is linked to active production cycle and force=false")
     public ResponseEntity<Void> deletePlot(
             @Parameter(description = "Farmer ID") @PathVariable Long farmerId,
-            @Parameter(description = "Plot ID")   @PathVariable Long plotId) {
-        plotService.deletePlot(farmerId, plotId);
+            @Parameter(description = "Plot ID")   @PathVariable Long plotId,
+            @Parameter(description = "Force deletion even if linked to active cycles")
+            @RequestParam(defaultValue = "false") boolean force) {
+        plotService.deletePlot(farmerId, plotId, force);
         return ResponseEntity.noContent().build();
     }
 }
