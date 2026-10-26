@@ -76,6 +76,14 @@ export const authService = {
     return updated;
   },
 
+  async forgotPassword(emailOrPhone) {
+    return await apiClient.post('/auth/forgot-password', { emailOrPhone });
+  },
+
+  async resetPassword(emailOrPhone, resetCode, newPassword) {
+    return await apiClient.post('/auth/reset-password', { emailOrPhone, resetCode, newPassword });
+  },
+
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

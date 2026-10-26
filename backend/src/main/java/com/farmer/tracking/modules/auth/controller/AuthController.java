@@ -5,10 +5,14 @@ import com.farmer.tracking.common.audit.AuditService;
 import com.farmer.tracking.common.exception.ApiException;
 import com.farmer.tracking.modules.auth.dto.AuthResponse;
 import com.farmer.tracking.modules.auth.dto.FarmerProfileResponse;
+import com.farmer.tracking.modules.auth.dto.ForgotPasswordRequest;
+import com.farmer.tracking.modules.auth.dto.ForgotPasswordResponse;
 import com.farmer.tracking.modules.auth.dto.GoogleConfigResponse;
 import com.farmer.tracking.modules.auth.dto.GoogleLoginRequest;
 import com.farmer.tracking.modules.auth.dto.LoginRequest;
 import com.farmer.tracking.modules.auth.dto.RegisterRequest;
+import com.farmer.tracking.modules.auth.dto.ResetPasswordRequest;
+import com.farmer.tracking.modules.auth.dto.ResetPasswordResponse;
 import com.farmer.tracking.modules.auth.service.AuthService;
 import com.farmer.tracking.modules.auth.service.GoogleAuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -109,5 +113,27 @@ public class AuthController {
         }
         FarmerProfileResponse profile = authService.updateProfile(userDetails.getUsername(), request);
         return ResponseEntity.ok(profile);
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Request a password reset code for a registered email or phone")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest http) {
+        ForgotPasswordResponse response = authService.forgotPassword(request);
+        auditService.record(AuditEventType.PASSWORD_RESET_REQUESTED, null,
+                request.getEmailOrPhone(), "Requested password reset code", http);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password using a valid reset code")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest http) {
+        ResetPasswordResponse response = authService.resetPassword(request);
+        auditService.record(AuditEventType.PASSWORD_RESET, null,
+                request.getEmailOrPhone(), "Password successfully reset with code", http);
+        return ResponseEntity.ok(response);
     }
 }
