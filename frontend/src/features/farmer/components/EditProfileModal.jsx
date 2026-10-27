@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   IconClose,
   IconCheck,
@@ -23,6 +23,9 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -41,6 +44,27 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
   }, [user, isOpen]);
 
   if (!isOpen) return null;
+
+  const handleDeviceUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(file.type)) { setUploadError('Only JPEG, PNG, WebP or GIF are supported.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError('Image must be smaller than 5 MB.'); return; }
+    setUploadError('');
+    setIsUploadingPhoto(true);
+    try {
+      const localPreview = URL.createObjectURL(file);
+      setFormData((prev) => ({ ...prev, avatarUrl: localPreview }));
+      const url = await authService.uploadAvatar(file);
+      if (url) setFormData((prev) => ({ ...prev, avatarUrl: url }));
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const validateArea = (val) => {
     const num = parseFloat(val);
@@ -268,27 +292,94 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
             )}
           </div>
 
-          {/* Profile Photo URL */}
-          <div>
-            <label htmlFor="modal-avatar-url" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-              Profile Photo / Avatar URL
+          {/* Profile Photo */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
+              Profile Photo
             </label>
+
+            {/* Hidden file input */}
             <input
-              id="modal-avatar-url"
-              name="avatarUrl"
-              type="text"
-              value={formData.avatarUrl}
-              onChange={handleChange}
-              placeholder="https://images.unsplash.com/..."
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--color-border-input, #DFD8CA)',
-                fontSize: '0.875rem',
-                outline: 'none'
-              }}
+              ref={fileInputRef}
+              id="modal-photo-file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              style={{ display: 'none' }}
+              onChange={handleDeviceUpload}
             />
+
+            {/* Upload button row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                id="modal-upload-photo-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '9px 18px', borderRadius: '8px',
+                  border: '1.5px solid var(--color-brand-primary, #164230)',
+                  backgroundColor: isUploadingPhoto ? '#f0f5f2' : '#FFFFFF',
+                  color: 'var(--color-brand-primary, #164230)',
+                  fontSize: '0.8125rem', fontWeight: 600,
+                  cursor: isUploadingPhoto ? 'not-allowed' : 'pointer',
+                  transition: 'all 150ms ease',
+                }}
+                onMouseEnter={(e) => { if (!isUploadingPhoto) e.currentTarget.style.backgroundColor = '#eef4f1'; }}
+                onMouseLeave={(e) => { if (!isUploadingPhoto) e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+              >
+                {isUploadingPhoto ? (
+                  <><span style={{ width: '14px', height: '14px', border: '2px solid #164230', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />Uploading…</>
+                ) : (
+                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Upload from device</>
+                )}
+              </button>
+              {formData.avatarUrl && (
+                <button type="button" onClick={() => { setFormData((p) => ({ ...p, avatarUrl: '' })); setUploadError(''); }}
+                  style={{ fontSize: '0.75rem', color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                  Remove
+                </button>
+              )}
+            </div>
+
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            {uploadError && <p style={{ color: '#DC2626', fontSize: '0.75rem', marginBottom: '10px' }}>⚠ {uploadError}</p>}
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0 12px' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-card-border, #ECE7DC)' }} />
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>or choose an avatar</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-card-border, #ECE7DC)' }} />
+            </div>
+
+            {/* Preset portraits */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'av1', label: 'Joyce', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80' },
+                { id: 'av2', label: 'Peter', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80' },
+                { id: 'av3', label: 'Maria', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80' },
+                { id: 'av4', label: 'David', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80' },
+                { id: 'av5', label: 'Field Hat', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80' },
+                { id: 'av6', label: 'Agri Lead', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&q=80' },
+              ].map((p) => {
+                const chosen = formData.avatarUrl === p.url;
+                return (
+                  <div key={p.id} onClick={() => { setFormData((prev) => ({ ...prev, avatarUrl: p.url })); setUploadError(''); }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                    <div style={{
+                      width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden',
+                      border: chosen ? '3px solid var(--color-brand-primary, #164230)' : '2px solid #ECE7DC',
+                      boxShadow: chosen ? '0 0 0 2px rgba(22, 66, 48, 0.18)' : 'none',
+                      transform: chosen ? 'scale(1.08)' : 'scale(1)',
+                      transition: 'all 150ms ease',
+                    }}>
+                      <img src={p.url} alt={p.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <span style={{ fontSize: '0.65rem', color: chosen ? 'var(--color-brand-primary, #164230)' : 'var(--color-text-muted)', fontWeight: chosen ? 700 : 500 }}>{p.label}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Full Name & Location */}

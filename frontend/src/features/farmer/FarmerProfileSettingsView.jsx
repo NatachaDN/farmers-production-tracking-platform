@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   IconFarms,
   IconCrop,
@@ -38,6 +38,9 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -87,7 +90,44 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
   const handleSelectPresetAvatar = (presetUrl) => {
     setFormData((prev) => ({ ...prev, avatarUrl: presetUrl }));
     setSelectedPreset(presetUrl);
+    setUploadError('');
     setSuccessMessage('');
+  };
+
+  const handleDeviceUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side pre-checks
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(file.type)) {
+      setUploadError('Only JPEG, PNG, WebP or GIF images are supported.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image must be smaller than 5 MB.');
+      return;
+    }
+
+    setUploadError('');
+    setIsUploadingPhoto(true);
+    try {
+      // Show an instant local preview while uploading
+      const localPreview = URL.createObjectURL(file);
+      setFormData((prev) => ({ ...prev, avatarUrl: localPreview }));
+
+      const url = await authService.uploadAvatar(file);
+      if (url) {
+        setFormData((prev) => ({ ...prev, avatarUrl: url }));
+        setSelectedPreset(null);
+      }
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset the file input so the same file can be re-selected if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleAddCropSuggestion = (crop) => {
@@ -665,36 +705,99 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
               )}
             </div>
 
-            {/* Photo / Avatar URL */}
-            <div>
-              <label htmlFor="profile-avatar-url" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-                Profile Photo / Avatar Image URL
-              </label>
-              <input
-                id="profile-avatar-url"
-                name="avatarUrl"
-                type="text"
-                value={formData.avatarUrl}
-                onChange={handleChange}
-                placeholder="https://images.unsplash.com/..."
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-border-input, #DFD8CA)',
-                  fontSize: '0.9375rem',
-                  outline: 'none',
-                  backgroundColor: '#FFFFFF',
-                  color: 'var(--color-text-primary)'
-                }}
-              />
-            </div>
-
-            {/* Preset Avatars Selector */}
+            {/* ── Profile Photo ───────────────────────────────────────── */}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
-                Or select an authentic farmer avatar portrait:
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                Profile Photo
               </label>
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                id="profile-photo-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                style={{ display: 'none' }}
+                onChange={handleDeviceUpload}
+              />
+
+              {/* Upload from device button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  id="upload-photo-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    border: '1.5px solid var(--color-brand-primary, #164230)',
+                    backgroundColor: isUploadingPhoto ? '#f0f5f2' : '#FFFFFF',
+                    color: 'var(--color-brand-primary, #164230)',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: isUploadingPhoto ? 'not-allowed' : 'pointer',
+                    transition: 'all 150ms ease',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={(e) => { if (!isUploadingPhoto) e.currentTarget.style.backgroundColor = '#eef4f1'; }}
+                  onMouseLeave={(e) => { if (!isUploadingPhoto) e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                >
+                  {isUploadingPhoto ? (
+                    <>
+                      <span style={{ width: '16px', height: '16px', border: '2px solid #164230', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+                      Uploading…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      Upload from device
+                    </>
+                  )}
+                </button>
+
+                {formData.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setFormData((p) => ({ ...p, avatarUrl: '' })); setSelectedPreset(null); setUploadError(''); }}
+                    style={{
+                      fontSize: '0.8rem',
+                      color: '#DC2626',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '0',
+                    }}
+                  >
+                    Remove photo
+                  </button>
+                )}
+              </div>
+
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+              {uploadError && (
+                <p style={{ color: '#DC2626', fontSize: '0.8rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>⚠</span> {uploadError}
+                </p>
+              )}
+
+              {/* Divider */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0 16px' }}>
+                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-card-border, #ECE7DC)' }} />
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>or choose an avatar portrait</span>
+                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-card-border, #ECE7DC)' }} />
+              </div>
+
+              {/* Preset avatar grid */}
               <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
                 {PRESET_AVATARS.map((preset) => {
                   const isChosen = formData.avatarUrl === preset.url;
@@ -702,28 +805,19 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                     <div
                       key={preset.id}
                       onClick={() => handleSelectPresetAvatar(preset.url)}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        cursor: 'pointer'
-                      }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                     >
                       <div style={{
-                        width: '52px',
-                        height: '52px',
+                        width: '58px',
+                        height: '58px',
                         borderRadius: '50%',
                         overflow: 'hidden',
                         border: isChosen ? '3px solid var(--color-brand-primary, #164230)' : '2px solid #ECE7DC',
-                        boxShadow: isChosen ? '0 0 0 2px rgba(22, 66, 48, 0.25)' : 'none',
-                        transition: 'all 150ms ease'
+                        boxShadow: isChosen ? '0 0 0 3px rgba(22, 66, 48, 0.18)' : 'none',
+                        transition: 'all 150ms ease',
+                        transform: isChosen ? 'scale(1.08)' : 'scale(1)',
                       }}>
-                        <img
-                          src={preset.url}
-                          alt={preset.label}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
+                        <img src={preset.url} alt={preset.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                       <span style={{ fontSize: '0.7rem', color: isChosen ? 'var(--color-brand-primary, #164230)' : 'var(--color-text-muted)', fontWeight: isChosen ? 700 : 500 }}>
                         {preset.label}

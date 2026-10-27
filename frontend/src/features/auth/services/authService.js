@@ -76,6 +76,14 @@ export const authService = {
     return updated;
   },
 
+  /** Upload an image File object from the device. Returns the public URL string. */
+  async uploadAvatar(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const result = await apiClient.upload('/auth/upload-avatar', fd);
+    return result?.url || null;
+  },
+
   async forgotPassword(emailOrPhone) {
     return await apiClient.post('/auth/forgot-password', { emailOrPhone });
   },
