@@ -45,17 +45,27 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
   return (
     <aside className="acrea-sidebar" style={{
       color: '#FFFFFF',
-      padding: '24px 16px',
-      justifyContent: 'space-between',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '0',
+      overflow: 'hidden',
     }}>
-      {/* Brand & Navigation */}
-      <div>
-        {/* Brand Header */}
-        <div style={{ padding: '0 4px', marginBottom: '28px' }}>
-          <AcreaLogo size={38} />
-        </div>
+      {/* Brand Header — fixed at top */}
+      <div style={{ padding: '24px 20px 16px', flexShrink: 0 }}>
+        <AcreaLogo size={38} />
+      </div>
 
-        {/* Navigation List */}
+      {/* Navigation List — scrollable middle section */}
+      <div className="sidebar-scroll-nav" style={{
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '8px 16px 48px',
+        WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+        maskImage: 'linear-gradient(to bottom, black calc(100% - 48px), transparent 100%)',
+      }}
+      >
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -78,7 +88,8 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
                   width: '100%',
                   textAlign: 'left',
                   transition: 'background-color var(--transition-fast), color var(--transition-fast)',
-                  position: 'relative'
+                  position: 'relative',
+                  flexShrink: 0,
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)';
