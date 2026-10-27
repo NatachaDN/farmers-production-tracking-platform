@@ -1,7 +1,6 @@
 package com.farmer.tracking.modules.farm.repository;
 
 import com.farmer.tracking.modules.farm.entity.Farm;
-import com.farmer.tracking.modules.farm.model.Farm;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -25,12 +24,7 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
 
     /** Check if a farmer has any farms registered. */
     boolean existsByFarmerId(Long farmerId);
-@Repository
-public interface FarmRepository extends JpaRepository<Farm, Long> {
 
-    List<Farm> findByFarmerIdOrderByCreatedAtDesc(Long farmerId);
-
-    Optional<Farm> findByIdAndFarmerId(Long id, Long farmerId);
-
+    /** Check if a farm exists and belongs to farmer. */
     boolean existsByIdAndFarmerId(Long id, Long farmerId);
 }

@@ -12,7 +12,8 @@ import {
   IconLeaf,
   IconWheat,
   IconTrash,
-  IconCheck
+  IconCheck,
+  IconInputs
 } from '../../shared/components/Icons';
 
 const DEFAULT_CYCLES = [
@@ -349,6 +350,37 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
           >
             <IconSprout size={16} color="var(--color-brand-primary)" />
             <span>Manage Crops</span>
+          </button>
+
+          {/* Cycle Inputs & Real Costs Action */}
+          <button
+            id="cycle-inputs-view-btn"
+            onClick={() => onNavigate && onNavigate('cycle-inputs')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-border-input)',
+              padding: '10px 16px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-brand-primary)';
+              e.currentTarget.style.backgroundColor = 'var(--color-brand-tint)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-border-input)';
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+            }}
+          >
+            <IconInputs size={16} color="var(--color-brand-primary)" />
+            <span>Cycle Inputs & Costs</span>
           </button>
 
           {/* New Production Cycle Action */}

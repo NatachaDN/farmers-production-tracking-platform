@@ -6,6 +6,7 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
+import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
@@ -110,6 +111,10 @@ export function App() {
       title: 'Farm Inputs',
       subtitle: 'Track seeds, fertilizers, and pesticides — stock & costs'
     },
+    'cycle-inputs': {
+      title: 'Cycle Inputs & Cost Tracking',
+      subtitle: 'Record consumed inputs, deduct inventory stock, and calculate real crop cost'
+    },
     reports: {
       title: 'Reports & Analytics',
       subtitle: 'Seasonal output forecasts and historical performance'
@@ -158,6 +163,7 @@ export function App() {
           { id: 'activities', label: 'Activities' },
           { id: 'production', label: 'Harvest / Production' },
           { id: 'inputs', label: 'Farm Inputs' },
+          { id: 'cycle-inputs', label: 'Cycle Inputs' },
           { id: 'settings', label: 'Profile Settings' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' },
@@ -243,7 +249,10 @@ export function App() {
             <HarvestPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'inputs' && (
-            <FarmInputsView farmerId={currentUser?.id || 1} />
+            <FarmInputsView farmerId={currentUser?.id || 1} onNavigate={(r) => setCurrentRoute(r)} />
+          )}
+          {currentRoute === 'cycle-inputs' && (
+            <CycleInputsPage farmerId={currentUser?.id || 1} />
           )}
           {currentRoute === 'settings' && (
             <FarmerProfileSettingsView

@@ -21,14 +21,8 @@ public interface CycleRepository extends JpaRepository<Cycle, Long> {
 
     List<Cycle> findByFarmerIdAndStatus(Long farmerId, CycleStatus status);
 
-    /** Find all cycles belonging to a specific farmer. */
-    List<Cycle> findByFarmerId(Long farmerId);
-
     /** Find all cycles for a farmer filtered by status. */
     List<Cycle> findByFarmerIdAndStatusOrderByCreatedAtDesc(Long farmerId, CycleStatus status);
-
-    /** Find all cycles for a farmer filtered by status. */
-    List<Cycle> findByFarmerIdAndStatus(Long farmerId, CycleStatus status);
 
     /** Find a single cycle only if it belongs to the specified farmer. */
     Optional<Cycle> findByIdAndFarmerId(Long id, Long farmerId);
