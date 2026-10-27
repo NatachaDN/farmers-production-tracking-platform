@@ -7,6 +7,7 @@ import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
+import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
@@ -115,6 +116,10 @@ export function App() {
       title: 'Cycle Inputs & Cost Tracking',
       subtitle: 'Record consumed inputs, deduct inventory stock, and calculate real crop cost'
     },
+    'incidents': {
+      title: 'Crop Cycle Incidents',
+      subtitle: 'Track diseases, pest attacks, and damage events per production cycle'
+    },
     reports: {
       title: 'Reports & Analytics',
       subtitle: 'Seasonal output forecasts and historical performance'
@@ -164,6 +169,7 @@ export function App() {
           { id: 'production', label: 'Harvest / Production' },
           { id: 'inputs', label: 'Farm Inputs' },
           { id: 'cycle-inputs', label: 'Cycle Inputs' },
+          { id: 'incidents', label: 'Incidents' },
           { id: 'settings', label: 'Profile Settings' },
           { id: 'login', label: 'Login' },
           { id: 'register', label: 'Register' },
@@ -253,6 +259,9 @@ export function App() {
           )}
           {currentRoute === 'cycle-inputs' && (
             <CycleInputsPage farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'incidents' && (
+            <CycleIncidentsPage farmerId={currentUser?.id || 1} />
           )}
           {currentRoute === 'settings' && (
             <FarmerProfileSettingsView

@@ -36,6 +36,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
     { id: 'production', label: 'Production', icon: IconProduction },
     { id: 'inputs', label: 'Farm Inputs', icon: IconInputs },
     { id: 'cycle-inputs', label: 'Cycle Inputs', icon: IconInputs },
+    { id: 'incidents', label: 'Incidents', icon: IconActivities },
     { id: 'reports', label: 'Reports', icon: IconReports },
     { id: 'settings', label: 'Settings', icon: IconSettings },
   ];
