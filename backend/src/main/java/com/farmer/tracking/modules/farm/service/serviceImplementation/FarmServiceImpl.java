@@ -37,6 +37,9 @@ public class FarmServiceImpl implements FarmService {
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated farmer account not found with ID: " + farmerId));
 
         Farm farm = farmMapper.toEntity(request, farmer);
+        // The first farm of a farmer becomes the default one (used when a plot has no farm).
+        farm.setDefault(!farmRepository.existsByFarmerId(farmerId));
+
         Farm savedFarm = farmRepository.save(farm);
         return farmMapper.toResponse(savedFarm);
     }

@@ -1,6 +1,6 @@
 package com.farmer.tracking.modules.farm.api;
 
-import com.farmer.tracking.modules.farm.entity.Farm;
+import com.farmer.tracking.modules.farm.model.Farm;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
@@ -42,11 +42,11 @@ public class FarmResponse {
     public static FarmResponse fromEntity(Farm farm, Double totalArea, Integer plotCount) {
         FarmResponse resp = new FarmResponse();
         resp.setId(farm.getId());
-        resp.setFarmerId(farm.getFarmerId());
+        resp.setFarmerId(farm.getFarmer().getId());
         resp.setName(farm.getName());
-        resp.setLocation(farm.getLocation());
+        resp.setLocation(farm.getDistrict() + ", " + farm.getRegion() + ", " + farm.getCountry());
         resp.setDescription(farm.getDescription());
-        resp.setIsDefault(farm.getIsDefault());
+        resp.setIsDefault(farm.isDefault());
         resp.setTotalArea(totalArea != null ? Math.round(totalArea * 100.0) / 100.0 : 0.0);
         resp.setPlotCount(plotCount != null ? plotCount : 0);
         resp.setCreatedAt(farm.getCreatedAt());
@@ -55,16 +55,7 @@ public class FarmResponse {
     }
 
     public static FarmResponse fromEntity(Farm farm) {
-        double area = 0.0;
-        int count = 0;
-        if (farm.getPlots() != null) {
-            count = farm.getPlots().size();
-            area = farm.getPlots().stream()
-                    .filter(p -> p.getArea() != null)
-                    .mapToDouble(p -> p.getArea())
-                    .sum();
-        }
-        return fromEntity(farm, area, count);
+        return fromEntity(farm, 0.0, 0);
     }
 
     // --- Getters and Setters ---

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HarvestForm } from '../components/HarvestForm';
 import { HarvestResult } from '../components/HarvestResult';
 import { harvestService } from '../services/harvestService';
@@ -10,7 +10,6 @@ import {
   IconCheck,
   IconClose,
   IconWheat
- 
 } from '../../../shared/components/Icons';
 
 const DEMO_CYCLES = [
@@ -41,13 +40,22 @@ export function HarvestPage({ farmerId = 1 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const toastTimerRef = useRef(null);
 
   const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
 
   const showToast = (text, type = 'success') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage({ text, type });
-    setTimeout(() => setToastMessage(null), 5000);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 5000);
   };
+
+  // Clear any pending toast timer when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const loadHarvest = async (cycleId) => {
     setIsLoading(true);
@@ -134,13 +142,6 @@ export function HarvestPage({ farmerId = 1 }) {
             style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
             <IconClose size={16} color="currentColor" />
-          <span>{toastMessage.text}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            style={{ fontSize: '1rem', color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            ✕
           </button>
         </div>
       )}
@@ -156,6 +157,7 @@ export function HarvestPage({ farmerId = 1 }) {
             return (
               <button
                 key={c.id}
+                type="button"
                 onClick={() => setSelectedCycleId(c.id)}
                 style={{
                   padding: '8px 16px',

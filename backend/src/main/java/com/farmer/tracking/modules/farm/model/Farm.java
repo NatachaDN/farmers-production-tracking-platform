@@ -67,6 +67,8 @@ public class Farm {
     @Column(name = "additional_notes", length = 500)
     private String additionalNotes;
 
+    @Column(name = "is_default", nullable = false)
+    private boolean isDefault = false;
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -212,6 +214,14 @@ public class Farm {
 
     public void setAdditionalNotes(String additionalNotes) {
         this.additionalNotes = additionalNotes;
+    }
+
+    public boolean isDefault() {
+        return isDefault;
+    }
+
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
     }
 
     public LocalDateTime getCreatedAt() {

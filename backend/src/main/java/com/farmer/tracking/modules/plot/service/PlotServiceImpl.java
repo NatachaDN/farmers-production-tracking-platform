@@ -1,7 +1,7 @@
 package com.farmer.tracking.modules.plot.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
-import com.farmer.tracking.modules.farm.entity.Farm;
+import com.farmer.tracking.modules.farm.model.Farm;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
 import com.farmer.tracking.modules.plot.api.PlotRequest;
 import com.farmer.tracking.modules.plot.api.PlotResponse;
