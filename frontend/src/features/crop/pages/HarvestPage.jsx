@@ -10,7 +10,6 @@ import {
   IconCheck,
   IconClose,
   IconWheat
- 
 } from '../../../shared/components/Icons';
 
 const DEMO_CYCLES = [
@@ -100,7 +99,7 @@ export function HarvestPage({ farmerId = 1 }) {
         };
       }
       setHarvest(recorded);
-      showToast('🌾 Harvest recorded successfully! Cycle marked as Completed.');
+      showToast('Harvest recorded successfully! Cycle marked as Completed.');
     } catch (err) {
       showToast(err?.message || 'Failed to record harvest. Please try again.', 'error');
     } finally {
@@ -134,13 +133,6 @@ export function HarvestPage({ farmerId = 1 }) {
             style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
             <IconClose size={16} color="currentColor" />
-          <span>{toastMessage.text}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            style={{ fontSize: '1rem', color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            ✕
           </button>
         </div>
       )}

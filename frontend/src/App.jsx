@@ -2,21 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
-import { CreateFarmView } from './features/farms/CreateFarmView';
-import { FarmDetailsView } from './features/farms/FarmDetailsView';
+
 import { CropProductionView } from './features/crops/CropProductionView';
-import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
+import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
+import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
+import { ForgotPasswordView } from './features/auth/ForgotPasswordView';
 import { authService } from './features/auth/services/authService';
+import { googleAuth } from './features/auth/services/googleAuth';
+import { GoogleCallbackView } from './features/auth/GoogleCallbackView';
+import { AdminOverviewView } from './features/admin/AdminOverviewView';
+import { AdminFarmersView } from './features/admin/AdminFarmersView';
+import { AdminActivityView } from './features/admin/AdminActivityView';
+import { AdminProductionView } from './features/admin/AdminProductionView';
+import { AdminSystemView } from './features/admin/AdminSystemView';
+import './features/admin/admin.css';
+
+import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
+import { EditProfileModal } from './features/farmer/components/EditProfileModal';
+
+const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
+
+const todayLabel = () =>
+  new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 export function App() {
   const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser());
-  const [currentRoute, setCurrentRoute] = useState(() => (authService.isAuthenticated() ? 'dashboard' : 'login'));
-  const [selectedFarmId, setSelectedFarmId] = useState(null);
+  const [currentRoute, setCurrentRoute] = useState(() => {
+    if (googleAuth.isCallback()) return 'google-callback';
+    return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
+  });
+  const [loginError, setLoginError] = useState('');
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (currentRoute !== 'google-callback') return;
+    authService.completeGoogleSignIn()
+      .then((response) => {
+        setCurrentUser(response.farmer);
+        setCurrentRoute(homeRouteFor(response.farmer));
+      })
+      .catch((err) => {
+        setLoginError(err.message || 'Google sign-in failed. Please try again.');
+        setCurrentRoute('login');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
@@ -27,13 +62,14 @@ export function App() {
   }, []);
 
   const handleLoginSuccess = (farmer) => {
+    setLoginError('');
     setCurrentUser(farmer);
-    setCurrentRoute('dashboard');
+    setCurrentRoute(homeRouteFor(farmer));
   };
 
   const handleRegisterSuccess = (farmer) => {
     setCurrentUser(farmer);
-    setCurrentRoute('dashboard');
+    setCurrentRoute(homeRouteFor(farmer));
   };
 
   const handleLogout = () => {
@@ -43,6 +79,11 @@ export function App() {
   };
 
   const routeHeaders = {
+    'admin-overview': { title: 'Platform overview', subtitle: `${todayLabel()} · Every farmer, one view` },
+    'admin-farmers': { title: 'Farmers', subtitle: 'Accounts, farms and production by farmer' },
+    'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
+    'admin-production': { title: 'Production', subtitle: 'Cycles, harvests and input spending' },
+    'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
     dashboard: {
       title: 'Dashboard',
       subtitle: 'Tuesday, 2 October · Green Acres Farm'
@@ -50,14 +91,6 @@ export function App() {
     farms: {
       title: 'Farms & Plots',
       subtitle: 'Organize land, plots and active production cycles'
-    },
-    'farms-create': {
-      title: 'Create Farm Wizard',
-      subtitle: 'Setup a new farm structure'
-    },
-    'farm-details': {
-      title: 'Farm Details View',
-      subtitle: 'Monitor and manage all aspects of your farm'
     },
     crops: {
       title: 'Crop Production Cycles',
@@ -79,22 +112,36 @@ export function App() {
       title: 'Farm Inputs',
       subtitle: 'Track seeds, fertilizers, and pesticides — stock & costs'
     },
+    'cycle-inputs': {
+      title: 'Cycle Inputs & Cost Tracking',
+      subtitle: 'Record consumed inputs, deduct inventory stock, and calculate real crop cost'
+    },
+    'incidents': {
+      title: 'Crop Cycle Incidents',
+      subtitle: 'Track diseases, pest attacks, and damage events per production cycle'
+    },
     reports: {
       title: 'Reports & Analytics',
       subtitle: 'Seasonal output forecasts and historical performance'
     },
     settings: {
-      title: 'Farm Settings',
-      subtitle: 'Configure acreage units, team members, and farm profiles'
+      title: 'Farm & Profile Settings',
+      subtitle: 'Configure farm holdings, crops grown, total area, and profile details'
     }
   };
 
   const currentHeader = routeHeaders[currentRoute] || routeHeaders.dashboard;
+  const isAdmin = authService.isAdmin(currentUser);
+  const isAdminRoute = currentRoute.startsWith('admin-');
+
+  if (currentRoute === 'google-callback') {
+    return <GoogleCallbackView />;
+  }
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
       {/* Quick Screen Preview Switcher Bar */}
-      <div style={{
+      {!isAdminRoute && <div style={{
         position: 'fixed',
         bottom: '16px',
         right: '20px',
@@ -117,15 +164,16 @@ export function App() {
         {[
           { id: 'dashboard', label: 'Dashboard' },
           { id: 'farms', label: 'Farms & Plots' },
-          { id: 'farms-create', label: '+ Create Farm' },
-          { id: 'farm-details', label: 'Farm Details' },
           { id: 'crops', label: 'Crop Cycles' },
-          { id: 'production', label: 'Harvest / Production' },
           { id: 'activities', label: 'Activities' },
           { id: 'production', label: 'Harvest / Production' },
           { id: 'inputs', label: 'Farm Inputs' },
+          { id: 'cycle-inputs', label: 'Cycle Inputs' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'settings', label: 'Profile Settings' },
           { id: 'login', label: 'Login' },
-          { id: 'register', label: 'Register' }
+          { id: 'register', label: 'Register' },
+          { id: 'forgot-password', label: 'Forgot Password' }
         ].map((screen) => (
           <button
             key={screen.id}
@@ -143,28 +191,50 @@ export function App() {
             {screen.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* Screen Views */}
       {currentRoute === 'login' ? (
         <LoginView
           onNavigate={(r) => setCurrentRoute(r)}
           onLoginSuccess={handleLoginSuccess}
+          initialError={loginError}
         />
       ) : currentRoute === 'register' ? (
         <RegisterView
           onNavigate={(r) => setCurrentRoute(r)}
           onRegisterSuccess={handleRegisterSuccess}
         />
+      ) : currentRoute === 'forgot-password' ? (
+        <ForgotPasswordView
+          onNavigate={(r) => setCurrentRoute(r)}
+        />
       ) : (
         <AppLayout
-          activeRoute={currentRoute === 'farms-create' || currentRoute === 'farm-details' ? 'farms' : currentRoute}
+          activeRoute={currentRoute}
           onNavigate={(r) => setCurrentRoute(r)}
           title={currentHeader.title}
           subtitle={currentHeader.subtitle}
           user={currentUser}
           onLogout={handleLogout}
+          onEditProfile={() => setIsEditProfileModalOpen(true)}
         >
+          {isAdminRoute && !isAdmin && (
+            <div style={{
+              backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-card-border)',
+              padding: '40px', textAlign: 'center'
+            }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '8px' }}>Administrators only</h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                Your account does not have access to the admin console.
+              </p>
+            </div>
+          )}
+          {isAdmin && currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={(r) => setCurrentRoute(r)} />}
+          {isAdmin && currentRoute === 'admin-farmers' && <AdminFarmersView />}
+          {isAdmin && currentRoute === 'admin-activity' && <AdminActivityView />}
+          {isAdmin && currentRoute === 'admin-production' && <AdminProductionView />}
+          {isAdmin && currentRoute === 'admin-system' && <AdminSystemView />}
           {currentRoute === 'dashboard' && (
             <DashboardView
               onNavigate={(r) => setCurrentRoute(r)}
@@ -178,35 +248,6 @@ export function App() {
               onNavigate={(r) => setCurrentRoute(r)}
             />
           )}
-          {currentRoute === 'farms' && (
-            <FarmsAndPlotsView
-              onNavigate={(r) => setCurrentRoute(r)}
-              onSelectFarm={(id) => {
-                setSelectedFarmId(id);
-                setCurrentRoute('farm-details');
-              }}
-            />
-          )}
-          {currentRoute === 'farms-create' && (
-            <CreateFarmView
-              onNavigate={(r) => setCurrentRoute(r)}
-              onFarmCreated={(newFarm) => {
-                setSelectedFarmId(newFarm.id);
-                setCurrentRoute('farm-details');
-              }}
-            />
-          )}
-          {currentRoute === 'farm-details' && (
-            <FarmDetailsView
-              farmId={selectedFarmId}
-              onNavigate={(r) => setCurrentRoute(r)}
-            />
-          )}
-          {currentRoute === 'crops' && <CropProductionView />}
-          {currentRoute === 'production' && (
-            <HarvestPage farmerId={currentUser?.id} />
-          )}
-          {['livestock', 'activities', 'reports', 'settings'].includes(currentRoute) && (
           {currentRoute === 'activities' && (
             <CycleActivitiesPage farmerId={currentUser?.id} />
           )}
@@ -214,35 +255,23 @@ export function App() {
             <HarvestPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'inputs' && (
-            <FarmInputsView farmerId={currentUser?.id || 1} />
+            <FarmInputsView farmerId={currentUser?.id || 1} onNavigate={(r) => setCurrentRoute(r)} />
           )}
-          {['livestock', 'reports', 'settings'].includes(currentRoute) && (
-          {currentRoute === 'farms' && (
-            <FarmsAndPlotsView
-              onNavigate={(r) => setCurrentRoute(r)}
-              onSelectFarm={(id) => {
-                setSelectedFarmId(id);
-                setCurrentRoute('farm-details');
+          {currentRoute === 'cycle-inputs' && (
+            <CycleInputsPage farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'incidents' && (
+            <CycleIncidentsPage farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'settings' && (
+            <FarmerProfileSettingsView
+              user={currentUser}
+              onProfileUpdated={(updated) => {
+                setCurrentUser(updated);
               }}
             />
           )}
-          {currentRoute === 'farms-create' && (
-            <CreateFarmView
-              onNavigate={(r) => setCurrentRoute(r)}
-              onFarmCreated={(newFarm) => {
-                setSelectedFarmId(newFarm.id);
-                setCurrentRoute('farm-details');
-              }}
-            />
-          )}
-          {currentRoute === 'farm-details' && (
-            <FarmDetailsView
-              farmId={selectedFarmId}
-              onNavigate={(r) => setCurrentRoute(r)}
-            />
-          )}
-          {currentRoute === 'crops' && <CropProductionView />}
-          {['livestock', 'activities', 'production', 'reports', 'settings'].includes(currentRoute) && (
+          {['livestock', 'reports'].includes(currentRoute) && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',
@@ -258,6 +287,16 @@ export function App() {
               </p>
             </div>
           )}
+
+          {/* Quick Edit Profile Modal */}
+          <EditProfileModal
+            isOpen={isEditProfileModalOpen}
+            onClose={() => setIsEditProfileModalOpen(false)}
+            user={currentUser}
+            onProfileUpdated={(updated) => {
+              setCurrentUser(updated);
+            }}
+          />
         </AppLayout>
       )}
     </div>

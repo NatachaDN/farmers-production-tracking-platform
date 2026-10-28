@@ -9,9 +9,13 @@ public interface PlotService {
 
     PlotResponse createPlot(Long farmerId, PlotRequest request);
 
+    PlotResponse updatePlot(Long farmerId, Long plotId, PlotRequest request);
+
     List<PlotResponse> getPlotsByFarmer(Long farmerId);
 
     PlotResponse getPlotById(Long farmerId, Long plotId);
 
     void deletePlot(Long farmerId, Long plotId);
+
+    void deletePlot(Long farmerId, Long plotId, boolean force);
 }

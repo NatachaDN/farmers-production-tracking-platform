@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Represents a crop production cycle.
 import java.util.ArrayList;
 import java.util.List;
 

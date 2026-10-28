@@ -1,15 +1,17 @@
 import React from 'react';
-import { IconSearch, IconBell, IconChevronDown } from './Icons';
+import { IconSearch, IconBell, IconChevronDown, IconSettings } from './Icons';
 
 export function TopBar({
   title = "Dashboard",
   subtitle = "Tuesday, 2 October · Green Acres Farm",
   userName = "Joyce M.",
   userInitials = "JM",
+  avatarUrl = null,
   farmName = "Green Acres Farm",
   onSearch,
   onNotificationClick,
-  onLogout
+  onLogout,
+  onEditProfile
 }) {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   return (
@@ -76,6 +78,7 @@ export function TopBar({
             backgroundColor: '#F4EFE6',
             padding: '2px 6px',
             borderRadius: '4px',
+            whiteSpace: 'nowrap',
             fontFamily: 'inherit'
           }}>
             ⌘ K
@@ -140,9 +143,13 @@ export function TopBar({
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              overflow: 'hidden'
             }}>
-              {userInitials}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" referrerPolicy="no-referrer"
+                  style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : userInitials}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
@@ -178,6 +185,33 @@ export function TopBar({
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{farmName}</div>
               </div>
               <button
+                id="topbar-edit-profile-btn"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  if (onEditProfile) onEditProfile();
+                }}
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-primary, #19201C)',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 150ms'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <IconSettings size={15} color="var(--color-brand-primary, #164230)" />
+                <span>Edit Profile</span>
+              </button>
+              <button
                 onClick={() => {
                   setDropdownOpen(false);
                   if (onLogout) onLogout();
@@ -189,6 +223,9 @@ export function TopBar({
                   color: '#DC2626',
                   borderRadius: '6px',
                   fontWeight: 500,
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
                   transition: 'background-color 150ms'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEE2E2'}

@@ -11,7 +11,8 @@ import {
   IconPlus,
   IconLeaf,
   IconTrash,
-  IconWarning
+  IconWarning,
+  IconInputs
 } from '../../shared/components/Icons';
 
 /* ─── Type metadata ─────────────────────────────────────────────── */
@@ -185,7 +186,7 @@ function StatChip({ label, value, accent }) {
 }
 
 /* ─── Main view ─────────────────────────────────────────────────── */
-export function FarmInputsView({ farmerId = 1 }) {
+export function FarmInputsView({ farmerId = 1, onNavigate }) {
   const [inputs, setInputs] = useState(SEED_INPUTS);
   const [filterType, setFilterType] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
@@ -404,23 +405,43 @@ export function FarmInputsView({ farmerId = 1 }) {
               </p>
             </div>
           </div>
-          <button
-            id="open-add-input-modal"
-            onClick={() => setIsModalOpen(true)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              backgroundColor: '#3E7B52', color: '#FFFFFF', border: 'none',
-              padding: '10px 18px', borderRadius: '10px',
-              fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(62,123,82,0.25)',
-              transition: 'background-color 150ms ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#336844'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3E7B52'}
-          >
-            <IconPlus size={16} color="#FFFFFF" />
-            Add Input
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {onNavigate && (
+              <button
+                id="go-to-cycle-inputs-btn"
+                onClick={() => onNavigate('cycle-inputs')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  backgroundColor: '#FFFFFF', color: '#164230', border: '1px solid #C8E2D0',
+                  padding: '10px 16px', borderRadius: '10px',
+                  fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                  transition: 'all 150ms ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#EAF4ED'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+              >
+                <IconInputs size={16} color="#3E7B52" />
+                <span>Record Cycle Consumption →</span>
+              </button>
+            )}
+            <button
+              id="open-add-input-modal"
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                backgroundColor: '#3E7B52', color: '#FFFFFF', border: 'none',
+                padding: '10px 18px', borderRadius: '10px',
+                fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(62,123,82,0.25)',
+                transition: 'background-color 150ms ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#336844'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3E7B52'}
+            >
+              <IconPlus size={16} color="#FFFFFF" />
+              Add Input
+            </button>
+          </div>
         </div>
 
         {/* Stats row */}

@@ -5,6 +5,7 @@ import { FarmTypeSelector } from './FarmTypeSelector';
 import { RegisterPasswordFields } from './RegisterPasswordFields';
 import { IconLocation } from '../../shared/components/Icons';
 import { authService } from './services/authService';
+import { GoogleSignInSection } from './GoogleSignInSection';
 
 export function RegisterView({ onNavigate, onRegisterSuccess }) {
   const [fullName, setFullName] = useState('');
@@ -222,6 +223,8 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
               {loading ? 'Creating your account...' : 'Create Farmer Account'}
             </button>
           </form>
+
+          <GoogleSignInSection onError={setError} dividerLabel="or sign up with Google" />
 
           {/* Switch to Login */}
           <div style={{

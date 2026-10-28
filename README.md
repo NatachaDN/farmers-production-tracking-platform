@@ -303,3 +303,22 @@ npm run dev
 ```
 
 The frontend will run at `http://localhost:5173`.
+
+## Google sign-in and admin console
+
+### Google sign-in (OAuth 2.0)
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create an **OAuth client ID** of type *Web application*.
+2. Add the authorised redirect URI `http://localhost:5173/auth/google/callback` (and your production URL + the same path).
+3. Put the values in `.env` (see `.env.example`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+4. Restart the backend. The "Continue with Google" button on the login and register screens becomes active.
+
+In production the host must serve `index.html` for `/auth/google/callback` (single-page-app fallback).
+
+### Admin console
+The console lives in the sidebar for accounts with `ROLE_ADMIN` (Overview, Farmers, Activity, Production, System health). It is read-only.
+Create an administrator in one of three ways:
+* `ADMIN_EMAILS=you@gmail.com` - that Google account becomes admin the next time it signs in with Google.
+* `ADMIN_BOOTSTRAP_EMAIL` + `ADMIN_BOOTSTRAP_PASSWORD` - an email/password admin is created (or an existing account promoted) at startup.
+* SQL: `UPDATE farmers SET role = 'ROLE_ADMIN' WHERE email_or_phone = 'you@example.com';`
+
+Self-registration never grants admin rights.

@@ -9,6 +9,7 @@ export function AppLayout({
   subtitle,
   user,
   onLogout,
+  onEditProfile,
   children
 }) {
   const initials = user?.fullName
@@ -18,7 +19,7 @@ export function AppLayout({
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-canvas-bg)' }}>
       {/* Sidebar */}
-      <Sidebar activeRoute={activeRoute} onNavigate={onNavigate} />
+      <Sidebar activeRoute={activeRoute} onNavigate={onNavigate} isAdmin={user?.role === 'ROLE_ADMIN'} />
 
       {/* Main Workspace */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -27,8 +28,10 @@ export function AppLayout({
           subtitle={subtitle}
           userName={user?.fullName || "Joyce M."}
           userInitials={initials}
-          farmName={user?.location || "Green Acres Farm"}
+          farmName={user?.role === 'ROLE_ADMIN' ? 'Administrator' : (user?.farmName || user?.location || "Green Acres Farm")}
+          avatarUrl={user?.avatarUrl}
           onLogout={onLogout}
+          onEditProfile={onEditProfile}
         />
         <main style={{ padding: '0 36px 36px 36px', flex: 1 }}>
           {children}

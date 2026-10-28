@@ -1,0 +1,210 @@
+/* CycleInputUsageList.css - Acrea Design System Styling */
+
+.cycle-input-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Category breakdown chips */
+.cost-breakdown-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  background-color: var(--color-surface-card, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 2px 8px rgba(22, 66, 48, 0.02);
+}
+
+.cost-breakdown-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary, #4B5752);
+  margin-right: 4px;
+}
+
+.breakdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.breakdown-pill.SEEDS {
+  background-color: #EAF4ED;
+  color: #2A6740;
+  border-color: #C8E2D0;
+}
+
+.breakdown-pill.FERTILIZER {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border-color: #FDE68A;
+}
+
+.breakdown-pill.PESTICIDE {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border-color: #FECACA;
+}
+
+.breakdown-pill.OTHER {
+  background-color: #F1F5F9;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+
+/* Consumed Inputs Table Card */
+.consumed-inputs-table-card {
+  background-color: var(--color-surface-card, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: var(--radius-xl, 16px);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(22, 66, 48, 0.04);
+}
+
+.consumed-table-header {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-subtle, #ECE7DC);
+}
+
+.consumed-table-header h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  margin: 0;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.consumed-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.consumed-table th {
+  background-color: var(--color-surface-subtle, #F4EFE6);
+  color: var(--color-text-secondary, #4B5752);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-border-subtle, #ECE7DC);
+  white-space: nowrap;
+}
+
+.consumed-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border-subtle, #ECE7DC);
+  color: var(--color-text-primary, #19201C);
+  vertical-align: middle;
+}
+
+.consumed-table tr:last-child td {
+  border-bottom: none;
+}
+
+.consumed-table tr:hover {
+  background-color: #FCFAF6;
+}
+
+.input-item-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.input-item-name {
+  font-weight: 600;
+  color: var(--color-text-primary, #19201C);
+}
+
+.input-category-chip {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #788680);
+}
+
+.quantity-badge {
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+}
+
+.cost-highlight {
+  font-weight: 700;
+  color: var(--color-brand-primary, #3E7B52);
+}
+
+.btn-delete-usage {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--color-text-muted, #788680);
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+.btn-delete-usage:hover {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+/* Empty State */
+.consumed-inputs-empty {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.consumed-inputs-empty .empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--color-surface-subtle, #F4EFE6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.consumed-inputs-empty h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  margin: 0;
+}
+
+.consumed-inputs-empty p {
+  color: var(--color-text-muted, #788680);
+  font-size: 0.875rem;
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.5;
+}

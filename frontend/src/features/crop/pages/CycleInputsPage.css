@@ -1,0 +1,149 @@
+/* CycleInputsPage.css - Acrea Design System Workspace */
+
+.cycle-inputs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Header & Cycle Selection Bar */
+.cycle-selection-card {
+  background-color: var(--color-surface-card, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: var(--radius-xl, 16px);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(22, 66, 48, 0.04);
+}
+
+.cycle-selection-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cycle-icon-pill {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background-color: #EAF4ED;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cycle-selection-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  margin: 0;
+}
+
+.cycle-selection-subtitle {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #788680);
+  margin: 4px 0 0 0;
+}
+
+.cycle-selection-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cycle-dropdown-select {
+  padding: 10px 16px;
+  background-color: var(--color-surface-subtle, #F4EFE6);
+  border: 1px solid var(--color-border-input, #DFD8CA);
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #19201C);
+  cursor: pointer;
+  outline: none;
+  min-width: 220px;
+}
+
+.cycle-dropdown-select:focus {
+  border-color: var(--color-brand-primary, #3E7B52);
+  box-shadow: 0 0 0 3px rgba(62, 123, 82, 0.15);
+}
+
+.btn-open-record-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background-color: var(--color-brand-primary, #3E7B52);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: 0 2px 6px rgba(62, 123, 82, 0.25);
+  white-space: nowrap;
+}
+
+.btn-open-record-form:hover {
+  background-color: var(--color-brand-hover, #336844);
+}
+
+/* Metric Cards Grid */
+.inputs-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .inputs-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .inputs-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Toast Message */
+.cycle-inputs-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999;
+  background-color: var(--color-sidebar-bg, #164230);
+  color: #FFFFFF;
+  padding: 14px 22px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: slideInDown 200ms ease;
+}
+
+.cycle-inputs-toast.warning {
+  background-color: #92400E;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

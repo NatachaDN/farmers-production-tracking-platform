@@ -14,6 +14,8 @@ public interface FarmerRepository extends JpaRepository<Farmer, Long> {
     @Query("SELECT f FROM Farmer f WHERE f.emailOrPhone = :identifier")
     Optional<Farmer> findByEmailOrPhone(@Param("identifier") String identifier);
 
+    Optional<Farmer> findByGoogleId(String googleId);
+
     @Query("SELECT COUNT(f) > 0 FROM Farmer f WHERE f.emailOrPhone = :identifier")
     boolean existsByEmailOrPhone(@Param("identifier") String identifier);
 }

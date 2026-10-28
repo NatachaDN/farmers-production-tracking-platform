@@ -1,0 +1,356 @@
+/* CycleInputUsageForm.css - Acrea Design System Styling */
+
+.cycle-input-form {
+  background-color: var(--color-surface-card, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: var(--radius-xl, 16px);
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(22, 66, 48, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 200ms ease-out;
+}
+
+.cycle-input-form .form-header {
+  border-bottom: 1px solid var(--color-border-subtle, #ECE7DC);
+  padding-bottom: 16px;
+}
+
+.cycle-input-form .form-header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cycle-input-form .form-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  margin: 0;
+}
+
+.cycle-input-form .cycle-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #EAF4ED;
+  color: #2A6740;
+  border: 1px solid #CDE2D4;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cycle-input-form .cycle-inactive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cycle-input-form .form-subtitle {
+  color: var(--color-text-muted, #788680);
+  font-size: 0.875rem;
+  margin: 6px 0 0 0;
+}
+
+/* Warnings and Alerts */
+.stock-warning-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: #FEF3C7;
+  border: 1px solid #F59E0B;
+  color: #92400E;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.1);
+}
+
+.stock-warning-alert.severe {
+  background-color: #FEF2F2;
+  border-color: #EF4444;
+  color: #991B1B;
+}
+
+.stock-warning-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.stock-warning-content strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+/* Form groups */
+.cycle-input-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cycle-input-form .form-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #19201C);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cycle-input-form .form-label .required {
+  color: #DC2626;
+  margin-left: 2px;
+}
+
+.cycle-input-form .form-label .label-stock-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-brand-primary, #3E7B52);
+}
+
+.cycle-input-form .form-label .label-stock-hint.out-of-stock {
+  color: #DC2626;
+}
+
+.cycle-input-form .form-select,
+.cycle-input-form .form-input,
+.cycle-input-form .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border-input, #DFD8CA);
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.9375rem;
+  color: var(--color-text-primary, #19201C);
+  transition: all 150ms ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.cycle-input-form .form-select:focus,
+.cycle-input-form .form-input:focus,
+.cycle-input-form .form-textarea:focus {
+  outline: none;
+  border-color: var(--color-brand-primary, #3E7B52);
+  box-shadow: 0 0 0 3px rgba(62, 123, 82, 0.15);
+}
+
+.cycle-input-form .form-input.has-error,
+.cycle-input-form .form-select.has-error {
+  border-color: #EF4444;
+  background-color: #FFFDFD;
+}
+
+.cycle-input-form .form-input.has-error:focus,
+.cycle-input-form .form-select.has-error:focus {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.cycle-input-form .error-text {
+  font-size: 0.78rem;
+  color: #DC2626;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+/* Input group with attached unit */
+.input-with-addon {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+.input-with-addon .form-input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.input-addon {
+  background-color: var(--color-surface-subtle, #F4EFE6);
+  border: 1px solid var(--color-border-input, #DFD8CA);
+  border-left: none;
+  border-top-right-radius: var(--radius-md, 10px);
+  border-bottom-right-radius: var(--radius-md, 10px);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary, #4B5752);
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Selected input detail preview */
+.selected-input-card {
+  background-color: var(--color-surface-subtle, #F4EFE6);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.selected-input-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-input-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--color-text-primary, #19201C);
+}
+
+.selected-input-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #788680);
+}
+
+.stock-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-stock {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  color: var(--color-text-secondary, #4B5752);
+}
+
+.pill-stock.available {
+  background-color: #EAF4ED;
+  color: #2A6740;
+  border-color: #C8E2D0;
+}
+
+.pill-price {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+/* Real Cost Calculation Preview Card */
+.calculation-preview-card {
+  background: linear-gradient(135deg, #FBF9F4 0%, #F5EFE3 100%);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .calculation-preview-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calc-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #788680);
+  margin-bottom: 4px;
+}
+
+.calc-stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-brand-primary, #3E7B52);
+}
+
+.calc-stat-subtext {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary, #4B5752);
+  margin-top: 2px;
+}
+
+.calc-stat-subtext.warning {
+  color: #DC2626;
+  font-weight: 600;
+}
+
+/* Actions */
+.cycle-input-form .form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.btn-secondary {
+  padding: 10px 18px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border-input, #DFD8CA);
+  color: var(--color-text-secondary, #4B5752);
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-surface-subtle, #F4EFE6);
+}
+
+.btn-primary-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background-color: var(--color-brand-primary, #3E7B52);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: 0 2px 6px rgba(62, 123, 82, 0.25);
+}
+
+.btn-primary-record:hover:not(:disabled) {
+  background-color: var(--color-brand-hover, #336844);
+  transform: translateY(-1px);
+}
+
+.btn-primary-record:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}

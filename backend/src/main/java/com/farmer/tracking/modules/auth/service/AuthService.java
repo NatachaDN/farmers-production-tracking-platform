@@ -5,6 +5,12 @@ import com.farmer.tracking.modules.auth.dto.FarmerProfileResponse;
 import com.farmer.tracking.modules.auth.dto.LoginRequest;
 import com.farmer.tracking.modules.auth.dto.RegisterRequest;
 
+import com.farmer.tracking.modules.auth.dto.ForgotPasswordRequest;
+import com.farmer.tracking.modules.auth.dto.ForgotPasswordResponse;
+import com.farmer.tracking.modules.auth.dto.ResetPasswordRequest;
+import com.farmer.tracking.modules.auth.dto.ResetPasswordResponse;
+import com.farmer.tracking.modules.auth.dto.UpdateProfileRequest;
+
 public interface AuthService {
 
     AuthResponse register(RegisterRequest request);
@@ -12,4 +18,10 @@ public interface AuthService {
     AuthResponse login(LoginRequest request);
 
     FarmerProfileResponse getCurrentFarmer(String emailOrPhone);
+
+    FarmerProfileResponse updateProfile(String emailOrPhone, UpdateProfileRequest request);
+
+    ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request);
+
+    ResetPasswordResponse resetPassword(ResetPasswordRequest request);
 }

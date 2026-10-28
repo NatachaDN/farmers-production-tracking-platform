@@ -1,9 +1,28 @@
 import { apiClient } from '../../../shared/services/apiClient';
+import { googleAuth } from './googleAuth';
 
 const TOKEN_KEY = 'acrea_token';
 const USER_KEY = 'acrea_user';
 
+function persistSession(response) {
+  if (response?.token) {
+    localStorage.setItem(TOKEN_KEY, response.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(response.farmer));
+  }
+}
+
 export const authService = {
+  /** Finishes "Continue with Google" after Google redirects back to the app. */
+  async completeGoogleSignIn() {
+    const response = await googleAuth.complete();
+    persistSession(response);
+    return response;
+  },
+
+  isAdmin(user = this.getStoredUser()) {
+    return user?.role === 'ROLE_ADMIN';
+  },
+
   async register(formData) {
     const response = await apiClient.post('/auth/register', formData);
     if (response?.token) {
@@ -47,6 +66,30 @@ export const authService = {
 
   isAuthenticated() {
     return Boolean(localStorage.getItem(TOKEN_KEY));
+  },
+
+  async updateProfile(profileData) {
+    const updated = await apiClient.put('/auth/me', profileData);
+    if (updated) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+    return updated;
+  },
+
+  /** Upload an image File object from the device. Returns the public URL string. */
+  async uploadAvatar(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const result = await apiClient.upload('/auth/upload-avatar', fd);
+    return result?.url || null;
+  },
+
+  async forgotPassword(emailOrPhone) {
+    return await apiClient.post('/auth/forgot-password', { emailOrPhone });
+  },
+
+  async resetPassword(emailOrPhone, resetCode, newPassword) {
+    return await apiClient.post('/auth/reset-password', { emailOrPhone, resetCode, newPassword });
   },
 
   logout() {

@@ -40,7 +40,6 @@ export function HarvestResult({ harvest }) {
           <span className="completed-icon">
             <IconCheckCircle size={16} color="currentColor" />
           </span>
-          <span className="completed-icon">✅</span>
           <span>Cycle Completed</span>
         </div>
         <h3 className="result-title">Harvest Record — {harvest.cycleName}</h3>
@@ -64,7 +63,6 @@ export function HarvestResult({ harvest }) {
           <span className="detail-card-icon">
             <IconCalendar size={18} color="var(--color-brand-primary, #164230)" />
           </span>
-          <span className="detail-card-icon">📅</span>
           <div>
             <div className="detail-card-label">Harvest Date</div>
             <div className="detail-card-value">{formatDate(harvest.harvestDate)}</div>
@@ -75,7 +73,6 @@ export function HarvestResult({ harvest }) {
           <span className="detail-card-icon">
             <IconScale size={18} color="var(--color-brand-primary, #164230)" />
           </span>
-          <span className="detail-card-icon">⚖️</span>
           <div>
             <div className="detail-card-label">Unit of Measure</div>
             <div className="detail-card-value">{harvest.unit}</div>
@@ -87,7 +84,6 @@ export function HarvestResult({ harvest }) {
             <span className="detail-card-icon">
               <IconLocation size={18} color="var(--color-brand-primary, #164230)" />
             </span>
-            <span className="detail-card-icon">🗺️</span>
             <div>
               <div className="detail-card-label">Acreage</div>
               <div className="detail-card-value">{harvest.acreage} ha</div>
@@ -99,7 +95,6 @@ export function HarvestResult({ harvest }) {
           <span className="detail-card-icon">
             <IconTrendingUp size={18} color="var(--color-brand-primary, #164230)" />
           </span>
-          <span className="detail-card-icon">📈</span>
           <div>
             <div className="detail-card-label">Calculated Yield</div>
             <div className="detail-card-value">{harvest.yieldDisplay}</div>
@@ -114,7 +109,6 @@ export function HarvestResult({ harvest }) {
             <IconFileText size={15} color="currentColor" />
             <span>Harvest Notes</span>
           </div>
-          <div className="result-notes-label">📝 Harvest Notes</div>
           <div className="result-notes-text">{harvest.notes}</div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge } from './StatusBadge';
-import { IconDots, IconChevronRight, IconTrash } from './Icons';
+import { IconDots, IconChevronRight, IconTrash, IconPencil } from './Icons';
 
 export function PlotCard({
   icon,
@@ -10,6 +10,7 @@ export function PlotCard({
   progress = 0,
   updated = "Updated today",
   onViewDetails,
+  onEditPlot,
   onDeletePlot
 }) {
   return (
@@ -41,10 +42,40 @@ export function PlotCard({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <StatusBadge status={stage} />
+            {onEditPlot && (
+              <button
+                onClick={onEditPlot}
+                title="Edit Plot"
+                aria-label="Edit Plot"
+                style={{
+                  color: 'var(--color-brand-primary, #164230)',
+                  backgroundColor: '#F0FDF4',
+                  border: '1px solid #BBF7D0',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-brand-primary, #164230)';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F0FDF4';
+                  e.currentTarget.style.color = 'var(--color-brand-primary, #164230)';
+                }}
+              >
+                <IconPencil size={15} />
+              </button>
+            )}
             {onDeletePlot && (
               <button
                 onClick={onDeletePlot}
                 title="Delete Plot"
+                aria-label="Delete Plot"
                 style={{
                   color: '#DC2626',
                   backgroundColor: '#FEF2F2',
