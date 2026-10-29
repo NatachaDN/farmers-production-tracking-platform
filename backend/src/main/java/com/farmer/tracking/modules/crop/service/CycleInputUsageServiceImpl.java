@@ -2,8 +2,7 @@ package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
-import com.farmer.tracking.common.exception.UnauthorizedException;
-import com.farmer.tracking.common.security.UserPrincipal;
+import com.farmer.tracking.common.security.FarmerAccessGuard;
 import com.farmer.tracking.modules.crop.api.CycleCostSummaryResponse;
 import com.farmer.tracking.modules.crop.api.CycleInputUsageRequest;
 import com.farmer.tracking.modules.crop.api.CycleInputUsageResponse;
@@ -14,8 +13,6 @@ import com.farmer.tracking.modules.crop.repository.CycleInputUsageRepository;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.input.entity.FarmInput;
 import com.farmer.tracking.modules.input.repository.FarmInputRepository;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -180,13 +177,6 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
     }
 
     private void validateFarmerAccess(Long farmerId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof UserPrincipal principal) {
-            boolean isAdmin = auth.getAuthorities().stream()
-                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-            if (!isAdmin && !principal.getId().equals(farmerId)) {
-                throw new UnauthorizedException("Access denied: You can only access your own cycle records.");
-            }
-        }
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "cycle input usage");
     }
 }

@@ -155,4 +155,43 @@ class CycleControllerTest {
                 .andExpect(jsonPath("$.activeCycleId").value(1))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already occupied")));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/farmers/{farmerId}/cycles/{cycleId} - Returns gap between expected and harvested")
+    void getCycleDetail_ReturnsQuantityGap() throws Exception {
+        CycleResponse response = new CycleResponse();
+        response.setId(30L);
+        response.setFarmerId(farmerId);
+        response.setCropName("Maize");
+        response.setStatus(CycleStatus.COMPLETED);
+        response.setExpectedQuantity(5000.0);
+        response.setExpectedQuantityUnit("kg");
+        response.setHarvestedQuantity(4.5);
+        response.setHarvestedUnit("TONS");
+        response.setGapQuantity(-500.0);
+        response.setGapPercentage(-10.0);
+
+        when(cycleService.getCycleById(farmerId, 30L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/farmers/{farmerId}/cycles/{cycleId}", farmerId, 30L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(30))
+                .andExpect(jsonPath("$.expectedQuantity").value(5000.0))
+                .andExpect(jsonPath("$.harvestedQuantity").value(4.5))
+                .andExpect(jsonPath("$.harvestedUnit").value("TONS"))
+                .andExpect(jsonPath("$.gapQuantity").value(-500.0))
+                .andExpect(jsonPath("$.gapPercentage").value(-10.0));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/farmers/{farmerId}/cycles/{cycleId} - Returns 404 when cycle not owned by farmer")
+    void getCycleDetail_NotOwnedCycle_Returns404() throws Exception {
+        when(cycleService.getCycleById(eq(farmerId), eq(99L)))
+                .thenThrow(new ResourceNotFoundException("Cycle not found with id: 99 for farmer: 1"));
+
+        mockMvc.perform(get("/api/v1/farmers/{farmerId}/cycles/{cycleId}", farmerId, 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Cycle not found")));
+    }
 }

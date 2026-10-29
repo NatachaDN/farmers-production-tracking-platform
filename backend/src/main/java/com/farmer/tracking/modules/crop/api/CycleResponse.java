@@ -2,6 +2,8 @@ package com.farmer.tracking.modules.crop.api;
 
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleStatus;
+import com.farmer.tracking.modules.crop.entity.Harvest;
+import com.farmer.tracking.modules.crop.service.QuantityGapCalculator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -54,6 +56,18 @@ public class CycleResponse {
     @Schema(description = "Status subtext / health summary", example = "On track")
     private String subStatus;
 
+    @Schema(description = "Actually harvested quantity, null when no harvest recorded", example = "4500.0")
+    private Double harvestedQuantity;
+
+    @Schema(description = "Unit of the harvested quantity", example = "KG")
+    private String harvestedUnit;
+
+    @Schema(description = "Gap between harvested and expected quantity expressed in the expected unit (harvested - expected)", example = "-500.0")
+    private Double gapQuantity;
+
+    @Schema(description = "Gap as a percentage of the expected quantity ((harvested - expected) / expected * 100)", example = "-10.0")
+    private Double gapPercentage;
+
     @Schema(description = "Creation timestamp")
     private LocalDateTime createdAt;
 
@@ -63,6 +77,10 @@ public class CycleResponse {
     public CycleResponse() {}
 
     public static CycleResponse fromEntity(Cycle cycle) {
+        return fromEntity(cycle, null);
+    }
+
+    public static CycleResponse fromEntity(Cycle cycle, Harvest harvest) {
         CycleResponse resp = new CycleResponse();
         resp.setId(cycle.getId());
         resp.setFarmerId(cycle.getFarmerId());
@@ -83,6 +101,7 @@ public class CycleResponse {
         resp.setSubStatus(cycle.getSubStatus());
         resp.setCreatedAt(cycle.getCreatedAt());
         resp.setUpdatedAt(cycle.getUpdatedAt());
+        QuantityGapCalculator.apply(resp, cycle, harvest);
         return resp;
     }
 
@@ -206,6 +225,38 @@ public class CycleResponse {
 
     public void setSubStatus(String subStatus) {
         this.subStatus = subStatus;
+    }
+
+    public Double getHarvestedQuantity() {
+        return harvestedQuantity;
+    }
+
+    public void setHarvestedQuantity(Double harvestedQuantity) {
+        this.harvestedQuantity = harvestedQuantity;
+    }
+
+    public String getHarvestedUnit() {
+        return harvestedUnit;
+    }
+
+    public void setHarvestedUnit(String harvestedUnit) {
+        this.harvestedUnit = harvestedUnit;
+    }
+
+    public Double getGapQuantity() {
+        return gapQuantity;
+    }
+
+    public void setGapQuantity(Double gapQuantity) {
+        this.gapQuantity = gapQuantity;
+    }
+
+    public Double getGapPercentage() {
+        return gapPercentage;
+    }
+
+    public void setGapPercentage(Double gapPercentage) {
+        this.gapPercentage = gapPercentage;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -69,6 +69,8 @@ const DEFAULT_CYCLES = [
     plannedHarvestDate: '2026-11-30',
     expectedQuantity: 7900,
     expectedQuantityUnit: 'kg',
+    harvestedQuantity: 7900,
+    harvestedUnit: 'KG',
     stage: 'Harvested',
     progress: 100,
     subStatus: 'Final yield 7.9 t'

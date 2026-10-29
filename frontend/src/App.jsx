@@ -5,7 +5,7 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
-import { HarvestPage } from './features/crop/pages/HarvestPage';
+import { ProductionView } from './features/production/ProductionView';
 import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
 import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
@@ -105,8 +105,8 @@ export function App() {
       subtitle: 'Record and track daily farming activities per cycle'
     },
     production: {
-      title: 'Harvest & Production Records',
-      subtitle: 'Harvest tallies, batch weighings, and yield logs'
+      title: 'Production',
+      subtitle: 'All crop production cycles - past and ongoing - at a glance'
     },
     inputs: {
       title: 'Farm Inputs',
@@ -166,7 +166,7 @@ export function App() {
           { id: 'farms', label: 'Farms & Plots' },
           { id: 'crops', label: 'Crop Cycles' },
           { id: 'activities', label: 'Activities' },
-          { id: 'production', label: 'Harvest / Production' },
+          { id: 'production', label: 'Production' },
           { id: 'inputs', label: 'Farm Inputs' },
           { id: 'cycle-inputs', label: 'Cycle Inputs' },
           { id: 'incidents', label: 'Incidents' },
@@ -252,7 +252,7 @@ export function App() {
             <CycleActivitiesPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'production' && (
-            <HarvestPage farmerId={currentUser?.id} />
+            <ProductionView farmerId={currentUser?.id || 1} />
           )}
           {currentRoute === 'inputs' && (
             <FarmInputsView farmerId={currentUser?.id || 1} onNavigate={(r) => setCurrentRoute(r)} />

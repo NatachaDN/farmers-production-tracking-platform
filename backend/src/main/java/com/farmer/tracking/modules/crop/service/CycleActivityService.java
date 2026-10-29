@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.FarmerAccessGuard;
 import com.farmer.tracking.modules.crop.api.CycleActivityRequest;
 import com.farmer.tracking.modules.crop.api.CycleActivityResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -115,10 +116,11 @@ public class CycleActivityService {
     // ------------------------------------------------------------------ //
 
     /**
-     * Ensures the cycle exists AND belongs to the farmer.
-     * This is the main security gate until Spring Security is wired in.
+     * Ensures the requester may access the farmer's data, the cycle exists and
+     * belongs to the farmer. This is the main security gate for cycle activities.
      */
     private Cycle getCycleForFarmer(Long farmerId, Long cycleId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "cycle activity");
         return cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Cycle not found with id: " + cycleId + " for farmer: " + farmerId));

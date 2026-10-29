@@ -2,12 +2,15 @@ package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.FarmerAccessGuard;
 import com.farmer.tracking.modules.crop.api.CycleRequest;
 import com.farmer.tracking.modules.crop.api.CycleResponse;
 import com.farmer.tracking.modules.crop.api.PlotConflictCheckResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleStatus;
+import com.farmer.tracking.modules.crop.entity.Harvest;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
+import com.farmer.tracking.modules.crop.repository.HarvestRepository;
 import com.farmer.tracking.modules.plot.entity.Plot;
 import com.farmer.tracking.modules.plot.repository.PlotRepository;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,10 +35,12 @@ public class CycleService {
 
     private final CycleRepository cycleRepository;
     private final PlotRepository plotRepository;
+    private final HarvestRepository harvestRepository;
 
-    public CycleService(CycleRepository cycleRepository, PlotRepository plotRepository) {
+    public CycleService(CycleRepository cycleRepository, PlotRepository plotRepository, HarvestRepository harvestRepository) {
         this.cycleRepository = cycleRepository;
         this.plotRepository = plotRepository;
+        this.harvestRepository = harvestRepository;
     }
 
     /**
@@ -42,6 +48,7 @@ public class CycleService {
      */
     @Transactional
     public CycleResponse createCycle(Long farmerId, CycleRequest request) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "production cycle");
         // 1. Verify Plot ownership
         Plot plot = plotRepository.findByIdAndFarmerId(request.getPlotId(), farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot not found with id: " + request.getPlotId() + " for farmer: " + farmerId));
@@ -96,17 +103,31 @@ public class CycleService {
     }
 
     /**
-     * Lists all cycles for a farmer, optionally filtered by status.
+     * Lists all cycles for a farmer, optionally filtered by status, sorted by cycle date (newest first).
      */
     @Transactional(readOnly = true)
     public List<CycleResponse> getCyclesByFarmer(Long farmerId, CycleStatus status) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "production cycle");
         List<Cycle> cycles = (status != null)
-                ? cycleRepository.findByFarmerIdAndStatusOrderByCreatedAtDesc(farmerId, status)
-                : cycleRepository.findByFarmerIdOrderByCreatedAtDesc(farmerId);
+                ? cycleRepository.findByFarmerIdAndStatus(farmerId, status)
+                : cycleRepository.findByFarmerId(farmerId);
 
         return cycles.stream()
+                .sorted(Comparator.comparing(CycleService::effectiveCycleDate)
+                        .thenComparing(cycle -> cycle.getId() != null ? cycle.getId() : 0L)
+                        .reversed())
                 .map(CycleResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private static LocalDate effectiveCycleDate(Cycle cycle) {
+        if (cycle.getStartDate() != null) {
+            return cycle.getStartDate();
+        }
+        if (cycle.getCreatedAt() != null) {
+            return cycle.getCreatedAt().toLocalDate();
+        }
+        return LocalDate.MIN;
     }
 
     /**
@@ -114,9 +135,11 @@ public class CycleService {
      */
     @Transactional(readOnly = true)
     public CycleResponse getCycleById(Long farmerId, Long cycleId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "production cycle");
         Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
-        return CycleResponse.fromEntity(cycle);
+        Harvest harvest = harvestRepository.findByCycleId(cycleId).orElse(null);
+        return CycleResponse.fromEntity(cycle, harvest);
     }
 
     /**
@@ -124,6 +147,7 @@ public class CycleService {
      */
     @Transactional(readOnly = true)
     public PlotConflictCheckResponse checkPlotAvailability(Long farmerId, Long plotId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "production cycle");
         Plot plot = plotRepository.findByIdAndFarmerId(plotId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot not found with id: " + plotId + " for farmer: " + farmerId));
 
@@ -145,6 +169,7 @@ public class CycleService {
      */
     @Transactional
     public void deleteCycle(Long farmerId, Long cycleId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "production cycle");
         Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
         cycleRepository.delete(cycle);

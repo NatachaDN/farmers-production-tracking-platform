@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   IconClose,
   IconSprout,
@@ -18,6 +18,7 @@ import {
 } from '../../../shared/components/Icons';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import { RecordCycleInputModal } from './RecordCycleInputModal';
+import { cropCycleService } from '../services/cropCycleService';
 
 function getCropIcon(cropName) {
   const name = (cropName || '').toLowerCase();
@@ -43,6 +44,26 @@ function formatDate(dateStr) {
 
 export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId = 1 }) {
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [cycleDetail, setCycleDetail] = useState(null);
+
+  const isCompleted = (plot?.status || '').toUpperCase() === 'COMPLETED';
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isOpen || !isCompleted || !plot?.id || !farmerId) {
+      return undefined;
+    }
+    cropCycleService.getCycleById(farmerId, plot.id)
+      .then((detail) => {
+        if (!cancelled) setCycleDetail(detail || null);
+      })
+      .catch(() => {
+        if (!cancelled) setCycleDetail(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, isCompleted, plot?.id, farmerId]);
 
   if (!isOpen || !plot) return null;
 
@@ -59,6 +80,23 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
     ? `${plot.expectedQuantity.toLocaleString()} ${plot.expectedQuantityUnit || 'kg'}`
     : '5,000 kg';
   const location = plot.location || 'North Field, Section 1 · Nakuru County';
+
+  // Plan vs actual (harvest gap) — server-computed values first, local fallback otherwise
+  const expectedVal = plot.expectedQuantity;
+  const expectedUnit = plot.expectedQuantityUnit || 'kg';
+  const detailMatched = cycleDetail && cycleDetail.id === plot.id ? cycleDetail : null;
+  const harvestedVal = detailMatched?.harvestedQuantity ?? plot.harvestedQuantity;
+  const harvestedUnit = (detailMatched?.harvestedUnit || expectedUnit).toLowerCase();
+  const gapVal = detailMatched?.gapQuantity ?? (harvestedVal != null && expectedVal != null ? harvestedVal - expectedVal : null);
+  const gapPct = detailMatched?.gapPercentage ?? (gapVal != null && expectedVal ? (gapVal / expectedVal) * 100 : null);
+  const showOutcomeCard = isCompleted && expectedVal != null;
+  const targetPct = expectedVal ? (harvestedVal / expectedVal) * 100 : null;
+  const achievedPct = targetPct != null ? Math.max(0, Math.min(targetPct, 100)) : null;
+  const gapPositive = (gapVal ?? 0) >= 0;
+  const gapColor = gapPositive ? '#2E7D32' : '#92400E';
+  const gapBg = gapPositive ? '#E8F5E9' : '#FEF3C7';
+  const gapBorder = gapPositive ? '#C8E2D0' : '#FDE68A';
+  const gapLabel = gapVal == null ? null : gapVal === 0 ? 'On target' : gapPositive ? 'Above target' : 'Below target';
 
   return (
     <div style={{
@@ -257,6 +295,117 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
               <span>5. Harvest</span>
             </div>
           </div>
+
+          {/* Plan vs Actual — Harvest Outcome (completed cycles) */}
+          {showOutcomeCard && (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-card-border)',
+              borderRadius: 'var(--radius-lg, 12px)',
+              padding: '18px 20px',
+              boxShadow: 'var(--shadow-subtle)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <IconScale size={16} color="var(--color-brand-primary)" />
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    Plan vs Actual — Harvest Outcome
+                  </span>
+                </div>
+                {gapLabel && (
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em',
+                    padding: '4px 10px', borderRadius: '999px',
+                    backgroundColor: gapBg, color: gapColor, border: `1px solid ${gapBorder}`
+                  }}>
+                    {gapLabel}
+                  </span>
+                )}
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '14px',
+                marginBottom: harvestedVal != null ? '14px' : '0'
+              }}>
+                <div style={{
+                  backgroundColor: '#F9F6F0',
+                  border: '1px solid #ECE7DC',
+                  borderRadius: 'var(--radius-md, 10px)',
+                  padding: '12px 14px'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Expected
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                    {expectedVal.toLocaleString()} {expectedUnit}
+                  </div>
+                </div>
+
+                <div style={{
+                  backgroundColor: '#F9F6F0',
+                  border: '1px solid #ECE7DC',
+                  borderRadius: 'var(--radius-md, 10px)',
+                  padding: '12px 14px'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Harvested
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                    {harvestedVal != null ? `${harvestedVal.toLocaleString()} ${harvestedUnit}` : '—'}
+                  </div>
+                </div>
+
+                <div style={{
+                  backgroundColor: '#F9F6F0',
+                  border: '1px solid #ECE7DC',
+                  borderRadius: 'var(--radius-md, 10px)',
+                  padding: '12px 14px'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Gap
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: gapColor }}>
+                    {gapVal != null
+                      ? `${gapVal > 0 ? '+' : ''}${gapVal.toLocaleString()} ${expectedUnit} (${gapPct != null ? `${gapPct > 0 ? '+' : ''}${gapPct.toFixed(1)}%` : '—'})`
+                      : 'Not comparable'}
+                  </div>
+                </div>
+              </div>
+
+              {harvestedVal != null ? (
+                <>
+                  <div style={{
+                    height: '6px',
+                    width: '100%',
+                    backgroundColor: '#ECE7DC',
+                    borderRadius: '9999px',
+                    overflow: 'hidden',
+                    marginBottom: '8px'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${achievedPct}%`,
+                      backgroundColor: gapPositive ? 'var(--color-brand-primary)' : '#D97706',
+                      borderRadius: '9999px',
+                      transition: 'width 500ms ease-out'
+                    }} />
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Target attained</span>
+                    <span style={{ fontWeight: 600, color: gapPositive ? 'var(--color-brand-primary)' : '#D97706' }}>
+                      {targetPct != null ? `${targetPct.toFixed(1)}% of plan` : '—'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                  No harvest recorded for this cycle yet.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Agronomic Condition & Soil Health */}
           <div style={{

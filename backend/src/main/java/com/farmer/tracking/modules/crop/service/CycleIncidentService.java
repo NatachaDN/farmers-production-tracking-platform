@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.FarmerAccessGuard;
 import com.farmer.tracking.modules.crop.api.CycleIncidentRequest;
 import com.farmer.tracking.modules.crop.api.CycleIncidentResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -136,6 +137,7 @@ public class CycleIncidentService {
      * This is the primary security gate — prevents any cross-farmer data access.
      */
     private Cycle getCycleForFarmer(Long farmerId, Long cycleId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "cycle incident");
         return cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Cycle not found with id: " + cycleId + " for farmer: " + farmerId));

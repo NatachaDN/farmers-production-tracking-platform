@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.FarmerAccessGuard;
 import com.farmer.tracking.modules.crop.api.HarvestRequest;
 import com.farmer.tracking.modules.crop.api.HarvestResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -34,6 +35,7 @@ public class HarvestService {
      */
     @Transactional
     public HarvestResponse recordHarvest(Long farmerId, Long cycleId, HarvestRequest request) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "harvest");
         Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
 
@@ -79,6 +81,7 @@ public class HarvestService {
      */
     @Transactional(readOnly = true)
     public HarvestResponse getHarvestByCycle(Long farmerId, Long cycleId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "harvest");
         Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
 
