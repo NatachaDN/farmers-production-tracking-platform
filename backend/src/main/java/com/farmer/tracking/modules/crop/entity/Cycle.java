@@ -4,7 +4,6 @@ import com.farmer.tracking.modules.plot.entity.Plot;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 import java.util.ArrayList;
 import java.util.List;
 

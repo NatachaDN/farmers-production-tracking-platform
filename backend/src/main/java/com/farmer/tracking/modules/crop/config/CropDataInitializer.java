@@ -1,11 +1,5 @@
 package com.farmer.tracking.modules.crop.config;
 
-import com.farmer.tracking.modules.crop.entity.Cycle;
-import com.farmer.tracking.modules.crop.entity.CycleStatus;
-import com.farmer.tracking.modules.crop.entity.Harvest;
-import com.farmer.tracking.modules.crop.entity.HarvestUnit;
-import com.farmer.tracking.modules.crop.repository.CycleRepository;
-import com.farmer.tracking.modules.crop.repository.HarvestRepository;
 import com.farmer.tracking.modules.crop.entity.ActivityType;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleActivity;
@@ -22,10 +16,7 @@ import java.time.LocalDate;
 
 /**
  * Seeds initial demo crop cycle, activity, and harvest data for development.
- * Only runs when the cycles table is empty.
- * Seeds initial demo crop cycle and harvest data for development.
  * Only runs when the cycles table is empty to avoid duplicate entries.
- * Seeds initial demo crop cycle and activity data for development.
  */
 @Component
 public class CropDataInitializer implements CommandLineRunner {
@@ -64,8 +55,7 @@ public class CropDataInitializer implements CommandLineRunner {
             activeCycle.setName("Maize Production (Field A)");
             activeCycle.setCropName("Maize");
             activeCycle.setStatus(CycleStatus.ACTIVE);
-            activeCycle.setAcreage(2.5);
-            activeCycle.setStartDate(LocalDate.now().minusDays(90));
+            activeCycle.setStartDate(LocalDate.now().minusDays(30));
             Cycle savedActive = cycleRepository.save(activeCycle);
 
             // Seed sample interventions
@@ -89,7 +79,6 @@ public class CropDataInitializer implements CommandLineRunner {
             completedCycle.setName("Rice Season 2025 (Field B)");
             completedCycle.setCropName("Rice");
             completedCycle.setStatus(CycleStatus.COMPLETED);
-            completedCycle.setAcreage(1.8);
             completedCycle.setStartDate(LocalDate.now().minusDays(180));
             completedCycle.setEndDate(LocalDate.now().minusDays(10));
             Cycle savedCompleted = cycleRepository.save(completedCycle);
@@ -99,7 +88,7 @@ public class CropDataInitializer implements CommandLineRunner {
             harvest.setQuantity(900.0);
             harvest.setUnit(HarvestUnit.KG);
             harvest.setHarvestDate(LocalDate.now().minusDays(10));
-            harvest.setCalculatedYield(Math.round((900.0 / 1.8) * 100.0) / 100.0); // 500.0 kg/ha
+            harvest.setCalculatedYield(500.0); // 500.0 kg/ha
             harvest.setNotes("Good season — uniform grain size, minimal pest impact.");
             harvestRepository.save(harvest);
         }
