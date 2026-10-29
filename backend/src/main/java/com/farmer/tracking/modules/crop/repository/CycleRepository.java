@@ -20,5 +20,13 @@ public interface CycleRepository extends JpaRepository<Cycle, Long> {
 
     /** Find a single cycle only if it belongs to the specified farmer. */
     Optional<Cycle> findByIdAndFarmerId(Long id, Long farmerId);
+
+    /** Check if an active cycle exists on a specific plot. */
+    boolean existsByPlotIdAndStatus(Long plotId, CycleStatus status);
+
+    /** Find active cycle for a plot if present. */
     Optional<Cycle> findFirstByPlotIdAndStatusOrderByIdDesc(Long plotId, CycleStatus status);
+
+    /** Find all cycles for a plot. */
+    List<Cycle> findByPlotId(Long plotId);
 }
