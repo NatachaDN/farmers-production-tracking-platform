@@ -135,7 +135,93 @@ email, it is linked to Google and its password is retired. Emails listed in `ADM
 
 ---
 
-## 4. Administration (requires `ROLE_ADMIN`, read-only)
+## 4. Forgot Password & Password Recovery
+
+### 4.1 Request Password Reset Code
+- **Endpoint:** `POST /api/v1/auth/forgot-password`
+- **Auth required:** None (Public)
+- **Request Body:**
+```json
+{
+  "emailOrPhone": "joyce@example.com"
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "message": "A password reset code has been sent to your registered email or phone.",
+  "resetCode": "482910"
+}
+```
+- **Error Response (404 Not Found):**
+```json
+{
+  "status": 404,
+  "error": "Not Found",
+  "message": "No farmer account found with this email or phone number.",
+  "path": "/api/v1/auth/forgot-password"
+}
+```
+
+### 4.2 Reset Password
+- **Endpoint:** `POST /api/v1/auth/reset-password`
+- **Auth required:** None (Public)
+- **Request Body:**
+```json
+{
+  "emailOrPhone": "joyce@example.com",
+  "resetCode": "482910",
+  "newPassword": "NewSecurePassword123",
+  "confirmPassword": "NewSecurePassword123"
+}
+```
+- **Response (200 OK):**
+```json
+{
+  "message": "Password has been reset successfully. You can now sign in with your new password."
+}
+```
+- **Error Response (400 Bad Request):**
+```json
+{
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Invalid or already used reset code.",
+  "path": "/api/v1/auth/reset-password"
+}
+```
+
+---
+
+## 5. Profile Picture Upload & Avatar Serving
+
+### 5.1 Upload Avatar
+- **Endpoint:** `POST /api/v1/auth/me/avatar`
+- **Auth required:** Authenticated Farmer (`Authorization: Bearer <token>`)
+- **Content-Type:** `multipart/form-data` (form field: `file`)
+- **Response (200 OK):**
+```json
+{
+  "id": 1,
+  "fullName": "Joyce Muthoni",
+  "emailOrPhone": "joyce@example.com",
+  "location": "Nakuru County",
+  "farmType": "MIXED",
+  "role": "ROLE_FARMER",
+  "createdAt": "2026-10-06T12:00:00",
+  "avatarUrl": "/api/v1/auth/avatars/farmer-1-1730582930123.jpg",
+  "authProvider": "LOCAL"
+}
+```
+
+### 5.2 Serve Avatar
+- **Endpoint:** `GET /api/v1/auth/avatars/{filename}`
+- **Auth required:** None (Public static image serving)
+- **Response (200 OK):** Binary image content (`image/jpeg`, `image/png`, etc.)
+
+---
+
+## 6. Administration (requires `ROLE_ADMIN`, read-only)
 
 All endpoints are under `/api/v1/admin` and return `403` for non-admin tokens. Timestamps are ISO-8601 instants.
 

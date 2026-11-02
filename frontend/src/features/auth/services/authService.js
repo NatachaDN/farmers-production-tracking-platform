@@ -41,6 +41,29 @@ export const authService = {
     return response;
   },
 
+  async forgotPassword(emailOrPhone) {
+    return apiClient.post('/auth/forgot-password', { emailOrPhone });
+  },
+
+  async resetPassword({ emailOrPhone, resetCode, newPassword, confirmPassword }) {
+    return apiClient.post('/auth/reset-password', {
+      emailOrPhone,
+      resetCode,
+      newPassword,
+      confirmPassword,
+    });
+  },
+
+  async uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const updatedUser = await apiClient.upload('/auth/me/avatar', formData);
+    if (updatedUser) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    }
+    return updatedUser;
+  },
+
   async getCurrentUser() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return null;

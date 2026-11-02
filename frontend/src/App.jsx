@@ -8,6 +8,7 @@ import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
+import { ForgotPasswordView } from './features/auth/ForgotPasswordView';
 import { authService } from './features/auth/services/authService';
 import { googleAuth } from './features/auth/services/googleAuth';
 import { GoogleCallbackView } from './features/auth/GoogleCallbackView';
@@ -30,6 +31,8 @@ export function App() {
     return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
   });
   const [loginError, setLoginError] = useState('');
+  const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
+  const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
 
   useEffect(() => {
     if (currentRoute !== 'google-callback') return;
@@ -55,6 +58,7 @@ export function App() {
 
   const handleLoginSuccess = (farmer) => {
     setLoginError('');
+    setLoginSuccessMessage('');
     setCurrentUser(farmer);
     setCurrentRoute(homeRouteFor(farmer));
   };
@@ -67,6 +71,13 @@ export function App() {
   const handleLogout = () => {
     authService.logout();
     setCurrentUser(null);
+    setCurrentRoute('login');
+  };
+
+  const handleResetComplete = (identifier) => {
+    setLoginPrefilledIdentifier(identifier || '');
+    setLoginSuccessMessage('Password has been reset successfully. Please sign in with your new password.');
+    setLoginError('');
     setCurrentRoute('login');
   };
 
@@ -153,7 +164,8 @@ export function App() {
           { id: 'production', label: 'Harvest / Production' },
           { id: 'inputs', label: 'Farm Inputs' },
           { id: 'login', label: 'Login' },
-          { id: 'register', label: 'Register' }
+          { id: 'register', label: 'Register' },
+          { id: 'forgot-password', label: 'Forgot Password' }
         ].map((screen) => (
           <button
             key={screen.id}
@@ -179,11 +191,18 @@ export function App() {
           onNavigate={(r) => setCurrentRoute(r)}
           onLoginSuccess={handleLoginSuccess}
           initialError={loginError}
+          initialIdentifier={loginPrefilledIdentifier}
+          initialSuccess={loginSuccessMessage}
         />
       ) : currentRoute === 'register' ? (
         <RegisterView
           onNavigate={(r) => setCurrentRoute(r)}
           onRegisterSuccess={handleRegisterSuccess}
+        />
+      ) : currentRoute === 'forgot-password' ? (
+        <ForgotPasswordView
+          onNavigate={(r) => setCurrentRoute(r)}
+          onResetComplete={handleResetComplete}
         />
       ) : (
         <AppLayout
@@ -193,6 +212,7 @@ export function App() {
           subtitle={currentHeader.subtitle}
           user={currentUser}
           onLogout={handleLogout}
+          onUserUpdate={(updated) => setCurrentUser(updated)}
         >
           {isAdminRoute && !isAdmin && (
             <div style={{
