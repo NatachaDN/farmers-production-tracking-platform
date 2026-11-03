@@ -75,6 +75,7 @@ class AuthControllerTest {
         ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
         ForgotPasswordResponse response = new ForgotPasswordResponse(
                 "A password reset code has been sent to your registered email or phone.",
+                "joyce@example.com",
                 "123456"
         );
 

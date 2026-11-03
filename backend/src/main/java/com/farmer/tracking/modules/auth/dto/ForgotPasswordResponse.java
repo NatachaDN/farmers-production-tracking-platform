@@ -12,6 +12,11 @@ public class ForgotPasswordResponse {
         this.message = message;
     }
 
+    public ForgotPasswordResponse(String message, String emailOrPhone) {
+        this.message = message;
+        this.emailOrPhone = emailOrPhone;
+    }
+
     public ForgotPasswordResponse(String message, String emailOrPhone, String resetCode) {
         this.message = message;
         this.emailOrPhone = emailOrPhone;

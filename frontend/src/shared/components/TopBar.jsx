@@ -1,11 +1,6 @@
-<<<<<<< HEAD
 import React, { useRef, useState } from 'react';
-import { IconSearch, IconBell, IconChevronDown, IconCamera } from './Icons';
+import { IconSearch, IconBell, IconChevronDown, IconCamera, IconSettings } from './Icons';
 import { authService } from '../../features/auth/services/authService';
-=======
-import React from 'react';
-import { IconSearch, IconBell, IconChevronDown, IconSettings } from './Icons';
->>>>>>> origin/feature/sprint-1-task-7and-8
 
 export function TopBar({
   title = "Dashboard",
@@ -17,11 +12,8 @@ export function TopBar({
   onSearch,
   onNotificationClick,
   onLogout,
-<<<<<<< HEAD
-  onUserUpdate
-=======
+  onUserUpdate,
   onEditProfile
->>>>>>> origin/feature/sprint-1-task-7and-8
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -307,11 +299,6 @@ export function TopBar({
                   border: 'none',
                   borderRadius: '6px',
                   fontWeight: 500,
-<<<<<<< HEAD
-=======
-                  border: 'none',
-                  backgroundColor: 'transparent',
->>>>>>> origin/feature/sprint-1-task-7and-8
                   cursor: 'pointer',
                   transition: 'background-color 150ms'
                 }}
