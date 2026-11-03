@@ -1,5 +1,6 @@
-import React from 'react';
-import { IconSearch, IconBell, IconChevronDown, IconSettings } from './Icons';
+import React, { useRef, useState } from 'react';
+import { IconSearch, IconBell, IconChevronDown, IconCamera, IconSettings } from './Icons';
+import { authService } from '../../features/auth/services/authService';
 
 export function TopBar({
   title = "Dashboard",
@@ -11,9 +12,33 @@ export function TopBar({
   onSearch,
   onNotificationClick,
   onLogout,
+  onUserUpdate,
   onEditProfile
 }) {
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const updatedUser = await authService.uploadAvatar(file);
+      if (onUserUpdate) {
+        onUserUpdate(updatedUser);
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to upload profile picture.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <header style={{
       display: 'flex',
@@ -46,6 +71,15 @@ export function TopBar({
 
       {/* Right Controls: Search, Notification, Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Hidden file input for avatar upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+
         {/* Global Search */}
         <div style={{
           display: 'flex',
@@ -120,6 +154,7 @@ export function TopBar({
         {/* User Profile Pill */}
         <div style={{ position: 'relative' }}>
           <div
+            id="profile-dropdown-trigger"
             onClick={() => setDropdownOpen(!dropdownOpen)}
             style={{
               display: 'flex',
@@ -144,12 +179,19 @@ export function TopBar({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              position: 'relative'
             }}>
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" referrerPolicy="no-referrer"
-                  style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }} />
-              ) : userInitials}
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                userInitials
+              )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
@@ -174,7 +216,7 @@ export function TopBar({
               borderRadius: 'var(--radius-md)',
               boxShadow: 'var(--shadow-card-hover)',
               padding: '8px',
-              width: '180px',
+              width: '200px',
               zIndex: 100,
               display: 'flex',
               flexDirection: 'column',
@@ -184,6 +226,38 @@ export function TopBar({
                 <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{userName}</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{farmName}</div>
               </div>
+
+              {/* Upload Profile Picture Action */}
+              <button
+                id="upload-avatar-btn"
+                type="button"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                disabled={uploading}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-primary)',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  cursor: uploading ? 'wait' : 'pointer',
+                  transition: 'background-color 150ms'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <IconCamera size={16} color="var(--color-brand-primary)" />
+                <span>{uploading ? 'Uploading photo...' : 'Change profile photo'}</span>
+              </button>
+
               <button
                 id="topbar-edit-profile-btn"
                 onClick={() => {
@@ -221,10 +295,10 @@ export function TopBar({
                   textAlign: 'left',
                   fontSize: '0.8125rem',
                   color: '#DC2626',
+                  backgroundColor: 'transparent',
+                  border: 'none',
                   borderRadius: '6px',
                   fontWeight: 500,
-                  border: 'none',
-                  backgroundColor: 'transparent',
                   cursor: 'pointer',
                   transition: 'background-color 150ms'
                 }}

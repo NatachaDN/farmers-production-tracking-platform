@@ -3,34 +3,30 @@ package com.farmer.tracking.modules.auth.controller;
 import com.farmer.tracking.common.audit.AuditEventType;
 import com.farmer.tracking.common.audit.AuditService;
 import com.farmer.tracking.common.exception.ApiException;
-import com.farmer.tracking.modules.auth.dto.AuthResponse;
-import com.farmer.tracking.modules.auth.dto.FarmerProfileResponse;
-import com.farmer.tracking.modules.auth.dto.ForgotPasswordRequest;
-import com.farmer.tracking.modules.auth.dto.ForgotPasswordResponse;
-import com.farmer.tracking.modules.auth.dto.GoogleConfigResponse;
-import com.farmer.tracking.modules.auth.dto.GoogleLoginRequest;
-import com.farmer.tracking.modules.auth.dto.LoginRequest;
-import com.farmer.tracking.modules.auth.dto.RegisterRequest;
-import com.farmer.tracking.modules.auth.dto.ResetPasswordRequest;
-import com.farmer.tracking.modules.auth.dto.ResetPasswordResponse;
+import com.farmer.tracking.common.exception.UnauthorizedException;
+import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.service.AuthService;
 import com.farmer.tracking.modules.auth.service.GoogleAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.farmer.tracking.common.exception.UnauthorizedException;
-import com.farmer.tracking.modules.auth.dto.UpdateProfileRequest;
+import java.io.IOException;
+import java.nio.file.Files;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@Tag(name = "Authentication", description = "Endpoints for farmer registration, login (password or Google) and session retrieval")
+@Tag(name = "Authentication", description = "Endpoints for farmer registration, login, password recovery and profile management")
 public class AuthController {
 
     private final AuthService authService;
@@ -65,6 +61,24 @@ public class AuthController {
                     request.getEmailOrPhone(), ex.getMessage(), http);
             throw ex;
         }
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Request a password reset code for a forgotten password")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest http) {
+        ForgotPasswordResponse response = authService.forgotPassword(request);
+        auditService.record(AuditEventType.PASSWORD_RESET_REQUESTED, null,
+                request.getEmailOrPhone(), "Password reset code requested", http);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password using verification code and new password")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest http) {
+        ResetPasswordResponse response = authService.resetPassword(request);
+        auditService.record(AuditEventType.PASSWORD_RESET_COMPLETED, null,
+                request.getEmailOrPhone(), "Password successfully reset", http);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/google/config")
@@ -115,25 +129,33 @@ public class AuthController {
         return ResponseEntity.ok(profile);
     }
 
-    @PostMapping("/forgot-password")
-    @Operation(summary = "Request a password reset code for a registered email or phone")
-    public ResponseEntity<ForgotPasswordResponse> forgotPassword(
-            @Valid @RequestBody ForgotPasswordRequest request,
-            HttpServletRequest http) {
-        ForgotPasswordResponse response = authService.forgotPassword(request);
-        auditService.record(AuditEventType.PASSWORD_RESET_REQUESTED, null,
-                request.getEmailOrPhone(), "Requested password reset code", http);
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload profile picture for the currently authenticated farmer")
+    public ResponseEntity<FarmerProfileResponse> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+        FarmerProfileResponse response = authService.uploadAvatar(userDetails.getUsername(), file);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/reset-password")
-    @Operation(summary = "Reset password using a valid reset code")
-    public ResponseEntity<ResetPasswordResponse> resetPassword(
-            @Valid @RequestBody ResetPasswordRequest request,
-            HttpServletRequest http) {
-        ResetPasswordResponse response = authService.resetPassword(request);
-        auditService.record(AuditEventType.PASSWORD_RESET, null,
-                request.getEmailOrPhone(), "Password successfully reset with code", http);
-        return ResponseEntity.ok(response);
+    @GetMapping("/avatars/{fileName:.+}")
+    @Operation(summary = "Serve uploaded farmer avatar")
+    public ResponseEntity<Resource> getAvatar(@PathVariable String fileName) {
+        Resource resource = authService.loadAvatar(fileName);
+        String contentType = "image/jpeg";
+        try {
+            String probed = Files.probeContentType(resource.getFile().toPath());
+            if (probed != null) {
+                contentType = probed;
+            }
+        } catch (IOException ignored) {}
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
     }
 }

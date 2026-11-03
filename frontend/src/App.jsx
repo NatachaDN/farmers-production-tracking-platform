@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
-
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { ProductionView } from './features/production/ProductionView';
@@ -23,10 +22,9 @@ import { AdminFarmersView } from './features/admin/AdminFarmersView';
 import { AdminActivityView } from './features/admin/AdminActivityView';
 import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
-import './features/admin/admin.css';
-
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
+import './features/admin/admin.css';
 
 const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
 
@@ -42,6 +40,8 @@ export function App() {
     return 'login';
   });
   const [loginError, setLoginError] = useState('');
+  const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
+  const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export function App() {
 
   const handleLoginSuccess = (farmer) => {
     setLoginError('');
+    setLoginSuccessMessage('');
     setCurrentUser(farmer);
     setCurrentRoute(homeRouteFor(farmer));
   };
@@ -82,6 +83,13 @@ export function App() {
   const handleLogout = () => {
     authService.logout();
     setCurrentUser(null);
+    setCurrentRoute('login');
+  };
+
+  const handleResetComplete = (identifier) => {
+    setLoginPrefilledIdentifier(identifier || '');
+    setLoginSuccessMessage('Password has been reset successfully. Please sign in with your new password.');
+    setLoginError('');
     setCurrentRoute('login');
   };
 
@@ -121,7 +129,7 @@ export function App() {
     },
     'cycle-inputs': {
       title: 'Cycle Inputs & Cost Tracking',
-      subtitle: 'Record consumed inputs, deduct inventory stock, and calculate real crop cost'
+      subtitle: 'Record and deduct inputs used in crop cycles'
     },
     'expenses': {
       title: 'Production Expenses',
@@ -144,8 +152,8 @@ export function App() {
       subtitle: 'Seasonal output forecasts and historical performance'
     },
     settings: {
-      title: 'Farm & Profile Settings',
-      subtitle: 'Configure farm holdings, crops grown, total area, and profile details'
+      title: 'Farm Settings',
+      subtitle: 'Configure acreage units, team members, and farm profiles'
     }
   };
 
@@ -159,68 +167,14 @@ export function App() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* Quick Screen Preview Switcher Bar */}
-      {!isAdminRoute && currentRoute !== 'login' && currentRoute !== 'register' && currentRoute !== 'forgot-password' && currentUser && <div style={{
-        position: 'fixed',
-        bottom: '16px',
-        right: '20px',
-        zIndex: 9999,
-        backgroundColor: 'rgba(22, 66, 48, 0.94)',
-        backdropFilter: 'blur(8px)',
-        color: '#FFFFFF',
-        borderRadius: '9999px',
-        padding: '6px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
-        fontSize: '0.75rem',
-        border: '1px solid rgba(255, 255, 255, 0.15)'
-      }}>
-        <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontWeight: 600, marginRight: '4px' }}>
-          DESIGNS:
-        </span>
-        {[
-          { id: 'dashboard', label: 'Dashboard' },
-          { id: 'farms', label: 'Farms & Plots' },
-          { id: 'crops', label: 'Crop Cycles' },
-          { id: 'activities', label: 'Activities' },
-          { id: 'production', label: 'Production' },
-          { id: 'inputs', label: 'Farm Inputs' },
-          { id: 'cycle-inputs', label: 'Cycle Inputs' },
-          { id: 'expenses', label: 'Expenses' },
-          { id: 'sales', label: 'Sales' },
-          { id: 'animals', label: 'Animals' },
-          { id: 'incidents', label: 'Incidents' },
-          { id: 'settings', label: 'Profile Settings' },
-          { id: 'login', label: 'Login' },
-          { id: 'register', label: 'Register' },
-          { id: 'forgot-password', label: 'Forgot Password' }
-        ].map((screen) => (
-          <button
-            key={screen.id}
-            onClick={() => setCurrentRoute(screen.id)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '9999px',
-              fontSize: '0.75rem',
-              fontWeight: currentRoute === screen.id ? 700 : 500,
-              backgroundColor: currentRoute === screen.id ? '#FFFFFF' : 'transparent',
-              color: currentRoute === screen.id ? '#164230' : 'rgba(255, 255, 255, 0.85)',
-              transition: 'all 150ms ease'
-            }}
-          >
-            {screen.label}
-          </button>
-        ))}
-      </div>}
-
       {/* Screen Views */}
       {currentRoute === 'login' ? (
         <LoginView
           onNavigate={(r) => setCurrentRoute(r)}
           onLoginSuccess={handleLoginSuccess}
           initialError={loginError}
+          initialIdentifier={loginPrefilledIdentifier}
+          initialSuccess={loginSuccessMessage}
         />
       ) : currentRoute === 'register' ? (
         <RegisterView
@@ -230,6 +184,7 @@ export function App() {
       ) : currentRoute === 'forgot-password' ? (
         <ForgotPasswordView
           onNavigate={(r) => setCurrentRoute(r)}
+          onResetComplete={handleResetComplete}
         />
       ) : (
         <AppLayout
@@ -240,6 +195,7 @@ export function App() {
           user={currentUser}
           onLogout={handleLogout}
           onEditProfile={() => setIsEditProfileModalOpen(true)}
+          onUserUpdate={(updated) => setCurrentUser(updated)}
         >
           {isAdminRoute && !isAdmin && (
             <div style={{

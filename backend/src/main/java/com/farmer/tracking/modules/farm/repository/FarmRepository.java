@@ -16,6 +16,9 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
     /** Find all farms belonging to a farmer, ordered by creation date ascending. */
     List<Farm> findByFarmerIdOrderByCreatedAtAsc(Long farmerId);
 
+    /** Find all farms belonging to a farmer, ordered by creation date descending. */
+    List<Farm> findByFarmerIdOrderByCreatedAtDesc(Long farmerId);
+
     /** Find a farm by ID only if owned by the specified farmer. */
     Optional<Farm> findByIdAndFarmerId(Long id, Long farmerId);
 

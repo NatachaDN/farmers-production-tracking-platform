@@ -1,19 +1,26 @@
 package com.farmer.tracking.modules.auth.dto;
 
-/**
- * Response returned after a successful forgot-password request.
- * The reset code is NOT included here — it is sent to the user's email only.
- */
 public class ForgotPasswordResponse {
 
     private String message;
     private String emailOrPhone;
+    private String resetCode;
 
     public ForgotPasswordResponse() {}
+
+    public ForgotPasswordResponse(String message) {
+        this.message = message;
+    }
 
     public ForgotPasswordResponse(String message, String emailOrPhone) {
         this.message = message;
         this.emailOrPhone = emailOrPhone;
+    }
+
+    public ForgotPasswordResponse(String message, String emailOrPhone, String resetCode) {
+        this.message = message;
+        this.emailOrPhone = emailOrPhone;
+        this.resetCode = resetCode;
     }
 
     public String getMessage() {
@@ -30,5 +37,13 @@ public class ForgotPasswordResponse {
 
     public void setEmailOrPhone(String emailOrPhone) {
         this.emailOrPhone = emailOrPhone;
+    }
+
+    public String getResetCode() {
+        return resetCode;
+    }
+
+    public void setResetCode(String resetCode) {
+        this.resetCode = resetCode;
     }
 }

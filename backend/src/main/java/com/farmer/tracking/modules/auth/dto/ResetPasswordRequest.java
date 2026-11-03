@@ -16,12 +16,22 @@ public class ResetPasswordRequest {
     @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters")
     private String newPassword;
 
+    private String confirmPassword;
+
     public ResetPasswordRequest() {}
 
     public ResetPasswordRequest(String emailOrPhone, String resetCode, String newPassword) {
         this.emailOrPhone = emailOrPhone;
         this.resetCode = resetCode;
         this.newPassword = newPassword;
+        this.confirmPassword = newPassword;
+    }
+
+    public ResetPasswordRequest(String emailOrPhone, String resetCode, String newPassword, String confirmPassword) {
+        this.emailOrPhone = emailOrPhone;
+        this.resetCode = resetCode;
+        this.newPassword = newPassword;
+        this.confirmPassword = confirmPassword;
     }
 
     public String getEmailOrPhone() {
@@ -46,5 +56,13 @@ public class ResetPasswordRequest {
 
     public void setNewPassword(String newPassword) {
         this.newPassword = newPassword;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 }

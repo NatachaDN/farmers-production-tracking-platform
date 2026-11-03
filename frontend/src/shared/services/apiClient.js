@@ -2,8 +2,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('acrea_token');
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -38,8 +39,17 @@ async function request(endpoint, options = {}) {
 
 export const apiClient = {
   get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
-  post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
-  put: (endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  post: (endpoint, body, options) => request(endpoint, {
+    ...options,
+    method: 'POST',
+    body: body instanceof FormData ? body : JSON.stringify(body),
+  }),
+  upload: (endpoint, formData, options) => request(endpoint, { ...options, method: 'POST', body: formData }),
+  put: (endpoint, body, options) => request(endpoint, {
+    ...options,
+    method: 'PUT',
+    body: body instanceof FormData ? body : JSON.stringify(body),
+  }),
   delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
 
   /** Upload a file using multipart/form-data. Do NOT set Content-Type — browser sets it with the boundary. */

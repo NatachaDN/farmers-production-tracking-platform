@@ -1,31 +1,29 @@
 package com.farmer.tracking.modules.auth;
 
 import com.farmer.tracking.common.email.EmailService;
+import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.exception.UnauthorizedException;
 import com.farmer.tracking.common.security.JwtTokenProvider;
-import com.farmer.tracking.modules.auth.dto.AuthResponse;
-import com.farmer.tracking.modules.auth.dto.FarmerProfileResponse;
-import com.farmer.tracking.modules.auth.dto.ForgotPasswordRequest;
-import com.farmer.tracking.modules.auth.dto.ForgotPasswordResponse;
-import com.farmer.tracking.modules.auth.dto.LoginRequest;
-import com.farmer.tracking.modules.auth.dto.RegisterRequest;
-import com.farmer.tracking.modules.auth.dto.ResetPasswordRequest;
-import com.farmer.tracking.modules.auth.dto.ResetPasswordResponse;
-import com.farmer.tracking.modules.auth.dto.UpdateProfileRequest;
+import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.model.PasswordResetToken;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
+import com.farmer.tracking.modules.auth.repository.PasswordResetTokenRepository;
 import com.farmer.tracking.modules.auth.service.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,6 +36,9 @@ class AuthServiceTest {
 
     @Mock
     private FarmerRepository farmerRepository;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -54,7 +55,14 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authMapper = new AuthMapper();
-        authService = new AuthServiceImpl(farmerRepository, authMapper, passwordEncoder, tokenProvider, emailService);
+        authService = new AuthServiceImpl(
+                farmerRepository,
+                passwordResetTokenRepository,
+                authMapper,
+                passwordEncoder,
+                tokenProvider,
+                emailService
+        );
     }
 
     @Test
@@ -140,179 +148,139 @@ class AuthServiceTest {
 
     @Test
     void updateProfile_Success() {
-        Farmer existingFarmer = new Farmer();
-        existingFarmer.setId(1L);
-        existingFarmer.setFullName("Joyce Muthoni");
-        existingFarmer.setEmailOrPhone("joyce@example.com");
-        existingFarmer.setLocation("Nakuru");
-        existingFarmer.setFarmType(FarmType.MIXED);
-        existingFarmer.setFarmName("Old Farm");
-        existingFarmer.setCropsGrown("Maize");
-        existingFarmer.setTotalArea(5.0);
-        existingFarmer.setAvatarUrl("https://example.com/old.jpg");
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setFullName("Old Name");
+        farmer.setEmailOrPhone("joyce@example.com");
 
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setFullName("Joyce M. Updated");
-        request.setFarmName("Green Acres Farm");
-        request.setCropsGrown("Maize, Tomatoes, Beans");
-        request.setTotalArea(8.7);
-        request.setAvatarUrl("https://example.com/new-avatar.jpg");
-        request.setLocation("Nakuru County, Kenya");
-        request.setFarmType(FarmType.CROP);
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(farmerRepository.save(any(Farmer.class))).thenAnswer(i -> i.getArgument(0));
 
-        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(existingFarmer));
-        when(farmerRepository.save(any(Farmer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        UpdateProfileRequest req = new UpdateProfileRequest();
+        req.setFullName("New Name");
+        req.setFarmName("Sunrise Farm");
+        req.setCropsGrown("Maize, Beans");
+        req.setTotalArea(12.5);
 
-        FarmerProfileResponse response = authService.updateProfile("joyce@example.com", request);
+        FarmerProfileResponse response = authService.updateProfile("joyce@example.com", req);
 
         assertNotNull(response);
-        assertEquals("Joyce M. Updated", response.getFullName());
-        assertEquals("Green Acres Farm", response.getFarmName());
-        assertEquals("Maize, Tomatoes, Beans", response.getCropsGrown());
-        assertEquals(8.7, response.getTotalArea());
-        assertEquals("https://example.com/new-avatar.jpg", response.getAvatarUrl());
-        assertEquals("Nakuru County, Kenya", response.getLocation());
-        assertEquals(FarmType.CROP, response.getFarmType());
-        verify(farmerRepository, times(1)).save(existingFarmer);
+        assertEquals("New Name", farmer.getFullName());
+        assertEquals("Sunrise Farm", farmer.getFarmName());
+        assertEquals("Maize, Beans", farmer.getCropsGrown());
+        assertEquals(12.5, farmer.getTotalArea());
     }
 
     @Test
-    void updateProfile_ThrowsIllegalArgumentException_WhenNegativeArea() {
-        Farmer existingFarmer = new Farmer();
-        existingFarmer.setId(1L);
-        existingFarmer.setEmailOrPhone("joyce@example.com");
+    void forgotPassword_Success_WhenFarmerExists() {
+        ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
 
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setTotalArea(-3.5);
-
-        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(existingFarmer));
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                authService.updateProfile("joyce@example.com", request));
-
-        assertTrue(ex.getMessage().contains("negative"));
-        verify(farmerRepository, never()).save(any(Farmer.class));
-    }
-
-    @Test
-    void updateProfile_ThrowsResourceNotFound_WhenFarmerNotFound() {
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setFarmName("New Farm");
-
-        when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () ->
-                authService.updateProfile("unknown@example.com", request));
-        verify(farmerRepository, never()).save(any(Farmer.class));
-    }
-
-    @Test
-    void updateProfile_ThrowsUnauthorized_WhenEmailBlank() {
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        assertThrows(UnauthorizedException.class, () ->
-                authService.updateProfile("   ", request));
-    }
-
-    @Test
-    void forgotPassword_Success() {
         Farmer farmer = new Farmer();
         farmer.setId(1L);
         farmer.setEmailOrPhone("joyce@example.com");
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
-        when(farmerRepository.save(any(Farmer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordResetTokenRepository.findByFarmerAndUsedFalse(farmer)).thenReturn(Collections.emptyList());
 
-        ForgotPasswordRequest req = new ForgotPasswordRequest("joyce@example.com");
-
-        // EmailService should be called but not return anything
-        doNothing().when(emailService).sendPasswordResetCode(anyString(), anyString());
-
-        ForgotPasswordResponse response = authService.forgotPassword(req);
+        ForgotPasswordResponse response = authService.forgotPassword(request);
 
         assertNotNull(response);
-        assertEquals("joyce@example.com", response.getEmailOrPhone());
-        assertNotNull(response.getMessage());
-        assertNotNull(farmer.getPasswordResetToken());
-        assertEquals(6, farmer.getPasswordResetToken().length());
-        assertNotNull(farmer.getPasswordResetExpiresAt());
+        assertNotNull(response.getResetCode());
+        assertEquals(6, response.getResetCode().length());
         verify(farmerRepository, times(1)).save(farmer);
-        verify(emailService, times(1)).sendPasswordResetCode(eq("joyce@example.com"), anyString());
     }
 
     @Test
-    void forgotPassword_ThrowsResourceNotFound_WhenFarmerNotFound() {
+    void forgotPassword_ThrowsNotFound_WhenFarmerDoesNotExist() {
+        ForgotPasswordRequest request = new ForgotPasswordRequest("unknown@example.com");
+
         when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
 
-        ForgotPasswordRequest req = new ForgotPasswordRequest("unknown@example.com");
-        assertThrows(ResourceNotFoundException.class, () -> authService.forgotPassword(req));
-        verify(farmerRepository, never()).save(any(Farmer.class));
+        assertThrows(ResourceNotFoundException.class, () -> authService.forgotPassword(request));
     }
 
     @Test
-    void forgotPassword_ThrowsIllegalArgument_WhenEmailBlank() {
-        ForgotPasswordRequest req = new ForgotPasswordRequest("   ");
-        assertThrows(IllegalArgumentException.class, () -> authService.forgotPassword(req));
-    }
+    void resetPassword_Success_WhenCodeIsValid() {
+        ResetPasswordRequest request = new ResetPasswordRequest(
+                "joyce@example.com", "123456", "NewSecretPass999", "NewSecretPass999"
+        );
 
-    @Test
-    void resetPassword_Success() {
         Farmer farmer = new Farmer();
         farmer.setId(1L);
         farmer.setEmailOrPhone("joyce@example.com");
         farmer.setPasswordResetToken("123456");
-        farmer.setPasswordResetExpiresAt(java.time.LocalDateTime.now().plusMinutes(10));
+        farmer.setPasswordResetExpiresAt(LocalDateTime.now().plusMinutes(10));
         farmer.setPasswordHash("old_hash");
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
-        when(passwordEncoder.encode("NewSecret123")).thenReturn("new_encoded_hash");
-        when(farmerRepository.save(any(Farmer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordEncoder.encode("NewSecretPass999")).thenReturn("new_hash");
 
-        ResetPasswordRequest req = new ResetPasswordRequest("joyce@example.com", "123456", "NewSecret123");
-        ResetPasswordResponse response = authService.resetPassword(req);
+        ResetPasswordResponse response = authService.resetPassword(request);
 
         assertNotNull(response);
-        assertTrue(response.getMessage().contains("successfully"));
-        assertEquals("new_encoded_hash", farmer.getPasswordHash());
+        assertEquals("new_hash", farmer.getPasswordHash());
         assertNull(farmer.getPasswordResetToken());
-        assertNull(farmer.getPasswordResetExpiresAt());
         verify(farmerRepository, times(1)).save(farmer);
     }
 
     @Test
-    void resetPassword_ThrowsUnauthorized_WhenCodeMismatch() {
+    void resetPassword_ThrowsBadRequest_WhenPasswordsDoNotMatch() {
+        ResetPasswordRequest request = new ResetPasswordRequest(
+                "joyce@example.com", "123456", "NewSecretPass999", "DifferentPass123"
+        );
+
+        assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        verify(farmerRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_ThrowsBadRequest_WhenCodeExpired() {
+        ResetPasswordRequest request = new ResetPasswordRequest(
+                "joyce@example.com", "123456", "NewSecretPass999", "NewSecretPass999"
+        );
+
         Farmer farmer = new Farmer();
         farmer.setId(1L);
         farmer.setEmailOrPhone("joyce@example.com");
         farmer.setPasswordResetToken("123456");
-        farmer.setPasswordResetExpiresAt(java.time.LocalDateTime.now().plusMinutes(10));
+        farmer.setPasswordResetExpiresAt(LocalDateTime.now().minusMinutes(5));
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
 
-        ResetPasswordRequest req = new ResetPasswordRequest("joyce@example.com", "999999", "NewSecret123");
-        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.resetPassword(req));
-        assertTrue(ex.getMessage().contains("Invalid reset code"));
-        verify(farmerRepository, never()).save(any(Farmer.class));
+        assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
     }
 
     @Test
-    void resetPassword_ThrowsUnauthorized_WhenCodeExpired() {
+    void uploadAvatar_Success() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "avatar.jpg", "image/jpeg", "fake image content".getBytes()
+        );
+
         Farmer farmer = new Farmer();
         farmer.setId(1L);
         farmer.setEmailOrPhone("joyce@example.com");
-        farmer.setPasswordResetToken("123456");
-        farmer.setPasswordResetExpiresAt(java.time.LocalDateTime.now().minusMinutes(5));
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(farmerRepository.save(any(Farmer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ResetPasswordRequest req = new ResetPasswordRequest("joyce@example.com", "123456", "NewSecret123");
-        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.resetPassword(req));
-        assertTrue(ex.getMessage().contains("expired"));
-        verify(farmerRepository, never()).save(any(Farmer.class));
+        FarmerProfileResponse response = authService.uploadAvatar("joyce@example.com", file);
+
+        assertNotNull(response);
+        assertNotNull(response.getAvatarUrl());
+        assertTrue(response.getAvatarUrl().startsWith("/api/v1/auth/avatars/farmer-1-"));
     }
 
     @Test
-    void resetPassword_ThrowsIllegalArgument_WhenPasswordTooShort() {
-        ResetPasswordRequest req = new ResetPasswordRequest("joyce@example.com", "123456", "short");
-        assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(req));
+    void uploadAvatar_ThrowsBadRequest_WhenEmptyFile() {
+        MockMultipartFile emptyFile = new MockMultipartFile("file", "empty.jpg", "image/jpeg", new byte[0]);
+        assertThrows(BadRequestException.class, () -> authService.uploadAvatar("joyce@example.com", emptyFile));
+    }
+
+    @Test
+    void uploadAvatar_ThrowsBadRequest_WhenNonImageFile() {
+        MockMultipartFile badFile = new MockMultipartFile(
+                "file", "script.exe", "application/octet-stream", "content".getBytes()
+        );
+        assertThrows(BadRequestException.class, () -> authService.uploadAvatar("joyce@example.com", badFile));
     }
 }

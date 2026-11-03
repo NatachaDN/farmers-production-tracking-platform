@@ -10,6 +10,7 @@ export function AppLayout({
   user,
   onLogout,
   onEditProfile,
+  onUserUpdate,
   children
 }) {
   const initials = user?.fullName
@@ -32,6 +33,7 @@ export function AppLayout({
           avatarUrl={user?.avatarUrl}
           onLogout={onLogout}
           onEditProfile={onEditProfile}
+          onUserUpdate={onUserUpdate}
         />
         <main style={{ padding: '0 36px 36px 36px', flex: 1 }}>
           {children}

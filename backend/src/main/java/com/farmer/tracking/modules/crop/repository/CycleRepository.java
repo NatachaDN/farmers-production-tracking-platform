@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface CycleRepository extends JpaRepository<Cycle, Long> {
     List<Cycle> findByFarmerIdOrderByCreatedAtDesc(Long farmerId);
+
     List<Cycle> findByFarmerId(Long farmerId);
 
     List<Cycle> findByFarmerIdAndStatus(Long farmerId, CycleStatus status);

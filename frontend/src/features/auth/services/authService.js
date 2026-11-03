@@ -76,20 +76,44 @@ export const authService = {
     return updated;
   },
 
-  /** Upload an image File object from the device. Returns the public URL string. */
+  /** Upload an image file from the device and update the user's avatar. */
   async uploadAvatar(file) {
     const fd = new FormData();
     fd.append('file', file);
-    const result = await apiClient.upload('/auth/upload-avatar', fd);
-    return result?.url || null;
+    try {
+      const result = await apiClient.upload('/auth/upload-avatar', fd);
+      if (result?.url) {
+        const updated = await this.updateProfile({ avatarUrl: result.url });
+        return updated || { avatarUrl: result.url };
+      }
+    } catch {
+      // Fallback
+    }
+
+    const updated = await apiClient.upload('/auth/me/avatar', fd);
+    if (updated) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+    return updated;
   },
 
   async forgotPassword(emailOrPhone) {
     return await apiClient.post('/auth/forgot-password', { emailOrPhone });
   },
 
-  async resetPassword(emailOrPhone, resetCode, newPassword) {
-    return await apiClient.post('/auth/reset-password', { emailOrPhone, resetCode, newPassword });
+  async resetPassword(arg1, arg2, arg3, arg4) {
+    let payload;
+    if (typeof arg1 === 'object') {
+      payload = arg1;
+    } else {
+      payload = {
+        emailOrPhone: arg1,
+        resetCode: arg2,
+        newPassword: arg3,
+        confirmPassword: arg4 || arg3,
+      };
+    }
+    return await apiClient.post('/auth/reset-password', payload);
   },
 
   logout() {
