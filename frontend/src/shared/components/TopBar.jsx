@@ -4,17 +4,20 @@ import { authService } from '../../features/auth/services/authService';
 
 export function TopBar({
   title = "Dashboard",
-  subtitle = "Tuesday, 2 October · Green Acres Farm",
-  userName = "Joyce M.",
-  userInitials = "JM",
+  subtitle,
+  userName = "",
+  userInitials = "",
   avatarUrl = null,
-  farmName = "Green Acres Farm",
+  farmName = "",
   onSearch,
   onNotificationClick,
   onLogout,
   onUserUpdate,
   onEditProfile
 }) {
+  // Default subtitle: today's real date, followed by the farmer's farm name when known.
+  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const headerSubtitle = subtitle ?? [today, farmName].filter(Boolean).join(' · ');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -58,13 +61,13 @@ export function TopBar({
         }}>
           {title}
         </h1>
-        {subtitle && (
+        {headerSubtitle && (
           <p style={{
             fontSize: '0.8125rem',
             color: 'var(--color-text-muted)',
             marginTop: '4px'
           }}>
-            {subtitle}
+            {headerSubtitle}
           </p>
         )}
       </div>

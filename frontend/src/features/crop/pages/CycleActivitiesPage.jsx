@@ -8,136 +8,71 @@ import {
   IconCrop,
   IconSprout,
   IconWater,
-  IconCheck,
   IconClose
 } from '../../../shared/components/Icons';
 import { MetricCard } from '../../../shared/components/MetricCard';
+import { CycleSelector } from '../components/CycleSelector';
+import { useFarmerCycles, cycleLabel } from '../hooks/useFarmerCycles';
 
-const DEMO_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)', crop: 'Maize', plot: 'Plot A', status: 'ACTIVE', area: '2.5 ha' },
-  { id: 2, name: 'Tomatoes (Plot B)', crop: 'Tomatoes', plot: 'Plot B', status: 'ACTIVE', area: '1.0 ha' },
-  { id: 3, name: 'Beans (Plot C)', crop: 'Beans', plot: 'Plot C', status: 'ACTIVE', area: '0.8 ha' },
-];
-
-const INITIAL_DEMO_ACTIVITIES = [
-  {
-    id: 1,
-    cycleId: 1,
-    activityType: 'FERTILIZING',
-    activityDate: '2026-10-06',
-    notes: 'Applied Field A organic compost & NPK fertilizer (15-15-15) at root depth.',
-    createdAt: '2026-10-06T09:30:00',
-  },
-  {
-    id: 2,
-    cycleId: 1,
-    activityType: 'TREATMENT',
-    activityDate: '2026-10-04',
-    notes: 'Preventative bio-fungicide treatment applied to foliage in morning.',
-    createdAt: '2026-10-04T08:15:00',
-  },
-  {
-    id: 3,
-    cycleId: 1,
-    activityType: 'WATERING',
-    activityDate: '2026-10-02',
-    notes: 'Automated drip irrigation running 45 min per zone.',
-    createdAt: '2026-10-02T07:00:00',
-  },
-  {
-    id: 4,
-    cycleId: 1,
-    activityType: 'WEEDING',
-    activityDate: '2026-09-28',
-    notes: 'Manual weeding performed between rows 1 through 12.',
-    createdAt: '2026-09-28T11:00:00',
-  },
-];
-
-export function CycleActivitiesPage({ farmerId = 1 }) {
-  const [selectedCycleId, setSelectedCycleId] = useState(1);
-  const [activities, setActivities] = useState(INITIAL_DEMO_ACTIVITIES);
+export function CycleActivitiesPage({ farmerId }) {
+  const {
+    cycles, selectedCycle, selectedCycleId, setSelectedCycleId,
+    isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
+  } = useFarmerCycles(farmerId);
+  const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
+  const canRecord = selectedCycle?.status === 'ACTIVE';
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Fetch activities from backend (with fallback to demo state)
-  const loadActivities = async (cycleId) => {
-    setIsLoading(true);
-    try {
-      const data = await cycleActivityService.getActivities(farmerId, cycleId);
-      if (Array.isArray(data) && data.length > 0) {
-        setActivities(data);
-      }
-    } catch {
-      console.info('Using active session state for activities.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadActivities(selectedCycleId);
-  }, [selectedCycleId]);
+    setShowForm(false);
+    setEditingActivity(null);
+    if (!selectedCycleId) {
+      setActivities([]);
+      return;
+    }
+    let isMounted = true;
+    setIsLoading(true);
+    cycleActivityService.getActivities(farmerId, selectedCycleId)
+      .then((data) => { if (isMounted) setActivities(Array.isArray(data) ? data : []); })
+      .catch((err) => {
+        if (!isMounted) return;
+        setActivities([]);
+        showToast(err?.message || 'Could not load activities for this cycle.', 'error');
+      })
+      .finally(() => { if (isMounted) setIsLoading(false); });
+    return () => { isMounted = false; };
+  }, [farmerId, selectedCycleId]);
 
   // Handle Create or Update
   const handleSaveActivity = async (formData) => {
     setIsSubmitting(true);
     try {
       if (editingActivity) {
-        try {
-          const updated = await cycleActivityService.updateActivity(
-            farmerId,
-            selectedCycleId,
-            editingActivity.id,
-            formData
-          );
-          setActivities((prev) =>
-            prev.map((a) => (a.id === editingActivity.id ? { ...a, ...updated } : a))
-          );
-        } catch {
-          setActivities((prev) =>
-            prev.map((a) =>
-              a.id === editingActivity.id
-                ? { ...a, ...formData, updatedAt: new Date().toISOString() }
-                : a
-            )
-          );
-        }
+        const updated = await cycleActivityService.updateActivity(
+          farmerId,
+          selectedCycleId,
+          editingActivity.id,
+          formData
+        );
+        setActivities((prev) => prev.map((a) => (a.id === editingActivity.id ? updated : a)));
         showToast('Activity intervention updated successfully.');
         setEditingActivity(null);
-        setShowForm(false);
       } else {
-        try {
-          const created = await cycleActivityService.createActivity(
-            farmerId,
-            selectedCycleId,
-            formData
-          );
-          setActivities((prev) => [created, ...prev]);
-        } catch {
-          const localNew = {
-            id: Date.now(),
-            cycleId: selectedCycleId,
-            activityType: formData.activityType,
-            activityDate: formData.activityDate,
-            notes: formData.notes,
-            createdAt: new Date().toISOString(),
-          };
-          setActivities((prev) => [localNew, ...prev]);
-        }
+        const created = await cycleActivityService.createActivity(farmerId, selectedCycleId, formData);
+        setActivities((prev) => [created, ...prev]);
         showToast('New activity intervention logged successfully.');
-        setShowForm(false);
       }
+      setShowForm(false);
     } catch (err) {
       showToast(err?.message || 'Failed to save activity.', 'error');
     } finally {
@@ -149,11 +84,7 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
   const handleDeleteActivity = async (activityId) => {
     if (!window.confirm('Are you sure you want to delete this activity record?')) return;
     try {
-      try {
-        await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityId);
-      } catch {
-        // fallback local
-      }
+      await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityId);
       setActivities((prev) => prev.filter((a) => a.id !== activityId));
       showToast('Activity deleted successfully.');
       if (editingActivity?.id === activityId) {
@@ -175,8 +106,8 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
     }
   };
 
-  // KPI Calculations
-  const cycleActivities = activities.filter((a) => a.cycleId === selectedCycleId);
+  // KPI Calculations (activities are already scoped to the selected cycle)
+  const cycleActivities = activities;
   const totalCount = cycleActivities.length;
   const wateringCount = cycleActivities.filter((a) => a.activityType === 'WATERING').length;
   const treatmentCount = cycleActivities.filter((a) => a.activityType === 'TREATMENT').length;
@@ -212,39 +143,20 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
 
       {/* Control Bar: Cycle Selector & Action Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        {/* Cycle Filter Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '4px' }}>
-            SELECT CYCLE:
-          </span>
-          {DEMO_CYCLES.map((c) => {
-            const isSelected = selectedCycleId === c.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setSelectedCycleId(c.id)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: '0.8125rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  backgroundColor: isSelected ? 'var(--color-brand-primary)' : '#FFFFFF',
-                  color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
-                  border: isSelected ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-card-border)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)'
-                }}
-              >
-                {c.name}
-              </button>
-            );
-          })}
-        </div>
+        <CycleSelector
+          cycles={cycles}
+          selectedCycleId={selectedCycleId}
+          onSelect={setSelectedCycleId}
+          isLoading={cyclesLoading}
+          error={cyclesError}
+          onRetry={reloadCycles}
+        />
 
         {/* Action Button: Record Activity */}
         <button
           type="button"
+          disabled={!canRecord}
+          title={canRecord ? undefined : 'Activities can only be recorded on an active cycle'}
           onClick={() => {
             setEditingActivity(null);
             setShowForm(!showForm);
@@ -260,7 +172,8 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
             fontSize: '0.875rem',
             fontWeight: 600,
             boxShadow: 'var(--shadow-subtle)',
-            cursor: 'pointer',
+            cursor: canRecord ? 'pointer' : 'not-allowed',
+            opacity: canRecord ? 1 : 0.5,
             transition: 'background-color var(--transition-fast)'
           }}
         >
@@ -285,9 +198,9 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
         gap: '20px'
       }}>
         <MetricCard
-          label="Active Cycle"
-          value={selectedCycle.name}
-          subtext={`${selectedCycle.area} · Status: ${selectedCycle.status}`}
+          label="Selected Cycle"
+          value={selectedCycle ? cycleLabel(selectedCycle) : '—'}
+          subtext={selectedCycle ? `${selectedCycle.acreage ?? '—'} ha · Status: ${selectedCycle.status}` : 'No cycle selected'}
           icon={<IconSprout size={20} color="#2D7A52" />}
           iconBg="#EAF4ED"
         />
@@ -315,8 +228,8 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
       </div>
 
       {/* Form Drawer / Container */}
-      {showForm && (
-        <div style={{
+      {showForm && canRecord && (
+        <div id="activity-form-container" style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--radius-xl)',
           border: '1px solid var(--color-card-border)',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlotCard } from '../../shared/components/PlotCard';
 import { AddPlotModal } from './components/AddPlotModal';
+import { EditPlotModal } from './components/EditPlotModal';
 import { PlotDetailsModal } from '../crops/components/PlotDetailsModal';
 import { plotService } from './services/plotService';
 import { farmService } from './services/farmService';
@@ -36,6 +37,8 @@ function mapPlot(p) {
     id: p.id,
     title: p.name,
     crop: p.cropType || 'Crop',
+    cropType: p.cropType,
+    farmId: p.farmId,
     areaVal: p.area,
     area: `${p.area} ha cultivated area`,
     stage: p.stage || 'Planting',
@@ -67,7 +70,7 @@ const primaryButtonStyle = {
   border: 'none'
 };
 
-export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
+export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   const [farms, setFarms] = useState([]);
   const [plots, setPlots] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +81,7 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
   const [isAddPlotModalOpen, setIsAddPlotModalOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [plotBeingEdited, setPlotBeingEdited] = useState(null);
 
   const showNotification = (message) => {
     setToast(message);
@@ -125,6 +129,14 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
       console.error('Failed to create plot:', err);
       showNotification(err.message || 'Failed to create plot.');
     }
+  };
+
+  // Errors are re-thrown so EditPlotModal can show them and stay open.
+  const handleUpdatePlot = async (plotData) => {
+    const { id, ...payload } = plotData;
+    const saved = await plotService.updatePlot(farmerId, id, payload);
+    setPlots((prev) => prev.map((p) => (p.id === id ? mapPlot(saved) : p)));
+    showNotification(`Plot "${saved.name}" was updated successfully.`);
   };
 
   const handleDeletePlot = async (plot) => {
@@ -180,9 +192,19 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
       )}
 
       <AddPlotModal
+        farmerId={farmerId}
         isOpen={isAddPlotModalOpen}
         onClose={() => setIsAddPlotModalOpen(false)}
         onAddPlot={handleAddPlot}
+      />
+
+      <EditPlotModal
+        farmerId={farmerId}
+        isOpen={Boolean(plotBeingEdited)}
+        onClose={() => setPlotBeingEdited(null)}
+        plot={plotBeingEdited}
+        farms={farms}
+        onPlotUpdated={handleUpdatePlot}
       />
 
       <PlotDetailsModal
@@ -330,6 +352,7 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
                   setSelectedPlot(plot);
                   setIsDetailsModalOpen(true);
                 }}
+                onEditPlot={() => setPlotBeingEdited(plot)}
                 onDeletePlot={() => handleDeletePlot(plot)}
               />
             ))}

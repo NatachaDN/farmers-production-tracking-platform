@@ -66,9 +66,9 @@ public class HarvestService {
         harvest.setNotes(request.getNotes());
         Harvest savedHarvest = harvestRepository.save(harvest);
 
-        // Update cycle status to COMPLETED and set end date
+        // Mark the cycle COMPLETED. Its end date keeps the *planned* harvest date (US-12):
+        // the actual date is stored on the Harvest so both can be compared (US-17).
         cycle.setStatus(CycleStatus.COMPLETED);
-        cycle.setEndDate(request.getHarvestDate());
         cycleRepository.save(cycle);
 
         return toResponse(savedHarvest, cycle, yieldDisplay);

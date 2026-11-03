@@ -38,7 +38,7 @@ export function CycleInputUsageList({
           <span className="cost-breakdown-title">Cost by Category:</span>
           {Object.entries(costByType).map(([type, cost]) => (
             <span key={type} className={`breakdown-pill ${type}`}>
-              {type}: KES {Number(cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {type}: XAF {Number(cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           ))}
         </div>
@@ -50,7 +50,7 @@ export function CycleInputUsageList({
           <div>
             <h4>Consumed Inputs & Expenditure</h4>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #788680)', marginTop: '2px' }}>
-              {usages.length} {usages.length === 1 ? 'item' : 'items'} applied · Real Cost: KES {Number(totalCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {usages.length} {usages.length === 1 ? 'item' : 'items'} applied · Real Cost: XAF {Number(totalCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -98,11 +98,11 @@ export function CycleInputUsageList({
                       </span>
                     </td>
                     <td>
-                      KES {Number(usage.unitPrice || 0).toFixed(2)} / {usage.unit}
+                      XAF {Number(usage.unitPrice || 0).toFixed(2)} / {usage.unit}
                     </td>
                     <td>
                       <span className="cost-highlight">
-                        KES {Number(usage.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        XAF {Number(usage.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>

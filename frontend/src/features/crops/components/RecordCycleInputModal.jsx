@@ -107,7 +107,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
   const qty = parseFloat(quantityUsed) || 0;
   const stockAvailable = selectedInput ? (selectedInput.quantity || 0) : 0;
   const isOverStock = qty > 0 && selectedInput && qty > stockAvailable;
-  const estimatedCost = selectedInput ? qty * (selectedInput.purchasePrice || 0) : 0;
+  const estimatedCost = selectedInput ? qty * (selectedInput.unitCost || 0) : 0;
 
   // --- Handlers ---
   const resetForm = () => {
@@ -344,7 +344,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
                 <IconScale size={16} color="#16A34A" />
                 <span>
                   Estimated cost: <strong>{formatCurrency(estimatedCost)}</strong>
-                  {' '}({qty.toFixed(2)} × {formatCurrency(selectedInput.purchasePrice || 0)} per {selectedInput.unit || 'unit'})
+                  {' '}({qty.toFixed(2)} × {formatCurrency(selectedInput.unitCost || 0)} per {selectedInput.unit || 'unit'})
                 </span>
                 <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#788680' }}>
                   Remaining stock: {(stockAvailable - qty).toFixed(2)} {selectedInput.unit || ''}

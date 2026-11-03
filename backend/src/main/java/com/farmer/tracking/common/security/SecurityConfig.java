@@ -51,7 +51,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // Must run after the JWT filter so the authenticated farmer is known.
+                .addFilterAfter(new FarmerOwnershipFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }

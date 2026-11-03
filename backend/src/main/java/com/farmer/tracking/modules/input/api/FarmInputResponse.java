@@ -17,6 +17,7 @@ public class FarmInputResponse {
     private LocalDate purchaseDate;
     private Double purchasePrice;
     private Double cumulativeCost;
+    private Double unitCost;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -37,7 +38,7 @@ public class FarmInputResponse {
     }
 
     public static FarmInputResponse fromEntity(FarmInput input) {
-        return new FarmInputResponse(
+        FarmInputResponse response = new FarmInputResponse(
                 input.getId(),
                 input.getFarmerId(),
                 input.getName(),
@@ -50,6 +51,16 @@ public class FarmInputResponse {
                 input.getCreatedAt(),
                 input.getUpdatedAt()
         );
+        response.setUnitCost(Math.round(input.getUnitCost() * 100.0) / 100.0);
+        return response;
+    }
+
+    public Double getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(Double unitCost) {
+        this.unitCost = unitCost;
     }
 
     public Long getId() {

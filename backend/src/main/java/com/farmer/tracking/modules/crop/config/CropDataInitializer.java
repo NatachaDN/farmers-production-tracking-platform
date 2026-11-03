@@ -10,6 +10,7 @@ import com.farmer.tracking.modules.crop.repository.CycleActivityRepository;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.crop.repository.HarvestRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -18,6 +19,8 @@ import java.time.LocalDate;
  * Seeds initial demo crop cycle, activity, and harvest data for development.
  * Only runs when the cycles table is empty to avoid duplicate entries.
  */
+// Demo data for local development only: never seed fake records into a real farmer account.
+@Profile("local")
 @Component
 public class CropDataInitializer implements CommandLineRunner {
 

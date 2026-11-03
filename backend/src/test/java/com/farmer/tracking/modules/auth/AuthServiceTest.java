@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.auth;
 
 import com.farmer.tracking.common.email.EmailService;
+import com.farmer.tracking.common.exception.AccountLockedException;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -10,9 +11,7 @@ import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.Farmer;
-import com.farmer.tracking.modules.auth.model.PasswordResetToken;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
-import com.farmer.tracking.modules.auth.repository.PasswordResetTokenRepository;
 import com.farmer.tracking.modules.auth.service.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +28,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,9 +37,6 @@ class AuthServiceTest {
 
     @Mock
     private FarmerRepository farmerRepository;
-
-    @Mock
-    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -57,7 +55,6 @@ class AuthServiceTest {
         authMapper = new AuthMapper();
         authService = new AuthServiceImpl(
                 farmerRepository,
-                passwordResetTokenRepository,
                 authMapper,
                 passwordEncoder,
                 tokenProvider,
@@ -130,6 +127,85 @@ class AuthServiceTest {
         assertEquals("joyce@example.com", response.getFarmer().getEmailOrPhone());
     }
 
+    private Farmer farmerForLogin(int failedAttempts, LocalDateTime lockedUntil) {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setFullName("Joyce Muthoni");
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setFailedLoginAttempts(failedAttempts);
+        farmer.setLockedUntil(lockedUntil);
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        return farmer;
+    }
+
+    @Test
+    void login_WrongPassword_IncrementsFailedAttempts() {
+        Farmer farmer = farmerForLogin(2, null);
+        when(passwordEncoder.matches("wrong", "hashed_password")).thenReturn(false);
+
+        assertThrows(UnauthorizedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "wrong")));
+
+        assertEquals(3, farmer.getFailedLoginAttempts());
+        assertNull(farmer.getLockedUntil());
+        verify(farmerRepository).save(farmer);
+    }
+
+    @Test
+    void login_FifthConsecutiveFailure_LocksAccount() {
+        Farmer farmer = farmerForLogin(4, null);
+        when(passwordEncoder.matches("wrong", "hashed_password")).thenReturn(false);
+
+        assertThrows(AccountLockedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "wrong")));
+
+        assertNotNull(farmer.getLockedUntil());
+        assertTrue(farmer.getLockedUntil().isAfter(LocalDateTime.now().plusMinutes(14)));
+        assertEquals(0, farmer.getFailedLoginAttempts());
+    }
+
+    @Test
+    void login_WhileLocked_RejectsEvenCorrectPassword() {
+        farmerForLogin(0, LocalDateTime.now().plusMinutes(10));
+
+        AccountLockedException ex = assertThrows(AccountLockedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "SecurePass123")));
+
+        assertTrue(ex.getMessage().contains("10 minutes"));
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(tokenProvider, never()).generateToken(any(), any());
+    }
+
+    @Test
+    void login_AfterLockExpires_SucceedsAndResetsCounters() {
+        Farmer farmer = farmerForLogin(3, LocalDateTime.now().minusMinutes(1));
+        when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
+        when(tokenProvider.generateToken(1L, "joyce@example.com")).thenReturn("mock-jwt-token");
+
+        AuthResponse response = authService.login(new LoginRequest("joyce@example.com", "SecurePass123"));
+
+        assertEquals("mock-jwt-token", response.getToken());
+        assertEquals(0, farmer.getFailedLoginAttempts());
+        assertNull(farmer.getLockedUntil());
+    }
+
+    @Test
+    void resetPassword_Success_UnlocksAccount() {
+        Farmer farmer = farmerWithResetCode(LocalDateTime.now().plusMinutes(10), 0);
+        farmer.setFailedLoginAttempts(2);
+        farmer.setLockedUntil(LocalDateTime.now().plusMinutes(10));
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("123456", "hashed_code")).thenReturn(true);
+        when(passwordEncoder.encode("NewSecretPass999")).thenReturn("new_hash");
+
+        authService.resetPassword(new ResetPasswordRequest(
+                "joyce@example.com", "123456", "NewSecretPass999", "NewSecretPass999"));
+
+        assertNull(farmer.getLockedUntil());
+        assertEquals(0, farmer.getFailedLoginAttempts());
+    }
+
     @Test
     void login_ThrowsUnauthorized_WhenPasswordInvalid() {
         LoginRequest request = new LoginRequest("joyce@example.com", "WrongPassword");
@@ -172,7 +248,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void forgotPassword_Success_WhenFarmerExists() {
+    void forgotPassword_StoresHashedCode_AndNeverReturnsIt() {
         ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
 
         Farmer farmer = new Farmer();
@@ -180,23 +256,40 @@ class AuthServiceTest {
         farmer.setEmailOrPhone("joyce@example.com");
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
-        when(passwordResetTokenRepository.findByFarmerAndUsedFalse(farmer)).thenReturn(Collections.emptyList());
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed_code");
 
         ForgotPasswordResponse response = authService.forgotPassword(request);
 
         assertNotNull(response);
-        assertNotNull(response.getResetCode());
-        assertEquals(6, response.getResetCode().length());
+        assertFalse(response.getMessage().matches(".*\\d{6}.*"), "Response must not contain the code");
+        assertEquals("hashed_code", farmer.getPasswordResetToken());
+        assertEquals(0, farmer.getPasswordResetAttempts());
+        verify(emailService).sendPasswordResetCode(eq("joyce@example.com"), argThat(code -> code.matches("\\d{6}")));
         verify(farmerRepository, times(1)).save(farmer);
     }
 
     @Test
-    void forgotPassword_ThrowsNotFound_WhenFarmerDoesNotExist() {
+    void forgotPassword_ReturnsGenericResponse_WhenFarmerDoesNotExist() {
         ForgotPasswordRequest request = new ForgotPasswordRequest("unknown@example.com");
 
         when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> authService.forgotPassword(request));
+        ForgotPasswordResponse response = authService.forgotPassword(request);
+
+        assertNotNull(response.getMessage());
+        verify(emailService, never()).sendPasswordResetCode(anyString(), anyString());
+        verify(farmerRepository, never()).save(any());
+    }
+
+    private Farmer farmerWithResetCode(LocalDateTime expiresAt, int attempts) {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordResetToken("hashed_code");
+        farmer.setPasswordResetExpiresAt(expiresAt);
+        farmer.setPasswordResetAttempts(attempts);
+        farmer.setPasswordHash("old_hash");
+        return farmer;
     }
 
     @Test
@@ -204,15 +297,10 @@ class AuthServiceTest {
         ResetPasswordRequest request = new ResetPasswordRequest(
                 "joyce@example.com", "123456", "NewSecretPass999", "NewSecretPass999"
         );
-
-        Farmer farmer = new Farmer();
-        farmer.setId(1L);
-        farmer.setEmailOrPhone("joyce@example.com");
-        farmer.setPasswordResetToken("123456");
-        farmer.setPasswordResetExpiresAt(LocalDateTime.now().plusMinutes(10));
-        farmer.setPasswordHash("old_hash");
+        Farmer farmer = farmerWithResetCode(LocalDateTime.now().plusMinutes(10), 0);
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("123456", "hashed_code")).thenReturn(true);
         when(passwordEncoder.encode("NewSecretPass999")).thenReturn("new_hash");
 
         ResetPasswordResponse response = authService.resetPassword(request);
@@ -220,6 +308,7 @@ class AuthServiceTest {
         assertNotNull(response);
         assertEquals("new_hash", farmer.getPasswordHash());
         assertNull(farmer.getPasswordResetToken());
+        assertNull(farmer.getPasswordResetExpiresAt());
         verify(farmerRepository, times(1)).save(farmer);
     }
 
@@ -238,16 +327,55 @@ class AuthServiceTest {
         ResetPasswordRequest request = new ResetPasswordRequest(
                 "joyce@example.com", "123456", "NewSecretPass999", "NewSecretPass999"
         );
-
-        Farmer farmer = new Farmer();
-        farmer.setId(1L);
-        farmer.setEmailOrPhone("joyce@example.com");
-        farmer.setPasswordResetToken("123456");
-        farmer.setPasswordResetExpiresAt(LocalDateTime.now().minusMinutes(5));
+        Farmer farmer = farmerWithResetCode(LocalDateTime.now().minusMinutes(5), 0);
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
 
         assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertNull(farmer.getPasswordResetToken());
+        assertEquals("old_hash", farmer.getPasswordHash());
+    }
+
+    @Test
+    void resetPassword_WrongCode_IncrementsAttempts() {
+        ResetPasswordRequest request = new ResetPasswordRequest(
+                "joyce@example.com", "000000", "NewSecretPass999", "NewSecretPass999"
+        );
+        Farmer farmer = farmerWithResetCode(LocalDateTime.now().plusMinutes(10), 1);
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("000000", "hashed_code")).thenReturn(false);
+
+        assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertEquals(2, farmer.getPasswordResetAttempts());
+        assertEquals("hashed_code", farmer.getPasswordResetToken());
+        assertEquals("old_hash", farmer.getPasswordHash());
+    }
+
+    @Test
+    void resetPassword_FifthWrongCode_InvalidatesCode() {
+        ResetPasswordRequest request = new ResetPasswordRequest(
+                "joyce@example.com", "000000", "NewSecretPass999", "NewSecretPass999"
+        );
+        Farmer farmer = farmerWithResetCode(LocalDateTime.now().plusMinutes(10), 4);
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("000000", "hashed_code")).thenReturn(false);
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertTrue(ex.getMessage().contains("Too many"));
+        assertNull(farmer.getPasswordResetToken());
+    }
+
+    @Test
+    void resetPassword_UnknownAccount_ReturnsSameErrorAsWrongCode() {
+        ResetPasswordRequest request = new ResetPasswordRequest(
+                "ghost@example.com", "123456", "NewSecretPass999", "NewSecretPass999"
+        );
+        when(farmerRepository.findByEmailOrPhone("ghost@example.com")).thenReturn(Optional.empty());
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertTrue(ex.getMessage().startsWith("Invalid reset code"));
     }
 
     @Test
