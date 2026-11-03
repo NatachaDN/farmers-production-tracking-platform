@@ -55,6 +55,44 @@ public class HarvestController {
     }
 
     // ------------------------------------------------------------------ //
+    //  PUT /api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest            //
+    // ------------------------------------------------------------------ //
+    @PutMapping
+    @Operation(
+            summary = "Correct an existing harvest record",
+            description = "Updates the harvested quantity, unit, date, and notes. Recalculates the actual yield " +
+                          "and syncs the cycle's end date. Returns 400 if the cycle has no harvest record yet."
+    )
+    @ApiResponse(responseCode = "200", description = "Harvest updated successfully")
+    @ApiResponse(responseCode = "400", description = "Validation failed")
+    @ApiResponse(responseCode = "404", description = "Cycle or harvest record not found for this farmer")
+    public ResponseEntity<HarvestResponse> updateHarvest(
+            @Parameter(description = "Farmer ID - enforces ownership") @PathVariable Long farmerId,
+            @Parameter(description = "Cycle ID")                       @PathVariable Long cycleId,
+            @Valid @RequestBody HarvestRequest request) {
+        HarvestResponse response = harvestService.updateHarvest(farmerId, cycleId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // ------------------------------------------------------------------ //
+    //  DELETE /api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest         //
+    // ------------------------------------------------------------------ //
+    @DeleteMapping
+    @Operation(
+            summary = "Remove an existing harvest record",
+            description = "Deletes the harvest record and reopens the cycle (status back to ACTIVE) " +
+                          "so a corrected harvest can be recorded again."
+    )
+    @ApiResponse(responseCode = "204", description = "Harvest deleted and cycle reopened")
+    @ApiResponse(responseCode = "404", description = "Cycle or harvest record not found for this farmer")
+    public ResponseEntity<Void> deleteHarvest(
+            @Parameter(description = "Farmer ID (enforces ownership)") @PathVariable Long farmerId,
+            @Parameter(description = "Cycle ID")                       @PathVariable Long cycleId) {
+        harvestService.deleteHarvest(farmerId, cycleId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ------------------------------------------------------------------ //
     //  GET /api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest            //
     // ------------------------------------------------------------------ //
     @GetMapping

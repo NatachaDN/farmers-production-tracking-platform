@@ -37,6 +37,7 @@ const DEMO_COMPLETED_HARVEST = {
 export function HarvestPage({ farmerId = 1 }) {
   const [selectedCycleId, setSelectedCycleId] = useState(1);
   const [harvest, setHarvest] = useState(null);
+  const [editingHarvest, setEditingHarvest] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -44,13 +45,15 @@ export function HarvestPage({ farmerId = 1 }) {
 
   const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
 
+  // Show the form when there is no harvest yet, or when editing an existing one
+  const showForm = !harvest || editingHarvest !== null;
+
   const showToast = (text, type = 'success') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage({ text, type });
     toastTimerRef.current = setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Clear any pending toast timer when the component unmounts
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -63,12 +66,14 @@ export function HarvestPage({ farmerId = 1 }) {
       const data = await harvestService.getHarvest(farmerId, cycleId);
       if (data) {
         setHarvest(data);
+        setEditingHarvest(null);
       } else {
         setHarvest(null);
       }
     } catch {
       if (cycleId === 2) {
         setHarvest(DEMO_COMPLETED_HARVEST);
+        setEditingHarvest(null);
       } else {
         setHarvest(null);
       }
@@ -81,38 +86,92 @@ export function HarvestPage({ farmerId = 1 }) {
     loadHarvest(selectedCycleId);
   }, [selectedCycleId]);
 
-  const handleRecordHarvest = async (formData) => {
+  // Handle Create or Update
+  const handleSaveHarvest = async (formData) => {
     setIsSubmitting(true);
     try {
-      let recorded;
-      try {
-        recorded = await harvestService.recordHarvest(farmerId, selectedCycleId, formData);
-      } catch {
-        const qty = formData.quantity;
-        const acreage = parseFloat(selectedCycle.area) || 2.5;
-        const calcYield = Math.round((qty / acreage) * 100) / 100;
-        recorded = {
-          id: Date.now(),
-          cycleId: selectedCycleId,
-          cycleName: selectedCycle.name,
-          cycleStatus: 'COMPLETED',
-          quantity: qty,
-          unit: formData.unit,
-          harvestDate: formData.harvestDate,
-          acreage,
-          calculatedYield: calcYield,
-          yieldDisplay: `${calcYield.toFixed(2)} ${formData.unit.toLowerCase()} / ha`,
-          notes: formData.notes || null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+      if (editingHarvest) {
+        // UPDATE
+        try {
+          const updated = await harvestService.updateHarvest(
+            farmerId,
+            selectedCycleId,
+            formData
+          );
+          setHarvest(updated);
+          showToast('Harvest record updated successfully.');
+        } catch {
+          setHarvest((prev) => ({
+            ...(prev || DEMO_COMPLETED_HARVEST),
+            ...formData,
+            updatedAt: new Date().toISOString(),
+          }));
+          showToast('Harvest record updated locally (server unreachable).');
+        }
+        setEditingHarvest(null);
+      } else {
+        // CREATE
+        try {
+          const recorded = await harvestService.recordHarvest(
+            farmerId,
+            selectedCycleId,
+            formData
+          );
+          setHarvest(recorded);
+          showToast('Harvest recorded successfully! Cycle marked as Completed.');
+        } catch {
+          const qty = formData.quantity;
+          const acreage = parseFloat(selectedCycle.area) || 2.5;
+          const calcYield = Math.round((qty / acreage) * 100) / 100;
+          const localRecorded = {
+            id: Date.now(),
+            cycleId: selectedCycleId,
+            cycleName: selectedCycle.name,
+            cycleStatus: 'COMPLETED',
+            quantity: qty,
+            unit: formData.unit,
+            harvestDate: formData.harvestDate,
+            acreage,
+            calculatedYield: calcYield,
+            yieldDisplay: `${calcYield.toFixed(2)} ${formData.unit.toLowerCase()} / ha`,
+            notes: formData.notes || null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          setHarvest(localRecorded);
+          showToast('Harvest recorded locally (server unreachable).');
+        }
       }
-      setHarvest(recorded);
-      showToast('Harvest recorded successfully! Cycle marked as Completed.');
     } catch (err) {
-      showToast(err?.message || 'Failed to record harvest. Please try again.', 'error');
+      showToast(err?.message || 'Failed to save harvest. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle Edit trigger
+  const handleEditHarvest = (harvestRecord) => {
+    setEditingHarvest(harvestRecord);
+    const formElement = document.getElementById('harvest-form-container');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Handle Delete
+  const handleDeleteHarvest = async (harvestId) => {
+    if (!window.confirm('Are you sure you want to delete this harvest record? The cycle will be reopened to ACTIVE.')) return;
+    try {
+      try {
+        await harvestService.deleteHarvest(farmerId, selectedCycleId);
+      } catch {
+        // continue with local removal
+      }
+      setHarvest(null);
+      setEditingHarvest(null);
+      showToast('Harvest record deleted. Cycle reopened to Active.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to delete harvest.', 'error');
     }
   };
 
@@ -227,7 +286,7 @@ export function HarvestPage({ farmerId = 1 }) {
         }}>
           <p>Loading harvest records...</p>
         </div>
-      ) : harvest ? (
+      ) : showForm ? (
         <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--radius-xl)',
@@ -235,7 +294,14 @@ export function HarvestPage({ farmerId = 1 }) {
           padding: '32px',
           boxShadow: 'var(--shadow-card)'
         }}>
-          <HarvestResult harvest={harvest} />
+          <HarvestForm
+            onSubmit={handleSaveHarvest}
+            isSubmitting={isSubmitting}
+            initialData={editingHarvest || null}
+            onCancel={() => {
+              setEditingHarvest(null);
+            }}
+          />
         </div>
       ) : (
         <div style={{
@@ -245,7 +311,11 @@ export function HarvestPage({ farmerId = 1 }) {
           padding: '32px',
           boxShadow: 'var(--shadow-card)'
         }}>
-          <HarvestForm onSubmit={handleRecordHarvest} isSubmitting={isSubmitting} />
+          <HarvestResult
+            harvest={harvest}
+            onEdit={handleEditHarvest}
+            onDelete={handleDeleteHarvest}
+          />
         </div>
       )}
     </div>

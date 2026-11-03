@@ -282,10 +282,10 @@ Never commit real credentials. Use environment variables or a local `.env` file,
 
 ```bash
 cd backend
-mvn clean spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The backend starts at `http://localhost:8080`.
+The backend starts at `http://localhost:8080` using an in-memory H2 database. Data is cleared when the backend stops. To use the configured MySQL database instead, run without the `local` profile and configure the datasource environment variables.
 
 ## 3. Swagger / OpenAPI Documentation
 

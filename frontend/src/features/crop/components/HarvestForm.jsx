@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './HarvestForm.css';
 import {
   IconScale,
   IconShoppingBag,
   IconTruck,
   IconWarning,
-  IconWheat
+  IconWheat,
+  IconClose
 } from '../../../shared/components/Icons';
 
 const UNIT_OPTIONS = [
@@ -15,20 +16,41 @@ const UNIT_OPTIONS = [
 ];
 
 /**
- * Form for recording a harvest at the end of a crop cycle.
+ * Form for recording or editing a harvest at the end of a crop cycle.
  * Validates: quantity > 0, unit required, harvest date required & not future.
  */
-export function HarvestForm({ onSubmit, isSubmitting }) {
+export function HarvestForm({ onSubmit, isSubmitting, initialData = null, onCancel }) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    quantity: '',
-    unit: 'KG',
-    harvestDate: todayStr,
-    notes: '',
+    quantity: initialData?.quantity ?? '',
+    unit: initialData?.unit || 'KG',
+    harvestDate: initialData?.harvestDate || todayStr,
+    notes: initialData?.notes || '',
   });
 
   const [errors, setErrors] = useState({});
+
+  // Synchronize form fields whenever initialData changes (edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        quantity: initialData.quantity ?? '',
+        unit: initialData.unit || 'KG',
+        harvestDate: initialData.harvestDate || todayStr,
+        notes: initialData.notes || '',
+      });
+      setErrors({});
+    } else {
+      setFormData({
+        quantity: '',
+        unit: 'KG',
+        harvestDate: todayStr,
+        notes: '',
+      });
+      setErrors({});
+    }
+  }, [initialData, todayStr]);
 
   const validate = () => {
     const errs = {};
@@ -87,9 +109,18 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
   return (
     <form className="harvest-form" onSubmit={handleSubmit} id="harvest-form-container">
       <div className="form-header">
-        <h3>Record Harvest Yield</h3>
+        <div className="form-header-title-row">
+          <h3>{initialData ? 'Edit Harvest Record' : 'Record Harvest Yield'}</h3>
+          {initialData && (
+            <span className="editing-badge">
+              Editing Record #{initialData.id}
+            </span>
+          )}
+        </div>
         <p className="form-subtitle">
-          Enter the total quantity harvested, unit of measure, and date. This will complete the cycle.
+          {initialData
+            ? 'Update the harvest details below and click Update Harvest.'
+            : 'Enter the total quantity harvested, unit of measure, and date. This will complete the cycle.'}
         </p>
       </div>
 
@@ -186,13 +217,23 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
 
       {/* Submit */}
       <div className="form-actions">
+        {onCancel && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+        )}
         <button type="submit" className="btn btn-harvest" disabled={isSubmitting}>
           {isSubmitting ? (
-            <span className="btn-loading">Recording harvest...</span>
+            <span className="btn-loading">Saving harvest...</span>
           ) : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <IconWheat size={18} color="currentColor" />
-              <span>Record Harvest &amp; Complete Cycle</span>
+              <span>{initialData ? 'Update Harvest' : 'Record Harvest &amp; Complete Cycle'}</span>
             </span>
           )}
         </button>

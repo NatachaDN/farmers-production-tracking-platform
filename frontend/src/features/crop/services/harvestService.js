@@ -25,4 +25,24 @@ export const harvestService = {
       `/farmers/${farmerId}/cycles/${cycleId}/harvest`
     );
   },
+
+  /**
+   * Update an existing harvest record.
+   * @param {Object} data - { quantity: number, unit: 'KG'|'BAGS'|'TONS', harvestDate: 'YYYY-MM-DD', notes?: string }
+   */
+  async updateHarvest(farmerId, cycleId, data) {
+    return await apiClient.put(
+      `/farmers/${farmerId}/cycles/${cycleId}/harvest`,
+      data
+    );
+  },
+
+  /**
+   * Delete an existing harvest record (reopens the cycle to ACTIVE).
+   */
+  async deleteHarvest(farmerId, cycleId) {
+    return await apiClient.delete(
+      `/farmers/${farmerId}/cycles/${cycleId}/harvest`
+    );
+  },
 };

@@ -9,6 +9,9 @@ import { ProductionView } from './features/production/ProductionView';
 import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
 import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
+import { ExpenseView } from './features/expenses/ExpenseView';
+import { SaleView } from './features/sales/SaleView';
+import { AnimalView } from './features/animals/AnimalView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { ForgotPasswordView } from './features/auth/ForgotPasswordView';
@@ -31,10 +34,12 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 export function App() {
-  const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser());
+  const [currentUser, setCurrentUser] = useState(null);
   const [currentRoute, setCurrentRoute] = useState(() => {
+    // Always start on the login screen: the user must sign in before seeing
+    // the dashboard. Only a Google sign-in callback restores a session.
     if (googleAuth.isCallback()) return 'google-callback';
-    return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
+    return 'login';
   });
   const [loginError, setLoginError] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
@@ -54,12 +59,14 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (authService.isAuthenticated()) {
+    // Refresh profile info only for an already-established session (never on launch).
+    if (currentRoute !== 'login' && currentRoute !== 'register' && currentRoute !== 'forgot-password' && authService.isAuthenticated()) {
       authService.getCurrentUser().then((user) => {
         if (user) setCurrentUser(user);
       }).catch(() => {});
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRoute]);
 
   const handleLoginSuccess = (farmer) => {
     setLoginError('');
@@ -116,6 +123,18 @@ export function App() {
       title: 'Cycle Inputs & Cost Tracking',
       subtitle: 'Record consumed inputs, deduct inventory stock, and calculate real crop cost'
     },
+    'expenses': {
+      title: 'Production Expenses',
+      subtitle: 'Track input purchases, labor, and transport costs'
+    },
+    'sales': {
+      title: 'Harvest Sales & Margin',
+      subtitle: 'Record sales and view profit per production cycle'
+    },
+    'animals': {
+      title: 'Animal Groups',
+      subtitle: 'Register and track livestock by type, purpose, and headcount'
+    },
     'incidents': {
       title: 'Crop Cycle Incidents',
       subtitle: 'Track diseases, pest attacks, and damage events per production cycle'
@@ -141,7 +160,7 @@ export function App() {
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
       {/* Quick Screen Preview Switcher Bar */}
-      {!isAdminRoute && <div style={{
+      {!isAdminRoute && currentRoute !== 'login' && currentRoute !== 'register' && currentRoute !== 'forgot-password' && currentUser && <div style={{
         position: 'fixed',
         bottom: '16px',
         right: '20px',
@@ -169,6 +188,9 @@ export function App() {
           { id: 'production', label: 'Production' },
           { id: 'inputs', label: 'Farm Inputs' },
           { id: 'cycle-inputs', label: 'Cycle Inputs' },
+          { id: 'expenses', label: 'Expenses' },
+          { id: 'sales', label: 'Sales' },
+          { id: 'animals', label: 'Animals' },
           { id: 'incidents', label: 'Incidents' },
           { id: 'settings', label: 'Profile Settings' },
           { id: 'login', label: 'Login' },
@@ -264,6 +286,15 @@ export function App() {
           )}
           {currentRoute === 'cycle-inputs' && (
             <CycleInputsPage farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'expenses' && (
+            <ExpenseView farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'sales' && (
+            <SaleView farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'animals' && (
+            <AnimalView farmerId={currentUser?.id || 1} />
           )}
           {currentRoute === 'incidents' && (
             <CycleIncidentsPage farmerId={currentUser?.id || 1} />

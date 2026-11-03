@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cropCycleService } from '../crops/services/cropCycleService';
 import { cycleActivityService } from '../crop/services/cycleActivityService';
 import { cycleIncidentService } from '../crop/services/cycleIncidentService';

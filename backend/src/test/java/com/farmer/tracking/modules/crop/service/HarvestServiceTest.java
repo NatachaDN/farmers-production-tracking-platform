@@ -1,6 +1,8 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.exception.UnauthorizedException;
+import com.farmer.tracking.common.security.UserPrincipal;
 import com.farmer.tracking.modules.crop.api.HarvestRequest;
 import com.farmer.tracking.modules.crop.api.HarvestResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -9,6 +11,7 @@ import com.farmer.tracking.modules.crop.entity.Harvest;
 import com.farmer.tracking.modules.crop.entity.HarvestUnit;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.crop.repository.HarvestRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,9 +19,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +55,7 @@ class HarvestServiceTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         activeCycle = new Cycle();
         activeCycle.setId(cycleId);
         activeCycle.setFarmerId(farmerId);
@@ -192,6 +200,133 @@ class HarvestServiceTest {
                 new HarvestRequest(100.0, HarvestUnit.KG, LocalDate.now(), null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("already been recorded");
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAs(Long id, String role) {
+        UserPrincipal principal = new UserPrincipal(id, "test@example.com", "pass",
+                List.of(new SimpleGrantedAuthority(role)));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+    }
+
+    // ------------------------------------------------------------------ //
+    //  updateHarvest                                                       //
+    // ------------------------------------------------------------------ //
+
+    @Test
+    @DisplayName("updateHarvest - recalculates yield, saves record, and syncs the cycle end date")
+    void updateHarvest_RecalculatesYieldAndSyncsEndDate() {
+        HarvestRequest request = new HarvestRequest(
+                750.0, HarvestUnit.KG, LocalDate.of(2026, 7, 15), "Corrected count");
+
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId))
+                .thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.of(savedHarvest));
+        when(harvestRepository.save(any(Harvest.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HarvestResponse response = harvestService.updateHarvest(farmerId, cycleId, request);
+
+        assertThat(response.getQuantity()).isEqualTo(750.0);
+        assertThat(response.getUnit()).isEqualTo(HarvestUnit.KG);
+        assertThat(response.getHarvestDate()).isEqualTo(LocalDate.of(2026, 7, 15));
+        assertThat(response.getCalculatedYield()).isEqualTo(300.0); // 750 / 2.5 ha
+        assertThat(completedCycle.getEndDate()).isEqualTo(LocalDate.of(2026, 7, 15));
+        verify(harvestRepository).save(savedHarvest);
+        verify(cycleRepository).save(completedCycle);
+    }
+
+    @Test
+    @DisplayName("updateHarvest - throws ResourceNotFoundException when no harvest record exists")
+    void updateHarvest_ThrowsWhenNoHarvestExists() {
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId))
+                .thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> harvestService.updateHarvest(farmerId, cycleId,
+                new HarvestRequest(100.0, HarvestUnit.KG, LocalDate.now(), null)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("No harvest record found");
+    }
+
+    @Test
+    @DisplayName("deleteHarvest - removes the record and reopens the cycle as ACTIVE")
+    void deleteHarvest_RemovesRecordAndReopensCycle() {
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId))
+                .thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.of(savedHarvest));
+
+        harvestService.deleteHarvest(farmerId, cycleId);
+
+        verify(harvestRepository).delete(savedHarvest);
+        assertThat(completedCycle.getStatus()).isEqualTo(CycleStatus.ACTIVE);
+        assertThat(completedCycle.getEndDate()).isNull();
+        verify(cycleRepository).save(completedCycle);
+    }
+
+    @Test
+    @DisplayName("deleteHarvest - throws ResourceNotFoundException when no harvest record exists")
+    void deleteHarvest_ThrowsWhenNoHarvestExists() {
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId))
+                .thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> harvestService.deleteHarvest(farmerId, cycleId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("No harvest record found");
+
+        verify(harvestRepository, never()).delete(any(Harvest.class));
+    }
+
+    // ------------------------------------------------------------------ //
+    //  Security: farmer data isolation on harvest records                  //
+    // ------------------------------------------------------------------ //
+
+    @Test
+    @DisplayName("updateHarvest - Unauthorized when another farmer attempts the correction")
+    void updateHarvest_UnauthorizedDifferentFarmer() {
+        authenticateAs(999L, "ROLE_FARMER");
+
+        assertThatThrownBy(() -> harvestService.updateHarvest(farmerId, cycleId,
+                new HarvestRequest(100.0, HarvestUnit.KG, LocalDate.now(), null)))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Access denied");
+
+        verify(cycleRepository, never()).findByIdAndFarmerId(any(), any());
+    }
+
+    @Test
+    @DisplayName("deleteHarvest - Unauthorized when another farmer attempts deletion")
+    void deleteHarvest_UnauthorizedDifferentFarmer() {
+        authenticateAs(999L, "ROLE_FARMER");
+
+        assertThatThrownBy(() -> harvestService.deleteHarvest(farmerId, cycleId))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Access denied");
+
+        verify(harvestRepository, never()).delete(any(Harvest.class));
+    }
+
+    @Test
+    @DisplayName("updateHarvest - Allowed for ROLE_ADMIN regardless of farmer id")
+    void updateHarvest_AdminAllowed() {
+        authenticateAs(77L, "ROLE_ADMIN");
+
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId))
+                .thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.of(savedHarvest));
+        when(harvestRepository.save(any(Harvest.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(cycleRepository.save(any(Cycle.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HarvestResponse response = harvestService.updateHarvest(farmerId, cycleId,
+                new HarvestRequest(600.0, HarvestUnit.KG, LocalDate.of(2026, 6, 2), null));
+
+        assertThat(response.getQuantity()).isEqualTo(600.0);
     }
 
     // ------------------------------------------------------------------ //

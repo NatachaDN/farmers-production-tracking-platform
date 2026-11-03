@@ -6,7 +6,9 @@ import {
   IconScale,
   IconLocation,
   IconTrendingUp,
-  IconFileText
+  IconFileText,
+  IconPencil,
+  IconTrash2
 } from '../../../shared/components/Icons';
 
 const UNIT_LABELS = { KG: 'kg', BAGS: 'bags', TONS: 'tons' };
@@ -15,7 +17,7 @@ const UNIT_LABELS = { KG: 'kg', BAGS: 'bags', TONS: 'tons' };
  * Displays the harvest record for a completed cycle.
  * Shows quantity, unit, harvest date, calculated yield, and notes.
  */
-export function HarvestResult({ harvest }) {
+export function HarvestResult({ harvest, onEdit, onDelete }) {
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
     try {
@@ -46,6 +48,30 @@ export function HarvestResult({ harvest }) {
         <p className="result-subtitle">
           This cycle has been completed. Below is the final yield summary.
         </p>
+        <div className="result-actions">
+          {onEdit && (
+            <button
+              type="button"
+              className="action-btn edit-btn"
+              title="Edit harvest"
+              onClick={() => onEdit(harvest)}
+            >
+              <IconPencil size={15} color="currentColor" />
+              <span>Edit</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              className="action-btn delete-btn"
+              title="Delete harvest"
+              onClick={() => onDelete(harvest.id)}
+            >
+              <IconTrash2 size={15} color="currentColor" />
+              <span>Delete</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Yield highlight */}

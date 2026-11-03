@@ -77,6 +77,65 @@ public class HarvestService {
     }
 
     /**
+     * Updates an existing harvest record (farmer-owned only).
+     * Recalculates the yield and syncs the cycle's end date.
+     */
+    @Transactional
+    public HarvestResponse updateHarvest(Long farmerId, Long cycleId, HarvestRequest request) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "harvest");
+        Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
+
+        Harvest harvest = harvestRepository.findByCycleId(cycle.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("No harvest record found for cycle id: " + cycleId));
+
+        harvest.setQuantity(request.getQuantity());
+        harvest.setUnit(request.getUnit());
+        harvest.setHarvestDate(request.getHarvestDate());
+        harvest.setNotes(request.getNotes());
+
+        String yieldDisplay;
+        if (cycle.getAcreage() != null && cycle.getAcreage() > 0) {
+            harvest.setCalculatedYield(Math.round((request.getQuantity() / cycle.getAcreage()) * 100.0) / 100.0);
+            yieldDisplay = String.format("%.2f %s / ha", harvest.getCalculatedYield(), request.getUnit().name().toLowerCase());
+        } else {
+            harvest.setCalculatedYield(request.getQuantity());
+            yieldDisplay = String.format("%.1f %s total output", harvest.getCalculatedYield(), request.getUnit().name().toLowerCase());
+        }
+
+        Harvest updated = harvestRepository.save(harvest);
+
+        // Keep the cycle's end date in sync with the corrected harvest date
+        cycle.setEndDate(request.getHarvestDate());
+        cycleRepository.save(cycle);
+
+        return toResponse(updated, cycle, yieldDisplay);
+    }
+
+    /**
+     * Deletes an existing harvest record (farmer-owned only).
+     * The cycle is reopened (status back to ACTIVE) so a corrected harvest can be re-recorded.
+     */
+    @Transactional
+    public void deleteHarvest(Long farmerId, Long cycleId) {
+        FarmerAccessGuard.validateFarmerAccess(farmerId, "harvest");
+        Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
+
+        Harvest harvest = harvestRepository.findByCycleId(cycle.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("No harvest record found for cycle id: " + cycleId));
+
+        harvestRepository.delete(harvest);
+
+        // Reopen the cycle: a deleted harvest means the cycle is active again
+        cycle.setStatus(CycleStatus.ACTIVE);
+        cycle.setStage("Maturing");
+        cycle.setSubStatus("On track");
+        cycle.setEndDate(null);
+        cycleRepository.save(cycle);
+    }
+
+    /**
      * Retrieves the harvest details for a cycle.
      */
     @Transactional(readOnly = true)

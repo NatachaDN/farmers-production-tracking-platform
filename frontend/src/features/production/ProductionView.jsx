@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { cropCycleService } from '../crops/services/cropCycleService';
+import { plotService } from '../farms/services/plotService';
 import { CycleDetailDrawer } from './CycleDetailDrawer';
 import { MetricCard } from '../../shared/components/MetricCard';
 import {
@@ -11,11 +12,11 @@ import {
   IconCrop,
   IconCalendar,
   IconTrendingUp,
-  IconClose,
-  IconRefresh,
+  IconCheckCircle,
   IconChevronRight,
-  IconArrowRight,
-  IconCheckCircle
+  IconRefresh,
+  IconFilter,
+  IconClose
 } from '../../shared/components/Icons';
 
 /** Normalizes a cycle's status to COMPLETED / ACTIVE. */
@@ -82,32 +83,114 @@ function QuantityLabel({ quantity, unit, fallback = '—' }) {
 
 export function ProductionView({ farmerId = 1 }) {
   const [cycles, setCycles] = useState([]);
+  const [plots, setPlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [activeTab, setActiveTab] = useState('All');
   const [selectedCycleId, setSelectedCycleId] = useState(null);
 
-  const loadCycles = async () => {
+  /* Filter state */
+  const [filters, setFilters] = useState({
+    farmId: '',
+    plotId: '',
+    crop: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+
+  // ------------------------------------------------------------------ //
+  //  Load cycles + plots (plots drive the farm & plot filter options)   //
+  // ------------------------------------------------------------------ //
+  const loadData = async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await cropCycleService.getCycles(farmerId, undefined);
-      setCycles(Array.isArray(data) ? data : []);
+      const [cycleData, plotData] = await Promise.all([
+        cropCycleService.getCycles(farmerId, undefined),
+        plotService.getPlots(farmerId)
+      ]);
+      setCycles(Array.isArray(cycleData) ? cycleData : []);
+      setPlots(Array.isArray(plotData) ? plotData : []);
     } catch (err) {
       setLoadError(err?.message || 'Could not load your production cycles.');
       setCycles([]);
+      setPlots([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (farmerId) loadCycles();
+    if (farmerId) loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [farmerId]);
 
-  /* Always date-sorted, newest first. The API already sorts; this keeps the
-     guarantee after local updates (e.g. harvest recorded). */
+  // Map plot id -> { name, farmId, farmName }
+  const plotMap = useMemo(() => {
+    const map = {};
+    (plots || []).forEach((p) => {
+      map[p.id] = {
+        name: p.name,
+        farmId: p.farmId,
+        farmName: p.farmName || 'Unassigned farm'
+      };
+    });
+    return map;
+  }, [plots]);
+
+  // Resolve the farm for a cycle (backend supplies plotId; demo data may not)
+  const resolveCycleFarm = useCallback((cycle) => {
+    const plot = cycle.plotId != null ? plotMap[cycle.plotId] : null;
+    if (plot) return plot;
+    // Fallback for demo data that only carries plotName
+    const fallbackPlot = (plots || []).find((p) => p.name === cycle.plotName);
+    if (fallbackPlot) return {
+      name: fallbackPlot.name,
+      farmId: fallbackPlot.farmId,
+      farmName: fallbackPlot.farmName || 'Unassigned farm'
+    };
+    return { name: cycle.plotName || 'Plot', farmId: null, farmName: 'Unassigned farm' };
+  }, [plots, plotMap]);
+
+  /* Unique filter options derived from the data */
+  const farmOptions = useMemo(() => {
+    const seen = new Set();
+    const opts = [];
+    (plots || []).forEach((p) => {
+      if (p.farmId && !seen.has(p.farmId)) {
+        seen.add(p.farmId);
+        opts.push({ id: p.farmId, label: p.farmName || 'Unassigned farm' });
+      }
+    });
+    return opts;
+  }, [plots]);
+
+  const plotOptions = useMemo(() => {
+    const selectedFarm = filters.farmId;
+    const seen = new Set();
+    const opts = [];
+    (plots || []).forEach((p) => {
+      if (selectedFarm && p.farmId != null && String(p.farmId) !== String(selectedFarm)) return;
+      if (seen.has(p.id)) return;
+      seen.add(p.id);
+      opts.push({ id: p.id, label: p.name });
+    });
+    return opts;
+  }, [plots, filters.farmId]);
+
+  const cropOptions = useMemo(() => {
+    const seen = new Set();
+    const opts = [];
+    (cycles || []).forEach((c) => {
+      const crop = c.cropName;
+      if (!crop || seen.has(crop)) return;
+      seen.add(crop);
+      opts.push({ id: crop, label: crop });
+    });
+    return opts.sort((a, b) => a.label.localeCompare(b.label));
+  }, [cycles]);
+
+  /* Always date-sorted, newest first. */
   const sortedCycles = useMemo(() => {
     return [...cycles].sort((a, b) => {
       const dateA = effectiveCycleDate(a);
@@ -117,17 +200,56 @@ export function ProductionView({ farmerId = 1 }) {
     });
   }, [cycles]);
 
-  const ongoingCount = sortedCycles.filter((c) => cycleStatusOf(c) === 'ACTIVE').length;
-  const completedCount = sortedCycles.filter((c) => cycleStatusOf(c) === 'COMPLETED').length;
+  /* Apply status tab + farm/plot/crop/period filters */
+  const filteredCycles = useMemo(() => {
+    const { farmId, plotId, crop, dateFrom, dateTo } = filters;
+    return sortedCycles.filter((cycle) => {
+      // Status tab filter
+      if (activeTab !== 'All') {
+        const status = cycleStatusOf(cycle);
+        const want = activeTab === 'Ongoing' ? 'ACTIVE' : 'COMPLETED';
+        if (status !== want) return false;
+      }
+      // Farm filter
+      if (farmId) {
+        const farm = resolveCycleFarm(cycle);
+        if (!farm.farmId || String(farm.farmId) !== String(farmId)) return false;
+      }
+      // Plot filter
+      if (plotId) {
+        const plotMatch = cycle.plotId != null
+          ? String(cycle.plotId) === String(plotId)
+          : cycle.plotName === plotOptions.find((p) => String(p.id) === String(plotId))?.label;
+        if (!plotMatch) return false;
+      }
+      // Crop filter (case-insensitive)
+      if (crop) {
+        if (!cycle.cropName || cycle.cropName.toLowerCase() !== crop.toLowerCase()) return false;
+      }
+      // Period filter on planting date
+      if (dateFrom || dateTo) {
+        const planting = cycle.plantingDate;
+        if (!planting) return false;
+        const d = new Date(planting + 'T00:00:00');
+        if (isNaN(d.getTime())) return false;
+        if (dateFrom && d < new Date(dateFrom + 'T00:00:00')) return false;
+        if (dateTo && d > new Date(dateTo + 'T00:00:00')) return false;
+      }
+      return true;
+    });
+  }, [sortedCycles, activeTab, filters, resolveCycleFarm, plotOptions]);
 
-  const totalHarvestedKg = sortedCycles
+  const ongoingCount = filteredCycles.filter((c) => cycleStatusOf(c) === 'ACTIVE').length;
+  const completedCount = filteredCycles.filter((c) => cycleStatusOf(c) === 'COMPLETED').length;
+
+  const totalHarvestedKg = filteredCycles
     .filter((c) => cycleStatusOf(c) === 'COMPLETED')
     .reduce((sum, c) => {
       const qty = c.harvestedQuantity || 0;
       const unit = ((c.harvestedUnit || 'KG') + '').toUpperCase();
       if (unit === 'TONS') return sum + qty * 1000;
       if (unit === 'KG') return sum + qty;
-      return sum; // BAGS cannot be converted safely to kg
+      return sum;
     }, 0);
 
   const totalHarvestLabel = totalHarvestedKg >= 1000
@@ -136,28 +258,32 @@ export function ProductionView({ farmerId = 1 }) {
 
   const activeCycle = sortedCycles.find((c) => c.id === selectedCycleId) || null;
 
+  // How many filters are currently active (for the badge)
+  const activeFilterCount = useMemo(() => {
+    const { farmId, plotId, crop, dateFrom, dateTo } = filters;
+    return [Boolean(farmId), Boolean(plotId), Boolean(crop), Boolean(dateFrom), Boolean(dateTo)]
+      .filter(Boolean).length;
+  }, [filters]);
+
   const handleCycleUpdated = (updated) => {
     if (!updated?.id) return;
     setCycles((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
   };
 
+  const clearFilters = useCallback(() => {
+    setFilters({ farmId: '', plotId: '', crop: '', dateFrom: '', dateTo: '' });
+  }, []);
+
   const tabs = [
-    { id: 'All', count: sortedCycles.length },
+    { id: 'All', count: filteredCycles.length },
     { id: 'Ongoing', count: ongoingCount },
     { id: 'Completed', count: completedCount }
   ];
 
-  const visibleCycles = sortedCycles.filter((c) => {
-    if (activeTab === 'All') return true;
-    const status = cycleStatusOf(c);
-    if (activeTab === 'Ongoing') return status === 'ACTIVE';
-    return status === 'COMPLETED';
-  });
-
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* Summary metrics */}
+      {/* Summary metrics (reflect filtered results) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -165,7 +291,7 @@ export function ProductionView({ farmerId = 1 }) {
       }}>
         <MetricCard
           label="Total cycles"
-          value={sortedCycles.length}
+          value={filteredCycles.length}
           subtext={`${ongoingCount} ongoing · ${completedCount} completed`}
           icon={<IconCrop size={18} color="var(--color-brand-primary)" />}
         />
@@ -191,8 +317,198 @@ export function ProductionView({ farmerId = 1 }) {
         />
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+      {/* Filter bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px',
+        padding: '10px 0'
+      }}>
+        {/* Filter chips (active filters with remove) */}
+        {activeFilterCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+              Filtering:
+            </span>
+            {filters.farmId && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                backgroundColor: '#FEF3C7', color: '#92400E', borderRadius: 'var(--radius-pill)',
+                padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid #FDE68A'
+              }}>
+                {farmOptions.find((f) => String(f.id) === String(filters.farmId))?.label || 'Farm'}
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, farmId: '' }))}
+                  style={{ background: 'none', border: 'none', color: '#92400E', cursor: 'pointer', padding: 0, fontSize: '0.75rem', lineHeight: 1 }}
+                >
+                  <IconClose size={12} color="currentColor" />
+                </button>
+              </span>
+            )}
+            {filters.plotId && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                backgroundColor: '#FEF3C7', color: '#92400E', borderRadius: 'var(--radius-pill)',
+                padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid #FDE68A'
+              }}>
+                {plotOptions.find((p) => String(p.id) === String(filters.plotId))?.label || 'Plot'}
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, plotId: '' }))}
+                  style={{ background: 'none', border: 'none', color: '#92400E', cursor: 'pointer', padding: 0, fontSize: '0.75rem', lineHeight: 1 }}
+                >
+                  <IconClose size={12} color="currentColor" />
+                </button>
+              </span>
+            )}
+            {filters.crop && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                backgroundColor: '#FEF3C7', color: '#92400E', borderRadius: 'var(--radius-pill)',
+                padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid #FDE68A'
+              }}>
+                {filters.crop}
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, crop: '' }))}
+                  style={{ background: 'none', border: 'none', color: '#92400E', cursor: 'pointer', padding: 0, fontSize: '0.75rem', lineHeight: 1 }}
+                >
+                  <IconClose size={12} color="currentColor" />
+                </button>
+              </span>
+            )}
+            {(filters.dateFrom || filters.dateTo) && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                backgroundColor: '#FEF3C7', color: '#92400E', borderRadius: 'var(--radius-pill)',
+                padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid #FDE68A'
+              }}>
+                Period: {filters.dateFrom || '—'} to {filters.dateTo || '—'}
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, dateFrom: '', dateTo: '' }))}
+                  style={{ background: 'none', border: 'none', color: '#92400E', cursor: 'pointer', padding: 0, fontSize: '0.75rem', lineHeight: 1 }}
+                >
+                  <IconClose size={12} color="currentColor" />
+                </button>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={clearFilters}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                backgroundColor: 'transparent', color: 'var(--color-brand-primary)',
+                fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              <IconClose size={14} color="currentColor" />
+              <span>Clear all</span>
+            </button>
+          </div>
+        )}
+
+        {/* Filter controls */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+              Farm
+            </label>
+            <select
+              value={filters.farmId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFilters((prev) => ({ ...prev, farmId: val, plotId: val ? '' : prev.plotId }));
+              }}
+              style={{
+                padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border-input)',
+                backgroundColor: '#FFFFFF', fontSize: '0.8125rem', color: 'var(--color-text-primary)',
+                cursor: 'pointer', minWidth: '140px'
+              }}
+            >
+              <option value="">All farms</option>
+              {farmOptions.map((f) => (
+                <option key={f.id} value={f.id}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+              Plot
+            </label>
+            <select
+              value={filters.plotId}
+              onChange={(e) => setFilters((prev) => ({ ...prev, plotId: e.target.value }))}
+              style={{
+                padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border-input)',
+                backgroundColor: '#FFFFFF', fontSize: '0.8125rem', color: 'var(--color-text-primary)',
+                cursor: 'pointer', minWidth: '140px'
+              }}
+            >
+              <option value="">All plots</option>
+              {plotOptions.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+              Crop
+            </label>
+            <select
+              value={filters.crop}
+              onChange={(e) => setFilters((prev) => ({ ...prev, crop: e.target.value }))}
+              style={{
+                padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border-input)',
+                backgroundColor: '#FFFFFF', fontSize: '0.8125rem', color: 'var(--color-text-primary)',
+                cursor: 'pointer', minWidth: '140px'
+              }}
+            >
+              <option value="">All crops</option>
+              {cropOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+              Period
+            </label>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              style={{
+                padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--color-border-input)',
+                backgroundColor: '#FFFFFF', fontSize: '0.8125rem', color: 'var(--color-text-primary)'
+              }}
+            />
+            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>to</span>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+              style={{
+                padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--color-border-input)',
+                backgroundColor: '#FFFFFF', fontSize: '0.8125rem', color: 'var(--color-text-primary)'
+              }}
+            />
+          </div>
+
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {tabs.map((tab) => {
             const isSelected = activeTab === tab.id;
@@ -217,21 +533,21 @@ export function ProductionView({ farmerId = 1 }) {
               </button>
             );
           })}
+          <button
+            onClick={loadData}
+            disabled={loading}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              backgroundColor: '#FFFFFF', border: '1px solid var(--color-border-input, #DFD8CA)',
+              padding: '8px 14px', borderRadius: '10px', fontSize: '0.8125rem', fontWeight: 600,
+              color: 'var(--color-text-secondary, #4B5752)', cursor: 'pointer',
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            <IconRefresh size={14} />
+            Refresh
+          </button>
         </div>
-        <button
-          onClick={loadCycles}
-          disabled={loading}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            backgroundColor: '#FFFFFF', border: '1px solid var(--color-border-input, #DFD8CA)',
-            padding: '8px 14px', borderRadius: '10px', fontSize: '0.8125rem', fontWeight: 600,
-            color: 'var(--color-text-secondary, #4B5752)', cursor: 'pointer',
-            opacity: loading ? 0.6 : 1
-          }}
-        >
-          <IconRefresh size={14} />
-          Refresh
-        </button>
       </div>
 
       {/* Cycle list */}
@@ -272,7 +588,7 @@ export function ProductionView({ farmerId = 1 }) {
               {loadError}
             </div>
             <button
-              onClick={loadCycles}
+              onClick={loadData}
               style={{
                 marginTop: '10px', padding: '8px 16px', borderRadius: '10px',
                 backgroundColor: 'var(--color-brand-primary, #3E7B52)', color: '#FFFFFF',
@@ -282,25 +598,41 @@ export function ProductionView({ farmerId = 1 }) {
               Try again
             </button>
           </div>
-        ) : visibleCycles.length === 0 ? (
+        ) : filteredCycles.length === 0 ? (
           <div style={{ padding: '48px 24px', textAlign: 'center' }}>
             <div style={{
               width: '48px', height: '48px', borderRadius: '50%',
               backgroundColor: '#EAF4ED', display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 12px auto'
             }}>
-              <IconWheat size={24} color="#3E7B52" />
+              <IconFilter size={24} color="#3E7B52" />
             </div>
             <h3 style={{ fontSize: '1.0625rem', fontWeight: 600, color: '#19201C', margin: '0 0 6px 0' }}>
-              No {activeTab.toLowerCase() === 'all' ? '' : activeTab.toLowerCase() + ' '}cycles yet
+              {activeFilterCount > 0
+                ? 'No cycles match your filters'
+                : `No ${activeTab.toLowerCase() === 'all' ? '' : activeTab.toLowerCase() + ' '}cycles yet`}
+              }
             </h3>
             <p style={{ fontSize: '0.875rem', color: '#788680', maxWidth: '420px', margin: '0 auto' }}>
-              Open the Crop Production module and create a production cycle. It will appear here with its
-              status, activities, incidents and harvest.
+              {activeFilterCount > 0
+                ? 'Try adjusting your farm, plot, crop, or period filters.'
+                : 'Open the Crop Production module and create a production cycle. It will appear here with its status, activities, incidents and harvest.'}
             </p>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                style={{
+                  marginTop: '14px', padding: '10px 20px', borderRadius: '10px',
+                  backgroundColor: 'var(--color-brand-primary)', color: '#FFFFFF',
+                  border: 'none', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer'
+                }}
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         ) : (
-          visibleCycles.map((cycle, index) => {
+          filteredCycles.map((cycle, index) => {
             const status = cycleStatusOf(cycle);
             const plotName = cycle.plotName || (cycle.plot ? cycle.plot.name : 'Plot');
             const isCompleted = status === 'COMPLETED';
@@ -314,7 +646,7 @@ export function ProductionView({ farmerId = 1 }) {
                   gap: '16px',
                   padding: '18px 24px',
                   alignItems: 'center',
-                  borderBottom: index < visibleCycles.length - 1 ? '1px solid var(--color-border-subtle, #ECE7DC)' : 'none',
+                  borderBottom: index < filteredCycles.length - 1 ? '1px solid var(--color-border-subtle, #ECE7DC)' : 'none',
                   cursor: 'pointer',
                   transition: 'background-color 150ms ease'
                 }}
@@ -408,3 +740,5 @@ export function ProductionView({ farmerId = 1 }) {
     </div>
   );
 }
+
+export default ProductionView;

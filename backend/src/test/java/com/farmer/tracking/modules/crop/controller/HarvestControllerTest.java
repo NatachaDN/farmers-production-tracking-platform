@@ -205,4 +205,111 @@ class HarvestControllerTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("No harvest record found for cycle id: 10"));
     }
+
+    // ------------------------------------------------------------------ //
+    //  PUT — correct a harvest record                                       //
+    // ------------------------------------------------------------------ //
+
+    @Test
+    @DisplayName("PUT returns 200 with the corrected harvest record")
+    void shouldReturn200WhenHarvestUpdated() throws Exception {
+        HarvestRequest request = new HarvestRequest(
+                750.0, HarvestUnit.KG, LocalDate.of(2026, 7, 15), "Corrected count");
+        HarvestResponse updated = new HarvestResponse(
+                harvestId, cycleId, "Maize Season 2026", CycleStatus.COMPLETED,
+                750.0, HarvestUnit.KG, LocalDate.of(2026, 7, 15),
+                2.5, 300.0, "300.00 kg / ha",
+                "Corrected count", LocalDateTime.now(), LocalDateTime.now());
+
+        when(harvestService.updateHarvest(eq(farmerId), eq(cycleId), any(HarvestRequest.class)))
+                .thenReturn(updated);
+
+        mockMvc.perform(put("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest",
+                        farmerId, cycleId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(harvestId))
+                .andExpect(jsonPath("$.quantity").value(750.0))
+                .andExpect(jsonPath("$.unit").value("KG"))
+                .andExpect(jsonPath("$.calculatedYield").value(300.0))
+                .andExpect(jsonPath("$.notes").value("Corrected count"));
+    }
+
+    @Test
+    @DisplayName("PUT with negative quantity returns 400 Bad Request")
+    void shouldReturn400WhenUpdateQuantityInvalid() throws Exception {
+        HarvestRequest invalidRequest = new HarvestRequest(
+                -10.0, HarvestUnit.KG, LocalDate.now(), null);
+
+        mockMvc.perform(put("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest",
+                        farmerId, cycleId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.validationErrors.quantity").exists());
+    }
+
+    @Test
+    @DisplayName("PUT with future harvest date returns 400 Bad Request")
+    void shouldReturn400WhenUpdateDateInFuture() throws Exception {
+        HarvestRequest invalidRequest = new HarvestRequest(
+                100.0, HarvestUnit.KG, LocalDate.now().plusDays(5), null);
+
+        mockMvc.perform(put("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest",
+                        farmerId, cycleId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.validationErrors.harvestDate").exists());
+    }
+
+    @Test
+    @DisplayName("PUT returns 404 when no harvest record exists for the cycle")
+    void shouldReturn404WhenUpdateHarvestNotFound() throws Exception {
+        HarvestRequest request = new HarvestRequest(
+                100.0, HarvestUnit.KG, LocalDate.of(2026, 6, 1), null);
+
+        when(harvestService.updateHarvest(eq(farmerId), eq(cycleId), any(HarvestRequest.class)))
+                .thenThrow(new ResourceNotFoundException("No harvest record found for cycle id: 10"));
+
+        mockMvc.perform(put("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest",
+                        farmerId, cycleId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("No harvest record found for cycle id: 10"));
+    }
+
+    // ------------------------------------------------------------------ //
+    //  DELETE — remove a harvest record                                    //
+    // ------------------------------------------------------------------ //
+
+    @Test
+    @DisplayName("DELETE returns 204 and deletes the harvest")
+    void shouldReturn204WhenHarvestDeleted() throws Exception {
+        doNothing().when(harvestService).deleteHarvest(farmerId, cycleId);
+
+        mockMvc.perform(delete("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest",
+                        farmerId, cycleId))
+                .andExpect(status().isNoContent());
+
+        verify(harvestService).deleteHarvest(farmerId, cycleId);
+    }
+
+    @Test
+    @DisplayName("DELETE returns 404 when no harvest record exists for the cycle")
+    void shouldReturn404WhenDeleteHarvestNotFound() throws Exception {
+        doThrow(new ResourceNotFoundException("No harvest record found for cycle id: 10"))
+                .when(harvestService).deleteHarvest(farmerId, cycleId);
+
+        mockMvc.perform(delete("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest",
+                        farmerId, cycleId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("No harvest record found for cycle id: 10"));
+    }
 }

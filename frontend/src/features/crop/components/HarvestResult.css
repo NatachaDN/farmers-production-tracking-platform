@@ -35,6 +35,49 @@
   color: var(--color-text-muted);
 }
 
+.result-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-card-border);
+  background-color: #FFFFFF;
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  box-shadow: var(--shadow-subtle);
+}
+
+.action-btn.edit-btn {
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}
+
+.action-btn.edit-btn:hover {
+  background-color: var(--color-brand-tint);
+}
+
+.action-btn.delete-btn {
+  border-color: var(--color-accent-red);
+  color: var(--color-accent-red);
+}
+
+.action-btn.delete-btn:hover {
+  background-color: var(--color-accent-red-bg);
+}
+
 .yield-highlight {
   background-color: var(--color-surface-subtle);
   border: 1px solid var(--color-card-border);
