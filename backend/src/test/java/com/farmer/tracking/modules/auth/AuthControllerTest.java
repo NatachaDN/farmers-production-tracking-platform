@@ -2,7 +2,6 @@ package com.farmer.tracking.modules.auth;
 
 import com.farmer.tracking.common.audit.AuditService;
 import com.farmer.tracking.common.exception.GlobalExceptionHandler;
-import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.security.UserPrincipal;
 import com.farmer.tracking.modules.auth.controller.AuthController;
 import com.farmer.tracking.modules.auth.dto.*;
@@ -75,8 +74,7 @@ class AuthControllerTest {
         ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
         ForgotPasswordResponse response = new ForgotPasswordResponse(
                 "A password reset code has been sent to your registered email or phone.",
-                "joyce@example.com",
-                "123456"
+                "joyce@example.com"
         );
 
         when(authService.forgotPassword(any(ForgotPasswordRequest.class))).thenReturn(response);
@@ -86,7 +84,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("A password reset code has been sent to your registered email or phone."))
-                .andExpect(jsonPath("$.resetCode").value("123456"));
+                .andExpect(jsonPath("$.resetCode").doesNotExist());
     }
 
     @Test
@@ -98,21 +96,6 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("POST /api/v1/auth/forgot-password - Non-existent farmer returns 404")
-    void forgotPassword_NotFound_Returns404() throws Exception {
-        ForgotPasswordRequest request = new ForgotPasswordRequest("unknown@example.com");
-
-        when(authService.forgotPassword(any(ForgotPasswordRequest.class)))
-                .thenThrow(new ResourceNotFoundException("No farmer account found with this email or phone number."));
-
-        mockMvc.perform(post("/api/v1/auth/forgot-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("No farmer account found with this email or phone number."));
     }
 
     @Test

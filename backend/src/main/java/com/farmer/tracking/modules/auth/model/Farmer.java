@@ -64,6 +64,9 @@ public class Farmer {
     @Column(name = "password_reset_expires_at")
     private LocalDateTime passwordResetExpiresAt;
 
+    @Column(name = "password_reset_attempts")
+    private Integer passwordResetAttempts = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -225,6 +228,14 @@ public class Farmer {
 
     public void setPasswordResetToken(String passwordResetToken) {
         this.passwordResetToken = passwordResetToken;
+    }
+
+    public int getPasswordResetAttempts() {
+        return passwordResetAttempts == null ? 0 : passwordResetAttempts;
+    }
+
+    public void setPasswordResetAttempts(Integer passwordResetAttempts) {
+        this.passwordResetAttempts = passwordResetAttempts;
     }
 
     public LocalDateTime getPasswordResetExpiresAt() {
