@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.auth;
 
 import com.farmer.tracking.common.email.EmailService;
+import com.farmer.tracking.common.exception.AccountLockedException;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -124,6 +125,85 @@ class AuthServiceTest {
         assertNotNull(response);
         assertEquals("mock-jwt-token", response.getToken());
         assertEquals("joyce@example.com", response.getFarmer().getEmailOrPhone());
+    }
+
+    private Farmer farmerForLogin(int failedAttempts, LocalDateTime lockedUntil) {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setFullName("Joyce Muthoni");
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setFailedLoginAttempts(failedAttempts);
+        farmer.setLockedUntil(lockedUntil);
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        return farmer;
+    }
+
+    @Test
+    void login_WrongPassword_IncrementsFailedAttempts() {
+        Farmer farmer = farmerForLogin(2, null);
+        when(passwordEncoder.matches("wrong", "hashed_password")).thenReturn(false);
+
+        assertThrows(UnauthorizedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "wrong")));
+
+        assertEquals(3, farmer.getFailedLoginAttempts());
+        assertNull(farmer.getLockedUntil());
+        verify(farmerRepository).save(farmer);
+    }
+
+    @Test
+    void login_FifthConsecutiveFailure_LocksAccount() {
+        Farmer farmer = farmerForLogin(4, null);
+        when(passwordEncoder.matches("wrong", "hashed_password")).thenReturn(false);
+
+        assertThrows(AccountLockedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "wrong")));
+
+        assertNotNull(farmer.getLockedUntil());
+        assertTrue(farmer.getLockedUntil().isAfter(LocalDateTime.now().plusMinutes(14)));
+        assertEquals(0, farmer.getFailedLoginAttempts());
+    }
+
+    @Test
+    void login_WhileLocked_RejectsEvenCorrectPassword() {
+        farmerForLogin(0, LocalDateTime.now().plusMinutes(10));
+
+        AccountLockedException ex = assertThrows(AccountLockedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "SecurePass123")));
+
+        assertTrue(ex.getMessage().contains("10 minutes"));
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(tokenProvider, never()).generateToken(any(), any());
+    }
+
+    @Test
+    void login_AfterLockExpires_SucceedsAndResetsCounters() {
+        Farmer farmer = farmerForLogin(3, LocalDateTime.now().minusMinutes(1));
+        when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
+        when(tokenProvider.generateToken(1L, "joyce@example.com")).thenReturn("mock-jwt-token");
+
+        AuthResponse response = authService.login(new LoginRequest("joyce@example.com", "SecurePass123"));
+
+        assertEquals("mock-jwt-token", response.getToken());
+        assertEquals(0, farmer.getFailedLoginAttempts());
+        assertNull(farmer.getLockedUntil());
+    }
+
+    @Test
+    void resetPassword_Success_UnlocksAccount() {
+        Farmer farmer = farmerWithResetCode(LocalDateTime.now().plusMinutes(10), 0);
+        farmer.setFailedLoginAttempts(2);
+        farmer.setLockedUntil(LocalDateTime.now().plusMinutes(10));
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("123456", "hashed_code")).thenReturn(true);
+        when(passwordEncoder.encode("NewSecretPass999")).thenReturn("new_hash");
+
+        authService.resetPassword(new ResetPasswordRequest(
+                "joyce@example.com", "123456", "NewSecretPass999", "NewSecretPass999"));
+
+        assertNull(farmer.getLockedUntil());
+        assertEquals(0, farmer.getFailedLoginAttempts());
     }
 
     @Test

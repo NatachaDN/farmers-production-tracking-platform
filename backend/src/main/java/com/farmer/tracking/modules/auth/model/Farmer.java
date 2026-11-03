@@ -67,6 +67,12 @@ public class Farmer {
     @Column(name = "password_reset_attempts")
     private Integer passwordResetAttempts = 0;
 
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -228,6 +234,22 @@ public class Farmer {
 
     public void setPasswordResetToken(String passwordResetToken) {
         this.passwordResetToken = passwordResetToken;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts == null ? 0 : failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public LocalDateTime getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public void setLockedUntil(LocalDateTime lockedUntil) {
+        this.lockedUntil = lockedUntil;
     }
 
     public int getPasswordResetAttempts() {

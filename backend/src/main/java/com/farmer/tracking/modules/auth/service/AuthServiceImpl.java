@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.auth.service;
 
 import com.farmer.tracking.common.email.EmailService;
+import com.farmer.tracking.common.exception.AccountLockedException;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -33,6 +34,9 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
+    private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final int LOCK_DURATION_MINUTES = 15;
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid email/phone or password.";
     private static final int RESET_CODE_VALIDITY_MINUTES = 15;
     private static final int MAX_RESET_ATTEMPTS = 5;
     private static final String INVALID_RESET_CODE_MESSAGE =
@@ -79,18 +83,37 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    // Failed-attempt counters must be persisted even though the request ends with an error.
+    @Transactional(noRollbackFor = {UnauthorizedException.class, AccountLockedException.class})
     public AuthResponse login(LoginRequest request) {
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
 
         Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
-                .orElseThrow(() -> new UnauthorizedException("Invalid email/phone or password."));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
 
-        if (!passwordEncoder.matches(request.getPassword(), farmer.getPasswordHash())) {
-            throw new UnauthorizedException("Invalid email/phone or password.");
+        LocalDateTime now = LocalDateTime.now();
+        if (farmer.getLockedUntil() != null && farmer.getLockedUntil().isAfter(now)) {
+            throw new AccountLockedException(lockedMessage(farmer.getLockedUntil(), now));
         }
 
-        farmer.setLastLoginAt(LocalDateTime.now());
+        if (!passwordEncoder.matches(request.getPassword(), farmer.getPasswordHash())) {
+            int attempts = farmer.getFailedLoginAttempts() + 1;
+            if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+                farmer.setFailedLoginAttempts(0);
+                farmer.setLockedUntil(now.plusMinutes(LOCK_DURATION_MINUTES));
+                farmerRepository.save(farmer);
+                log.warn("Farmer [{}] locked for {} minutes after {} failed login attempts",
+                        farmer.getId(), LOCK_DURATION_MINUTES, MAX_FAILED_LOGIN_ATTEMPTS);
+                throw new AccountLockedException(lockedMessage(farmer.getLockedUntil(), now));
+            }
+            farmer.setFailedLoginAttempts(attempts);
+            farmerRepository.save(farmer);
+            throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
+        }
+
+        farmer.setFailedLoginAttempts(0);
+        farmer.setLockedUntil(null);
+        farmer.setLastLoginAt(now);
         farmerRepository.save(farmer);
 
         String token = tokenProvider.generateToken(farmer.getId(), farmer.getEmailOrPhone());
@@ -233,11 +256,20 @@ public class AuthServiceImpl implements AuthService {
         }
 
         farmer.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        // Proving ownership by email also lifts a temporary login lock.
+        farmer.setFailedLoginAttempts(0);
+        farmer.setLockedUntil(null);
         clearResetCode(farmer);
 
         log.info("Password successfully reset for farmer [{}]", farmer.getId());
 
         return new ResetPasswordResponse("Password has been reset successfully. You can now log in with your new password.");
+    }
+
+    private static String lockedMessage(LocalDateTime lockedUntil, LocalDateTime now) {
+        long minutes = Math.max(1, (long) Math.ceil(java.time.Duration.between(now, lockedUntil).getSeconds() / 60.0));
+        return "Too many failed login attempts. Your account is temporarily locked; try again in "
+                + minutes + (minutes == 1 ? " minute" : " minutes") + " or reset your password.";
     }
 
     private void clearResetCode(Farmer farmer) {
