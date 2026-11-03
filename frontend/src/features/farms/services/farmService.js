@@ -2,76 +2,47 @@ import { apiClient } from '../../../shared/services/apiClient';
 
 /**
  * Service to manage Farm creation, retrieval, and updates.
- * Supports both scoped (/farmers/:farmerId/farms) and direct (/farms) patterns.
  */
 export const farmService = {
   /**
-   * List all farms for a farmer.
-   * @param {number|string} [farmerId=1]
+   * Fetch all farms owned by the logged-in farmer.
    */
-  async getFarms(farmerId = 1) {
+  getFarms: async () => {
     try {
-      return await apiClient.get(`/farmers/${farmerId}/farms`);
-    } catch {
-      return await apiClient.get('/farms');
+      const data = await apiClient.get('/farms');
+      return data;
+    } catch (error) {
+      console.warn('Failed to fetch farms from server, using fallback/local state:', error);
+      throw error;
     }
   },
 
   /**
-   * Get farm details by ID.
-   * @param {number|string} farmerId
-   * @param {number|string} [farmId]
+   * Fetch details for a specific farm by ID.
    */
-  async getFarmById(farmerId, farmId) {
-    if (farmId === undefined) {
-      return await apiClient.get(`/farms/${farmerId}`);
+  getFarmById: async (id) => {
+    try {
+      const data = await apiClient.get(`/farms/${id}`);
+      return data;
+    } catch (error) {
+      console.warn(`Failed to fetch farm #${id} from server:`, error);
+      throw error;
     }
-    return await apiClient.get(`/farmers/${farmerId}/farms/${farmId}`);
   },
 
   /**
-   * Create a new farm.
-   * @param {number|string|Object} farmerIdOrData
-   * @param {Object} [data]
+   * Create a new farm record for the authenticated user.
    */
-  async createFarm(farmerIdOrData, data) {
-    if (data !== undefined) {
-      return await apiClient.post(`/farmers/${farmerIdOrData}/farms`, data);
-    }
-    return await apiClient.post('/farms', farmerIdOrData);
+  createFarm: async (farmData) => {
+    const data = await apiClient.post('/farms', farmData);
+    return data;
   },
 
   /**
-   * Update an existing farm.
-   * @param {number|string} farmerIdOrFarmId
-   * @param {number|string|Object} farmIdOrData
-   * @param {Object} [data]
+   * Update an existing farm record (owner verified server-side).
    */
-  async updateFarm(farmerIdOrFarmId, farmIdOrData, data) {
-    if (data !== undefined) {
-      return await apiClient.put(`/farmers/${farmerIdOrFarmId}/farms/${farmIdOrData}`, data);
-    }
-    return await apiClient.put(`/farms/${farmerIdOrFarmId}`, farmIdOrData);
-  },
-
-  /**
-   * Set a farm as the default container.
-   * @param {number|string} farmerId
-   * @param {number|string} farmId
-   */
-  async setDefaultFarm(farmerId, farmId) {
-    return await apiClient.patch(`/farmers/${farmerId}/farms/${farmId}/default`);
-  },
-
-  /**
-   * Delete a farm.
-   * @param {number|string} farmerId
-   * @param {number|string} [farmId]
-   */
-  async deleteFarm(farmerId, farmId) {
-    if (farmId === undefined) {
-      return await apiClient.delete(`/farms/${farmerId}`);
-    }
-    return await apiClient.delete(`/farmers/${farmerId}/farms/${farmId}`);
+  updateFarm: async (id, farmData) => {
+    const data = await apiClient.put(`/farms/${id}`, farmData);
+    return data;
   }
 };

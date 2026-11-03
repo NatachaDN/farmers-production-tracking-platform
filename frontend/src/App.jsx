@@ -200,7 +200,31 @@ export function App() {
               user={currentUser}
             />
           )}
-          {currentRoute === 'farms' && <FarmsAndPlotsView />}
+          {currentRoute === 'farms' && (
+            <FarmsAndPlotsView
+              farmerId={currentUser?.id || 1}
+              onNavigate={(r) => setCurrentRoute(r)}
+              onSelectFarm={(id) => {
+                setSelectedFarmId(id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farms-create' && (
+            <CreateFarmView
+              onNavigate={(r) => setCurrentRoute(r)}
+              onFarmCreated={(newFarm) => {
+                setSelectedFarmId(newFarm.id);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farm-details' && (
+            <FarmDetailsView
+              farmId={selectedFarmId}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
           {currentRoute === 'crops' && (
             <CropProductionView
               farmerId={currentUser?.id || 1}

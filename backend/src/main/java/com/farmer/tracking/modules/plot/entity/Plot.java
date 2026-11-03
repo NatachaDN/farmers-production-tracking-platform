@@ -1,6 +1,6 @@
 package com.farmer.tracking.modules.plot.entity;
 
-import com.farmer.tracking.modules.farm.entity.Farm;
+import com.farmer.tracking.modules.farm.model.Farm;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

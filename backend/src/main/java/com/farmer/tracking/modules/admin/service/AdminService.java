@@ -16,7 +16,7 @@ import com.farmer.tracking.modules.crop.entity.Harvest;
 import com.farmer.tracking.modules.crop.repository.CycleActivityRepository;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.crop.repository.HarvestRepository;
-import com.farmer.tracking.modules.farm.entity.Farm;
+import com.farmer.tracking.modules.farm.model.Farm;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
 import com.farmer.tracking.modules.input.entity.FarmInput;
 import com.farmer.tracking.modules.input.entity.InputType;
