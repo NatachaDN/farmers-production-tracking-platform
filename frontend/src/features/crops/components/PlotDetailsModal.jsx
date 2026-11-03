@@ -47,18 +47,18 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
   if (!isOpen || !plot) return null;
 
   const cropName = plot.cropName || plot.crop || plot.title || 'Maize';
-  const plotName = plot.plotName || plot.title || 'Plot A';
-  const farmName = plot.farmName || plot.farm?.name || 'Green Acres Farm';
-  const areaVal = plot.acreage || plot.areaVal || (parseFloat(plot.area) || 2.5);
-  const stage = plot.stage || 'Vegetative growth';
-  const progress = plot.progress ?? 62;
+  const plotName = plot.plotName || plot.title || '—';
+  const farmName = plot.farmName || plot.farm?.name || '—';
+  const areaVal = plot.acreage || plot.areaVal || (parseFloat(plot.area) || 0);
+  const stage = plot.stage || '—';
+  const progress = plot.progress ?? 0;
   const status = (plot.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'Active' : 'Completed';
-  const plantingDate = plot.plantingDate || plot.startDate || '2026-07-12';
-  const harvestDate = plot.plannedHarvestDate || plot.endDate || '2026-11-28';
+  const plantingDate = plot.plantingDate || plot.startDate || null;
+  const harvestDate = plot.plannedHarvestDate || plot.endDate || null;
   const targetYield = plot.expectedQuantity
     ? `${plot.expectedQuantity.toLocaleString()} ${plot.expectedQuantityUnit || 'kg'}`
-    : '5,000 kg';
-  const location = plot.location || 'North Field, Section 1 · Nakuru County';
+    : '—';
+  const location = plot.location || '—';
 
   return (
     <div style={{
