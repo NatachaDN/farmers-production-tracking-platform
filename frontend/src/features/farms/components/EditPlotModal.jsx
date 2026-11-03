@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { CropTypeSelect } from './CropTypeSelect';
 import { IconCheck, IconClose, IconWarning, IconPencil } from '../../../shared/components/Icons';
 
-export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated }) {
+export function EditPlotModal({ farmerId, isOpen, onClose, plot, farms = [], onPlotUpdated }) {
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [location, setLocation] = useState('');
-  const [cropType, setCropType] = useState('Maize');
+  const [cropType, setCropType] = useState('');
   const [stage, setStage] = useState('Planting');
   const [farmId, setFarmId] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -17,7 +18,7 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
       const rawArea = plot.areaVal !== undefined ? plot.areaVal : (typeof plot.area === 'number' ? plot.area : parseFloat(plot.area));
       setArea(rawArea !== undefined && !isNaN(rawArea) ? String(rawArea) : '');
       setLocation(plot.location || '');
-      setCropType(plot.crop || plot.cropType || 'Maize');
+      setCropType(plot.cropType || '');
       setStage(plot.stage || 'Planting');
       setFarmId(plot.farmId ? String(plot.farmId) : (farms[0]?.id ? String(farms[0].id) : ''));
       setValidationError('');
@@ -209,9 +210,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
                 Primary Crop Type
               </label>
-              <select
+              <CropTypeSelect
+                farmerId={farmerId}
                 value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
+                onChange={setCropType}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -223,16 +225,7 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
                   outline: 'none',
                   boxSizing: 'border-box'
                 }}
-              >
-                <option value="Maize">Maize (Corn)</option>
-                <option value="Tomatoes">Tomatoes</option>
-                <option value="Beans">Beans</option>
-                <option value="Cassava">Cassava</option>
-                <option value="Potatoes">Potatoes</option>
-                <option value="Coffee">Coffee</option>
-                <option value="Tea">Tea</option>
-                <option value="Other">Other / Multicrop</option>
-              </select>
+              />
             </div>
           </div>
 

@@ -192,12 +192,14 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
       )}
 
       <AddPlotModal
+        farmerId={farmerId}
         isOpen={isAddPlotModalOpen}
         onClose={() => setIsAddPlotModalOpen(false)}
         onAddPlot={handleAddPlot}
       />
 
       <EditPlotModal
+        farmerId={farmerId}
         isOpen={Boolean(plotBeingEdited)}
         onClose={() => setPlotBeingEdited(null)}
         plot={plotBeingEdited}
@@ -350,7 +352,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
                   setSelectedPlot(plot);
                   setIsDetailsModalOpen(true);
                 }}
-                onEditPlot={() => setPlotBeingEdited({ ...plot, crop: plot.cropType })}
+                onEditPlot={() => setPlotBeingEdited(plot)}
                 onDeletePlot={() => handleDeletePlot(plot)}
               />
             ))}
