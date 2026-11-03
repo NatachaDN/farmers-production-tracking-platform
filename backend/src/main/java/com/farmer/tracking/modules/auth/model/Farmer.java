@@ -43,11 +43,26 @@ public class Farmer {
     @Column(name = "google_id", length = 64, unique = true)
     private String googleId;
 
-    @Column(name = "avatar_url", length = 512)
+    @Column(name = "avatar_url", length = 1024)
     private String avatarUrl;
+
+    @Column(name = "farm_name", length = 120)
+    private String farmName;
+
+    @Column(name = "crops_grown", length = 255)
+    private String cropsGrown;
+
+    @Column(name = "total_area")
+    private Double totalArea = 0.0;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
+
+    @Column(name = "password_reset_token", length = 120)
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expires_at")
+    private LocalDateTime passwordResetExpiresAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -156,6 +171,30 @@ public class Farmer {
         this.avatarUrl = avatarUrl;
     }
 
+    public String getFarmName() {
+        return farmName;
+    }
+
+    public void setFarmName(String farmName) {
+        this.farmName = farmName;
+    }
+
+    public String getCropsGrown() {
+        return cropsGrown;
+    }
+
+    public void setCropsGrown(String cropsGrown) {
+        this.cropsGrown = cropsGrown;
+    }
+
+    public Double getTotalArea() {
+        return totalArea;
+    }
+
+    public void setTotalArea(Double totalArea) {
+        this.totalArea = totalArea;
+    }
+
     public LocalDateTime getLastLoginAt() {
         return lastLoginAt;
     }
@@ -178,5 +217,21 @@ public class Farmer {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+
+    public LocalDateTime getPasswordResetExpiresAt() {
+        return passwordResetExpiresAt;
+    }
+
+    public void setPasswordResetExpiresAt(LocalDateTime passwordResetExpiresAt) {
+        this.passwordResetExpiresAt = passwordResetExpiresAt;
     }
 }

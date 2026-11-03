@@ -5,6 +5,8 @@ import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
+import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
+import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
@@ -17,6 +19,8 @@ import { AdminFarmersView } from './features/admin/AdminFarmersView';
 import { AdminActivityView } from './features/admin/AdminActivityView';
 import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
+import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
+import { EditProfileModal } from './features/farmer/components/EditProfileModal';
 import './features/admin/admin.css';
 
 const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
@@ -33,6 +37,7 @@ export function App() {
   const [loginError, setLoginError] = useState('');
   const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentRoute !== 'google-callback') return;
@@ -114,6 +119,14 @@ export function App() {
     inputs: {
       title: 'Farm Inputs',
       subtitle: 'Track seeds, fertilizers, and pesticides — stock & costs'
+    },
+    'cycle-inputs': {
+      title: 'Cycle Inputs & Cost Tracking',
+      subtitle: 'Record and deduct inputs used in crop cycles'
+    },
+    incidents: {
+      title: 'Cycle Incidents & Protection',
+      subtitle: 'Log and monitor pests, diseases, and damages'
     },
     reports: {
       title: 'Reports & Analytics',
@@ -212,6 +225,7 @@ export function App() {
           subtitle={currentHeader.subtitle}
           user={currentUser}
           onLogout={handleLogout}
+          onEditProfile={() => setIsEditProfileModalOpen(true)}
           onUserUpdate={(updated) => setCurrentUser(updated)}
         >
           {isAdminRoute && !isAdmin && (
@@ -250,9 +264,23 @@ export function App() {
             <HarvestPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'inputs' && (
-            <FarmInputsView farmerId={currentUser?.id || 1} />
+            <FarmInputsView farmerId={currentUser?.id || 1} onNavigate={(r) => setCurrentRoute(r)} />
           )}
-          {['livestock', 'reports', 'settings'].includes(currentRoute) && (
+          {currentRoute === 'cycle-inputs' && (
+            <CycleInputsPage farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'incidents' && (
+            <CycleIncidentsPage farmerId={currentUser?.id || 1} />
+          )}
+          {currentRoute === 'settings' && (
+            <FarmerProfileSettingsView
+              user={currentUser}
+              onProfileUpdated={(updated) => {
+                setCurrentUser(updated);
+              }}
+            />
+          )}
+          {['livestock', 'reports'].includes(currentRoute) && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',
@@ -268,6 +296,16 @@ export function App() {
               </p>
             </div>
           )}
+
+          {/* Quick Edit Profile Modal */}
+          <EditProfileModal
+            isOpen={isEditProfileModalOpen}
+            onClose={() => setIsEditProfileModalOpen(false)}
+            user={currentUser}
+            onProfileUpdated={(updated) => {
+              setCurrentUser(updated);
+            }}
+          />
         </AppLayout>
       )}
     </div>

@@ -135,6 +135,17 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
               </button>
             );
           })}
+          {UNIT_OPTIONS.map((opt) => (
+            <button
+              type="button"
+              key={opt.value}
+              className={`unit-pill ${formData.unit === opt.value ? 'selected' : ''}`}
+              onClick={() => handleUnitSelect(opt.value)}
+            >
+              <span className="unit-pill-icon">{opt.icon}</span>
+              <span className="unit-pill-label">{opt.label}</span>
+            </button>
+          ))}
         </div>
         {errors.unit && <span className="field-error">{errors.unit}</span>}
       </div>

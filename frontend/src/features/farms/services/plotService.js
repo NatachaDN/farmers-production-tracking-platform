@@ -31,11 +31,23 @@ export const plotService = {
   },
 
   /**
+   * Update an existing plot.
+   * @param {number} farmerId
+   * @param {number} plotId
+   * @param {Object} data - { name: string, area: number, location: string, cropType?: string, stage?: string, farmId?: number }
+   */
+  async updatePlot(farmerId, plotId, data) {
+    return await apiClient.put(`/farmers/${farmerId}/plots/${plotId}`, data);
+  },
+
+  /**
    * Delete a plot by ID.
    * @param {number} farmerId
    * @param {number} plotId
+   * @param {boolean} force - Force deletion even if linked to active cycles
    */
-  async deletePlot(farmerId, plotId) {
-    return await apiClient.delete(`/farmers/${farmerId}/plots/${plotId}`);
+  async deletePlot(farmerId, plotId, force = false) {
+    const query = force ? '?force=true' : '';
+    return await apiClient.delete(`/farmers/${farmerId}/plots/${plotId}${query}`);
   }
 };

@@ -3,6 +3,7 @@ package com.farmer.tracking.modules.auth.dto;
 public class ForgotPasswordResponse {
 
     private String message;
+    private String emailOrPhone;
     private String resetCode;
 
     public ForgotPasswordResponse() {}
@@ -11,8 +12,9 @@ public class ForgotPasswordResponse {
         this.message = message;
     }
 
-    public ForgotPasswordResponse(String message, String resetCode) {
+    public ForgotPasswordResponse(String message, String emailOrPhone, String resetCode) {
         this.message = message;
+        this.emailOrPhone = emailOrPhone;
         this.resetCode = resetCode;
     }
 
@@ -24,6 +26,14 @@ public class ForgotPasswordResponse {
         this.message = message;
     }
 
+    public String getEmailOrPhone() {
+        return emailOrPhone;
+    }
+
+    public void setEmailOrPhone(String emailOrPhone) {
+        this.emailOrPhone = emailOrPhone;
+    }
+
     public String getResetCode() {
         return resetCode;
     }
@@ -32,4 +42,3 @@ public class ForgotPasswordResponse {
         this.resetCode = resetCode;
     }
 }
-

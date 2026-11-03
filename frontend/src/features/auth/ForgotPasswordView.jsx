@@ -13,7 +13,7 @@ import {
 } from '../../shared/components/Icons';
 import { authService } from './services/authService';
 
-export function ForgotPasswordView({ onNavigate, onResetComplete }) {
+export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess }) {
   const [step, setStep] = useState(1); // 1 = Request code, 2 = Enter code & new password, 3 = Success
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [resetCode, setResetCode] = useState('');
@@ -596,6 +596,8 @@ export function ForgotPasswordView({ onNavigate, onResetComplete }) {
                 onClick={() => {
                   if (onResetComplete) {
                     onResetComplete(emailOrPhone);
+                  } else if (onResetSuccess) {
+                    onResetSuccess();
                   } else if (onNavigate) {
                     onNavigate('login');
                   }
@@ -632,4 +634,3 @@ export function ForgotPasswordView({ onNavigate, onResetComplete }) {
     </div>
   );
 }
-

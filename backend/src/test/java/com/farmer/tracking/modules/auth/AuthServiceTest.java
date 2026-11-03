@@ -1,5 +1,6 @@
 package com.farmer.tracking.modules.auth;
 
+import com.farmer.tracking.common.email.EmailService;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -45,6 +46,9 @@ class AuthServiceTest {
     @Mock
     private JwtTokenProvider tokenProvider;
 
+    @Mock
+    private EmailService emailService;
+
     private AuthMapper authMapper;
     private AuthServiceImpl authService;
 
@@ -56,7 +60,8 @@ class AuthServiceTest {
                 passwordResetTokenRepository,
                 authMapper,
                 passwordEncoder,
-                tokenProvider
+                tokenProvider,
+                emailService
         );
     }
 
@@ -142,6 +147,31 @@ class AuthServiceTest {
     }
 
     @Test
+    void updateProfile_Success() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setFullName("Old Name");
+        farmer.setEmailOrPhone("joyce@example.com");
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(farmerRepository.save(any(Farmer.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateProfileRequest req = new UpdateProfileRequest();
+        req.setFullName("New Name");
+        req.setFarmName("Sunrise Farm");
+        req.setCropsGrown("Maize, Beans");
+        req.setTotalArea(12.5);
+
+        FarmerProfileResponse response = authService.updateProfile("joyce@example.com", req);
+
+        assertNotNull(response);
+        assertEquals("New Name", farmer.getFullName());
+        assertEquals("Sunrise Farm", farmer.getFarmName());
+        assertEquals("Maize, Beans", farmer.getCropsGrown());
+        assertEquals(12.5, farmer.getTotalArea());
+    }
+
+    @Test
     void forgotPassword_Success_WhenFarmerExists() {
         ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
 
@@ -157,7 +187,7 @@ class AuthServiceTest {
         assertNotNull(response);
         assertNotNull(response.getResetCode());
         assertEquals(6, response.getResetCode().length());
-        verify(passwordResetTokenRepository, times(1)).save(any(PasswordResetToken.class));
+        verify(farmerRepository, times(1)).save(farmer);
     }
 
     @Test
@@ -167,7 +197,6 @@ class AuthServiceTest {
         when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> authService.forgotPassword(request));
-        verify(passwordResetTokenRepository, never()).save(any());
     }
 
     @Test
@@ -179,22 +208,19 @@ class AuthServiceTest {
         Farmer farmer = new Farmer();
         farmer.setId(1L);
         farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordResetToken("123456");
+        farmer.setPasswordResetExpiresAt(LocalDateTime.now().plusMinutes(10));
         farmer.setPasswordHash("old_hash");
 
-        PasswordResetToken token = new PasswordResetToken(farmer, "123456", LocalDateTime.now().plusMinutes(10));
-
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
-        when(passwordResetTokenRepository.findByFarmerAndTokenAndUsedFalse(farmer, "123456"))
-                .thenReturn(Optional.of(token));
         when(passwordEncoder.encode("NewSecretPass999")).thenReturn("new_hash");
 
         ResetPasswordResponse response = authService.resetPassword(request);
 
         assertNotNull(response);
         assertEquals("new_hash", farmer.getPasswordHash());
-        assertTrue(token.isUsed());
+        assertNull(farmer.getPasswordResetToken());
         verify(farmerRepository, times(1)).save(farmer);
-        verify(passwordResetTokenRepository, times(1)).save(token);
     }
 
     @Test
@@ -216,12 +242,10 @@ class AuthServiceTest {
         Farmer farmer = new Farmer();
         farmer.setId(1L);
         farmer.setEmailOrPhone("joyce@example.com");
-
-        PasswordResetToken expiredToken = new PasswordResetToken(farmer, "123456", LocalDateTime.now().minusMinutes(5));
+        farmer.setPasswordResetToken("123456");
+        farmer.setPasswordResetExpiresAt(LocalDateTime.now().minusMinutes(5));
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
-        when(passwordResetTokenRepository.findByFarmerAndTokenAndUsedFalse(farmer, "123456"))
-                .thenReturn(Optional.of(expiredToken));
 
         assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
     }

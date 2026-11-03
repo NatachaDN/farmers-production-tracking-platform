@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 import React, { useRef, useState } from 'react';
 import { IconSearch, IconBell, IconChevronDown, IconCamera } from './Icons';
 import { authService } from '../../features/auth/services/authService';
+=======
+import React from 'react';
+import { IconSearch, IconBell, IconChevronDown, IconSettings } from './Icons';
+>>>>>>> origin/feature/sprint-1-task-7and-8
 
 export function TopBar({
   title = "Dashboard",
@@ -12,7 +17,11 @@ export function TopBar({
   onSearch,
   onNotificationClick,
   onLogout,
+<<<<<<< HEAD
   onUserUpdate
+=======
+  onEditProfile
+>>>>>>> origin/feature/sprint-1-task-7and-8
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -258,6 +267,33 @@ export function TopBar({
               </button>
 
               <button
+                id="topbar-edit-profile-btn"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  if (onEditProfile) onEditProfile();
+                }}
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-text-primary, #19201C)',
+                  borderRadius: '6px',
+                  fontWeight: 500,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 150ms'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <IconSettings size={15} color="var(--color-brand-primary, #164230)" />
+                <span>Edit Profile</span>
+              </button>
+              <button
                 onClick={() => {
                   setDropdownOpen(false);
                   if (onLogout) onLogout();
@@ -271,6 +307,11 @@ export function TopBar({
                   border: 'none',
                   borderRadius: '6px',
                   fontWeight: 500,
+<<<<<<< HEAD
+=======
+                  border: 'none',
+                  backgroundColor: 'transparent',
+>>>>>>> origin/feature/sprint-1-task-7and-8
                   cursor: 'pointer',
                   transition: 'background-color 150ms'
                 }}

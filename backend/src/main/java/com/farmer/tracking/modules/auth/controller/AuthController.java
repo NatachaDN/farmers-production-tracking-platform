@@ -117,6 +117,18 @@ public class AuthController {
         return ResponseEntity.ok(profile);
     }
 
+    @PutMapping({"/me", "/profile"})
+    @Operation(summary = "Update authenticated farmer profile information (farm, crops grown, total area, photo)")
+    public ResponseEntity<FarmerProfileResponse> updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+        FarmerProfileResponse profile = authService.updateProfile(userDetails.getUsername(), request);
+        return ResponseEntity.ok(profile);
+    }
+
     @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload profile picture for the currently authenticated farmer")
     public ResponseEntity<FarmerProfileResponse> uploadAvatar(

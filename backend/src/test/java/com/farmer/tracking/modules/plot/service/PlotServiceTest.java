@@ -1,6 +1,9 @@
 package com.farmer.tracking.modules.plot.service;
 
+import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.modules.crop.entity.Cycle;
+import com.farmer.tracking.modules.crop.entity.CycleStatus;
 import com.farmer.tracking.modules.plot.api.PlotRequest;
 import com.farmer.tracking.modules.plot.api.PlotResponse;
 import com.farmer.tracking.modules.plot.entity.Plot;
@@ -30,6 +33,9 @@ class PlotServiceTest {
 
     @Mock
     private com.farmer.tracking.modules.farm.repository.FarmRepository farmRepository;
+
+    @Mock
+    private com.farmer.tracking.modules.crop.repository.CycleRepository cycleRepository;
 
     @InjectMocks
     private PlotServiceImpl plotService;
@@ -125,5 +131,97 @@ class PlotServiceTest {
 
         assertThatThrownBy(() -> plotService.getPlotById(farmerId, plotId))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Should update plot successfully when valid data provided")
+    void shouldUpdatePlotSuccessfully() {
+        PlotRequest updateReq = new PlotRequest("Plot A — Updated", 3.2, "South Field", "Wheat", "Flowering");
+
+        when(plotRepository.findByIdAndFarmerId(plotId, farmerId)).thenReturn(Optional.of(samplePlot));
+        when(plotRepository.save(any(Plot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PlotResponse response = plotService.updatePlot(farmerId, plotId, updateReq);
+
+        assertThat(response.getName()).isEqualTo("Plot A — Updated");
+        assertThat(response.getArea()).isEqualTo(3.2);
+        assertThat(response.getLocation()).isEqualTo("South Field");
+        assertThat(response.getCropType()).isEqualTo("Wheat");
+        assertThat(response.getStage()).isEqualTo("Flowering");
+        verify(plotRepository).save(samplePlot);
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when updating plot with negative area")
+    void shouldThrowExceptionWhenUpdatingWithNegativeArea() {
+        PlotRequest updateReq = new PlotRequest("Plot A", -1.0, "South Field");
+
+        assertThatThrownBy(() -> plotService.updatePlot(farmerId, plotId, updateReq))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("positive number");
+
+        verify(plotRepository, never()).save(any(Plot.class));
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when updating non-existent plot")
+    void shouldThrowExceptionWhenUpdatingNonExistentPlot() {
+        PlotRequest updateReq = new PlotRequest("Plot NonExistent", 2.0, "Somewhere");
+        when(plotRepository.findByIdAndFarmerId(999L, farmerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> plotService.updatePlot(farmerId, 999L, updateReq))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Should delete plot when no active production cycles exist")
+    void shouldDeletePlotSuccessfullyWhenNoActiveCycles() {
+        when(plotRepository.findByIdAndFarmerId(plotId, farmerId)).thenReturn(Optional.of(samplePlot));
+        when(cycleRepository.findFirstByPlotIdAndStatusOrderByIdDesc(plotId, CycleStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+        when(cycleRepository.findByPlotId(plotId)).thenReturn(List.of());
+
+        plotService.deletePlot(farmerId, plotId, false);
+
+        verify(plotRepository).delete(samplePlot);
+    }
+
+    @Test
+    @DisplayName("Should throw ConflictException when deleting plot with active cycle without force")
+    void shouldThrowConflictWhenDeletingPlotWithActiveCycleAndNotForced() {
+        Cycle activeCycle = new Cycle();
+        activeCycle.setName("Maize Season 2026");
+        activeCycle.setStatus(CycleStatus.ACTIVE);
+
+        when(plotRepository.findByIdAndFarmerId(plotId, farmerId)).thenReturn(Optional.of(samplePlot));
+        when(cycleRepository.findFirstByPlotIdAndStatusOrderByIdDesc(plotId, CycleStatus.ACTIVE))
+                .thenReturn(Optional.of(activeCycle));
+
+        assertThatThrownBy(() -> plotService.deletePlot(farmerId, plotId, false))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Cannot delete plot")
+                .hasMessageContaining("Maize Season 2026");
+
+        verify(plotRepository, never()).delete(any(Plot.class));
+    }
+
+    @Test
+    @DisplayName("Should delete plot and unlink cycles when force is true even if active cycle exists")
+    void shouldDeletePlotSuccessfullyWhenForcedWithActiveCycle() {
+        Cycle activeCycle = new Cycle();
+        activeCycle.setName("Maize Season 2026");
+        activeCycle.setStatus(CycleStatus.ACTIVE);
+        activeCycle.setPlot(samplePlot);
+
+        when(plotRepository.findByIdAndFarmerId(plotId, farmerId)).thenReturn(Optional.of(samplePlot));
+        when(cycleRepository.findFirstByPlotIdAndStatusOrderByIdDesc(plotId, CycleStatus.ACTIVE))
+                .thenReturn(Optional.of(activeCycle));
+        when(cycleRepository.findByPlotId(plotId)).thenReturn(List.of(activeCycle));
+
+        plotService.deletePlot(farmerId, plotId, true);
+
+        assertThat(activeCycle.getPlot()).isNull();
+        verify(cycleRepository).saveAll(List.of(activeCycle));
+        verify(plotRepository).delete(samplePlot);
     }
 }

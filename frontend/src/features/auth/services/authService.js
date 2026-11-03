@@ -41,29 +41,6 @@ export const authService = {
     return response;
   },
 
-  async forgotPassword(emailOrPhone) {
-    return apiClient.post('/auth/forgot-password', { emailOrPhone });
-  },
-
-  async resetPassword({ emailOrPhone, resetCode, newPassword, confirmPassword }) {
-    return apiClient.post('/auth/reset-password', {
-      emailOrPhone,
-      resetCode,
-      newPassword,
-      confirmPassword,
-    });
-  },
-
-  async uploadAvatar(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const updatedUser = await apiClient.upload('/auth/me/avatar', formData);
-    if (updatedUser) {
-      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-    }
-    return updatedUser;
-  },
-
   async getCurrentUser() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return null;
@@ -89,6 +66,54 @@ export const authService = {
 
   isAuthenticated() {
     return Boolean(localStorage.getItem(TOKEN_KEY));
+  },
+
+  async updateProfile(profileData) {
+    const updated = await apiClient.put('/auth/me', profileData);
+    if (updated) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+    return updated;
+  },
+
+  /** Upload an image file from the device and update the user's avatar. */
+  async uploadAvatar(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const result = await apiClient.upload('/auth/upload-avatar', fd);
+      if (result?.url) {
+        const updated = await this.updateProfile({ avatarUrl: result.url });
+        return updated || { avatarUrl: result.url };
+      }
+    } catch {
+      // Fallback
+    }
+
+    const updated = await apiClient.upload('/auth/me/avatar', fd);
+    if (updated) {
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    }
+    return updated;
+  },
+
+  async forgotPassword(emailOrPhone) {
+    return await apiClient.post('/auth/forgot-password', { emailOrPhone });
+  },
+
+  async resetPassword(arg1, arg2, arg3, arg4) {
+    let payload;
+    if (typeof arg1 === 'object') {
+      payload = arg1;
+    } else {
+      payload = {
+        emailOrPhone: arg1,
+        resetCode: arg2,
+        newPassword: arg3,
+        confirmPassword: arg4 || arg3,
+      };
+    }
+    return await apiClient.post('/auth/reset-password', payload);
   },
 
   logout() {

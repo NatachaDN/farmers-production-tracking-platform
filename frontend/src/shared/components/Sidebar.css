@@ -79,6 +79,33 @@
   gap: 6px;
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  /* Fade out at the bottom to hint at more items */
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent 100%);
+  padding-bottom: 48px;
+}
+
+/* Hide scrollbar — Chrome, Safari, Edge */
+.sidebar-nav::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+/* Hide scrollbar — Firefox */
+.sidebar-nav {
+  scrollbar-width: none;
+}
+
+/* Scrollable nav container */
+.sidebar-scroll-nav {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE / Edge */
+}
+
+/* Hide scrollbar — Chrome, Safari */
+.sidebar-scroll-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-item {

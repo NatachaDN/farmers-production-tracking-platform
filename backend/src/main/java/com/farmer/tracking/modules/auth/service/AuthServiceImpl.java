@@ -1,5 +1,6 @@
 package com.farmer.tracking.modules.auth.service;
 
+import com.farmer.tracking.common.email.EmailService;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -40,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthMapper authMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthServiceImpl(
@@ -47,12 +49,14 @@ public class AuthServiceImpl implements AuthService {
             PasswordResetTokenRepository passwordResetTokenRepository,
             AuthMapper authMapper,
             PasswordEncoder passwordEncoder,
-            JwtTokenProvider tokenProvider) {
+            JwtTokenProvider tokenProvider,
+            EmailService emailService) {
         this.farmerRepository = farmerRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.authMapper = authMapper;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
+        this.emailService = emailService;
     }
 
     @Override
@@ -107,69 +111,157 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
-        String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
-
-        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
-                .orElseThrow(() -> new ResourceNotFoundException("No farmer account found with this email or phone number."));
-
-        // Invalidate prior unused tokens for this farmer
-        List<PasswordResetToken> existing = passwordResetTokenRepository.findByFarmerAndUsedFalse(farmer);
-        for (PasswordResetToken t : existing) {
-            t.setUsed(true);
+    public FarmerProfileResponse updateProfile(String emailOrPhone, UpdateProfileRequest request) {
+        if (emailOrPhone == null || emailOrPhone.isBlank()) {
+            throw new UnauthorizedException("Authentication required.");
         }
-        passwordResetTokenRepository.saveAll(existing);
 
-        // Generate 6-digit numeric verification code
-        String code = String.format("%06d", secureRandom.nextInt(1_000_000));
+        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
+
+        if (request != null) {
+            if (request.getFullName() != null) {
+                farmer.setFullName(request.getFullName().trim());
+            }
+            if (request.getFarmName() != null) {
+                farmer.setFarmName(request.getFarmName().trim());
+            }
+            if (request.getCropsGrown() != null) {
+                farmer.setCropsGrown(request.getCropsGrown().trim());
+            }
+            if (request.getTotalArea() != null) {
+                if (request.getTotalArea() < 0) {
+                    throw new IllegalArgumentException("Total area cannot be negative");
+                }
+                farmer.setTotalArea(request.getTotalArea());
+            }
+            if (request.getAvatarUrl() != null) {
+                farmer.setAvatarUrl(request.getAvatarUrl().trim());
+            }
+            if (request.getLocation() != null) {
+                farmer.setLocation(request.getLocation().trim());
+            }
+            if (request.getFarmType() != null) {
+                farmer.setFarmType(request.getFarmType());
+            }
+        }
+
+        Farmer savedFarmer = farmerRepository.save(farmer);
+        return authMapper.toProfileResponse(savedFarmer);
+    }
+
+    @Override
+    @Transactional
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+        if (request == null || request.getEmailOrPhone() == null || request.getEmailOrPhone().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email or phone number is required.");
+        }
+
+        String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
+        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
+                .orElseThrow(() -> new ResourceNotFoundException("No account found with this email or phone number."));
+
+        String resetCode = String.format("%06d", secureRandom.nextInt(1_000_000));
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(15);
 
-        PasswordResetToken resetToken = new PasswordResetToken(farmer, code, expiresAt);
-        passwordResetTokenRepository.save(resetToken);
+        // Store reset code directly on Farmer entity
+        farmer.setPasswordResetToken(resetCode);
+        farmer.setPasswordResetExpiresAt(expiresAt);
+        farmerRepository.save(farmer);
 
-        log.info("Generated password reset code for farmer [{}]: {}", farmer.getId(), code);
+        // Also track in PasswordResetToken table if repository available
+        if (passwordResetTokenRepository != null) {
+            List<PasswordResetToken> existing = passwordResetTokenRepository.findByFarmerAndUsedFalse(farmer);
+            for (PasswordResetToken t : existing) {
+                t.setUsed(true);
+            }
+            passwordResetTokenRepository.saveAll(existing);
+            passwordResetTokenRepository.save(new PasswordResetToken(farmer, resetCode, expiresAt));
+        }
+
+        // Send by email if configured
+        if (emailService != null) {
+            try {
+                emailService.sendPasswordResetCode(normalizedIdentifier, resetCode);
+            } catch (Exception ex) {
+                log.warn("Could not email reset code to [{}]: {}", normalizedIdentifier, ex.getMessage());
+            }
+        }
+
+        log.info("Password reset code generated for farmer [{}] (valid for 15 minutes)", normalizedIdentifier);
 
         return new ForgotPasswordResponse(
-                "A password reset code has been sent to your registered email or phone.",
-                code
+                "A 6-digit password reset code has been sent to " + normalizedIdentifier + ". Check your inbox.",
+                normalizedIdentifier,
+                resetCode
         );
     }
 
     @Override
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
-        if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 8) {
-            throw new BadRequestException("Password must be at least 8 characters long.");
+        if (request == null || request.getEmailOrPhone() == null || request.getEmailOrPhone().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email or phone number is required.");
         }
-
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+        if (request.getResetCode() == null || request.getResetCode().trim().isEmpty()) {
+            throw new IllegalArgumentException("Reset code is required.");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
+            throw new IllegalArgumentException("Password must be between 8 and 72 characters.");
+        }
+        if (request.getConfirmPassword() != null && !request.getConfirmPassword().isBlank()
+                && !request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("Password confirmation does not match.");
         }
 
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
         Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
-                .orElseThrow(() -> new ResourceNotFoundException("No farmer account found with this email or phone number."));
+                .orElseThrow(() -> new ResourceNotFoundException("No account found with this email or phone number."));
 
-        String code = request.getResetCode().trim();
-        PasswordResetToken resetToken = passwordResetTokenRepository
-                .findByFarmerAndTokenAndUsedFalse(farmer, code)
-                .orElseThrow(() -> new BadRequestException("Invalid or already used reset code."));
+        String resetCode = request.getResetCode().trim();
+        boolean validCode = farmer.getPasswordResetToken() != null && farmer.getPasswordResetToken().trim().equals(resetCode);
 
-        if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("This reset code has expired. Please request a new one.");
+        // Fallback check against PasswordResetToken table
+        PasswordResetToken dbToken = null;
+        if (!validCode && passwordResetTokenRepository != null) {
+            dbToken = passwordResetTokenRepository.findByFarmerAndTokenAndUsedFalse(farmer, resetCode).orElse(null);
+            if (dbToken != null) {
+                validCode = true;
+            }
         }
 
-        // Apply new hashed password
+        if (!validCode) {
+            throw new BadRequestException("Invalid reset code. Please check the code or request a new one.");
+        }
+
+        LocalDateTime expiresAt = farmer.getPasswordResetExpiresAt();
+        if (expiresAt == null && dbToken != null) {
+            expiresAt = dbToken.getExpiresAt();
+        }
+
+        if (expiresAt == null || expiresAt.isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Password reset code has expired. Please request a new one.");
+        }
+
         farmer.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        farmer.setPasswordResetToken(null);
+        farmer.setPasswordResetExpiresAt(null);
         farmerRepository.save(farmer);
 
-        // Mark token as consumed
-        resetToken.setUsed(true);
-        passwordResetTokenRepository.save(resetToken);
+        if (dbToken != null) {
+            dbToken.setUsed(true);
+            passwordResetTokenRepository.save(dbToken);
+        } else if (passwordResetTokenRepository != null) {
+            passwordResetTokenRepository.findByFarmerAndTokenAndUsedFalse(farmer, resetCode)
+                    .ifPresent(t -> {
+                        t.setUsed(true);
+                        passwordResetTokenRepository.save(t);
+                    });
+        }
 
-        log.info("Password successfully reset for farmer [{}]", farmer.getId());
+        log.info("Password successfully reset for farmer [{}]", normalizedIdentifier);
 
-        return new ResetPasswordResponse("Password has been reset successfully. You can now sign in with your new password.");
+        return new ResetPasswordResponse("Password has been reset successfully. You can now log in with your new password.");
     }
 
     @Override

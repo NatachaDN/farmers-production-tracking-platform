@@ -24,4 +24,7 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
 
     /** Check if a farmer has any farms registered. */
     boolean existsByFarmerId(Long farmerId);
+
+    /** Check if a farm exists and belongs to farmer. */
+    boolean existsByIdAndFarmerId(Long id, Long farmerId);
 }

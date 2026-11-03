@@ -40,6 +40,9 @@ public class AuthMapper {
         );
         response.setAvatarUrl(farmer.getAvatarUrl());
         response.setAuthProvider(farmer.getAuthProvider());
+        response.setFarmName(farmer.getFarmName());
+        response.setCropsGrown(farmer.getCropsGrown());
+        response.setTotalArea(farmer.getTotalArea());
         return response;
     }
 }
