@@ -97,7 +97,7 @@ function formatDateDisplay(dateStr) {
   }
 }
 
-export function CropProductionView({ farmerId = 1, onNavigate }) {
+export function CropProductionView({ farmerId, onNavigate }) {
   const [activeTab, setActiveTab] = useState('Active');
   const [cycles, setCycles] = useState(DEFAULT_CYCLES);
   const [isModalOpen, setIsModalOpen] = useState(false);

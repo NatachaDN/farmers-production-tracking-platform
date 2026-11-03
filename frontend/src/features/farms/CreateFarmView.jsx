@@ -16,20 +16,20 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
   const [validationErrors, setValidationErrors] = useState({});
 
   const [formData, setFormData] = useState({
-    name: 'Green Valley Farm',
+    name: '',
     type: 'CROP',
-    size: 25,
+    size: '',
     sizeUnit: 'HECTARES',
-    description: 'Main farm for maize, beans and vegetables. Located in the highlands with good access to water.',
+    description: '',
     status: 'ACTIVE',
-    country: 'Cameroon',
-    region: 'West',
-    district: 'Bafoussam',
-    mapImageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
+    country: '',
+    region: '',
+    district: '',
+    mapImageUrl: '',
     soilType: 'LOAMY',
     slope: 'MODERATE',
     accessToWater: 'YES',
-    additionalNotes: 'Near a small river. Good for irrigation.'
+    additionalNotes: ''
   });
 
   const handleChange = (field, value) => {
@@ -594,7 +594,8 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                   </div>
                 </div>
 
-                {/* Map Preview Image Thumbnail */}
+                {/* Map Preview Image Thumbnail (only when a map has been provided) */}
+                {formData.mapImageUrl && (
                 <div style={{
                   position: 'relative',
                   borderRadius: 'var(--radius-lg)',
@@ -622,6 +623,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                     Boundary polygon mapped
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </div>

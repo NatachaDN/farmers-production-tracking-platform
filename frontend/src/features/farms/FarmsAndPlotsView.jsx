@@ -70,7 +70,7 @@ const primaryButtonStyle = {
   border: 'none'
 };
 
-export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
+export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   const [farms, setFarms] = useState([]);
   const [plots, setPlots] = useState([]);
   const [loading, setLoading] = useState(true);

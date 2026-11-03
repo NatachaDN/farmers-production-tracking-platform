@@ -14,6 +14,7 @@ import {
 export function FarmDetailsView({ farmId, onNavigate }) {
   const [farm, setFarm] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [activeTab, setActiveTab] = useState('Overview');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({});
@@ -24,58 +25,23 @@ export function FarmDetailsView({ farmId, onNavigate }) {
     let isMounted = true;
     async function loadFarmDetails() {
       setLoading(true);
+      setLoadError(null);
+      if (!farmId) {
+        setFarm(null);
+        setLoadError('No farm selected.');
+        setLoading(false);
+        return;
+      }
       try {
-        if (farmId) {
-          const data = await farmService.getFarmById(farmId);
-          if (isMounted) {
-            setFarm(data);
-            setEditFormData(data);
-          }
-        } else {
-          // Fallback initial demo farm
-          const mockData = {
-            id: 1,
-            name: 'Green Valley Farm',
-            type: 'CROP',
-            size: 25,
-            sizeUnit: 'HECTARES',
-            country: 'Cameroon',
-            region: 'West',
-            district: 'Bafoussam',
-            status: 'ACTIVE',
-            description: 'Main farm for maize, beans and vegetables. Located in the highlands with good access to water.',
-            mapImageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
-            soilType: 'LOAMY',
-            slope: 'MODERATE',
-            accessToWater: 'YES',
-            additionalNotes: 'Near a small river. Good for irrigation.'
-          };
-          if (isMounted) {
-            setFarm(mockData);
-            setEditFormData(mockData);
-          }
+        const data = await farmService.getFarmById(farmId);
+        if (isMounted) {
+          setFarm(data);
+          setEditFormData(data);
         }
       } catch (err) {
-        console.warn('Using default farm representation for view:', err);
-        const fallback = {
-          id: farmId || 1,
-          name: 'Green Valley Farm',
-          type: 'CROP',
-          size: 25,
-          sizeUnit: 'HECTARES',
-          country: 'Cameroon',
-          region: 'West',
-          district: 'Bafoussam',
-          status: 'ACTIVE',
-          description: 'Main farm for maize, beans and vegetables.',
-          mapImageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
-          soilType: 'LOAMY',
-          slope: 'MODERATE',
-          accessToWater: 'YES'
-        };
         if (isMounted) {
-          setFarm(fallback);
-          setEditFormData(fallback);
+          setFarm(null);
+          setLoadError(err?.message || 'Could not load this farm.');
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -132,16 +98,23 @@ export function FarmDetailsView({ farmId, onNavigate }) {
     );
   }
 
-  const currentFarm = farm || {
-    name: 'Green Valley Farm',
-    type: 'CROP',
-    size: 25,
-    sizeUnit: 'HECTARES',
-    country: 'Cameroon',
-    region: 'West',
-    district: 'Bafoussam',
-    status: 'ACTIVE'
-  };
+  if (!farm) {
+    return (
+      <div style={{ padding: '60px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+        <p style={{ color: 'var(--color-accent-red)', marginBottom: '12px' }}>{loadError || 'Farm not found.'}</p>
+        <button
+          type="button"
+          onClick={() => onNavigate && onNavigate('farms')}
+          style={{ background: 'none', border: 'none', color: 'var(--color-brand-primary)', fontWeight: 600, cursor: 'pointer' }}
+        >
+          ← Back to farms
+        </button>
+      </div>
+    );
+  }
+
+  const currentFarm = farm;
+
 
   const tabs = ['Overview', 'Crops', 'Livestock', 'Resources', 'Activities', 'Settings'];
 

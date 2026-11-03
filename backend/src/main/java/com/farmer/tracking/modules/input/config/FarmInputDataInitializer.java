@@ -4,6 +4,7 @@ import com.farmer.tracking.modules.input.entity.FarmInput;
 import com.farmer.tracking.modules.input.entity.InputType;
 import com.farmer.tracking.modules.input.repository.FarmInputRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -12,6 +13,8 @@ import java.time.LocalDate;
  * Seeds initial demo farm input data for farmer ID 1.
  * Only runs when the farm_inputs table is empty.
  */
+// Demo data for local development only: never seed fake records into a real farmer account.
+@Profile("local")
 @Component
 public class FarmInputDataInitializer implements CommandLineRunner {
 

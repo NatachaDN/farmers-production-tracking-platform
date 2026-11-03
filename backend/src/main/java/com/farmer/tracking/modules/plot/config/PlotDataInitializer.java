@@ -3,12 +3,15 @@ package com.farmer.tracking.modules.plot.config;
 import com.farmer.tracking.modules.plot.entity.Plot;
 import com.farmer.tracking.modules.plot.repository.PlotRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
  * Seeds initial demo plot data for farmer ID 1.
  * Only runs when the plots table is empty.
  */
+// Demo data for local development only: never seed fake records into a real farmer account.
+@Profile("local")
 @Component
 public class PlotDataInitializer implements CommandLineRunner {
 

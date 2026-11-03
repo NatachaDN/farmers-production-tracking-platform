@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './CycleInputsPage.css';
 import { cycleInputService } from '../../crops/services/cycleInputService';
-import { cropCycleService } from '../../crops/services/cropCycleService';
 import { inputService } from '../../inputs/services/inputService';
 import { CycleInputUsageForm } from '../components/CycleInputUsageForm';
 import { CycleInputUsageList } from '../components/CycleInputUsageList';
 import { MetricCard } from '../../../shared/components/MetricCard';
+import { useFarmerCycles, cycleLabel } from '../hooks/useFarmerCycles';
 import {
   IconInputs,
   IconPlus,
@@ -16,23 +16,12 @@ import {
   IconWarning
 } from '../../../shared/components/Icons';
 
-const FALLBACK_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)', cropName: 'Maize', plotName: 'Plot A', status: 'ACTIVE', acreage: 2.5, stage: 'Vegetative growth' },
-  { id: 2, name: 'Tomatoes (Plot B)', cropName: 'Tomatoes', plotName: 'Plot B', status: 'ACTIVE', acreage: 1.0, stage: 'Flowering' },
-  { id: 3, name: 'Beans (Plot C)', cropName: 'Beans', plotName: 'Plot C', status: 'ACTIVE', acreage: 0.8, stage: 'Planting' },
-];
-
-const FALLBACK_INPUTS = [
-  { id: 1, name: 'Hybrid Maize Seed 614', type: 'SEEDS', quantity: 45.0, unit: 'kg', purchasePrice: 480.0 },
-  { id: 2, name: 'CAN Fertilizer', type: 'FERTILIZER', quantity: 200.0, unit: 'kg', purchasePrice: 160.0 },
-  { id: 3, name: 'DAP Planting Fertilizer', type: 'FERTILIZER', quantity: 150.0, unit: 'kg', purchasePrice: 180.0 },
-  { id: 4, name: 'Belt Expert Pesticide', type: 'PESTICIDE', quantity: 12.0, unit: 'litres', purchasePrice: 1250.0 },
-];
-
-export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
-  const [cycles, setCycles] = useState(FALLBACK_CYCLES);
-  const [selectedCycleId, setSelectedCycleId] = useState(initialCycleId || 1);
-  const [availableInputs, setAvailableInputs] = useState(FALLBACK_INPUTS);
+export function CycleInputsPage({ farmerId, initialCycleId = null }) {
+  const {
+    cycles, selectedCycle, selectedCycleId, setSelectedCycleId,
+    isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
+  } = useFarmerCycles(farmerId);
+  const [availableInputs, setAvailableInputs] = useState([]);
   const [usages, setUsages] = useState([]);
   const [costSummary, setCostSummary] = useState(null);
 
@@ -42,40 +31,29 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
   const [serverError, setServerError] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
+  const canRecord = selectedCycle?.status === 'ACTIVE';
+
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4500);
   };
 
-  // 1. Load Farmer's Cycles
+  // 1. Honour a cycle pre-selected by the caller once the real cycles are loaded
   useEffect(() => {
-    async function fetchCycles() {
-      try {
-        const data = await cropCycleService.getCycles(farmerId);
-        if (Array.isArray(data) && data.length > 0) {
-          setCycles(data);
-          if (!initialCycleId) {
-            // Default to first active cycle
-            const activeOne = data.find((c) => (c.status || '').toUpperCase() === 'ACTIVE');
-            setSelectedCycleId(activeOne ? activeOne.id : data[0].id);
-          }
-        }
-      } catch (err) {
-        console.warn('Using default demo cycles:', err);
-      }
+    if (initialCycleId && cycles.some((c) => c.id === Number(initialCycleId))) {
+      setSelectedCycleId(Number(initialCycleId));
     }
-    fetchCycles();
-  }, [farmerId, initialCycleId]);
+  }, [initialCycleId, cycles, setSelectedCycleId]);
 
-  // 2. Load Inventory Inputs for farmer
+  // 2. Load the farmer's inventory inputs
   const loadInventory = async () => {
+    if (!farmerId) return;
     try {
       const data = await inputService.getInputs(farmerId);
-      if (Array.isArray(data) && data.length > 0) {
-        setAvailableInputs(data);
-      }
+      setAvailableInputs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Using default demo inputs:', err);
+      setAvailableInputs([]);
+      showToast(err?.message || 'Could not load your inventory inputs.', 'warning');
     }
   };
 
@@ -103,20 +81,24 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
       if (summaryData) {
         setCostSummary(summaryData);
       }
-    } catch {
-      console.info('No backend input usages found, using local view state.');
+    } catch (err) {
       setUsages([]);
       setCostSummary(null);
+      showToast(err?.message || 'Could not load input usage for this cycle.', 'warning');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    setShowForm(false);
+    if (!selectedCycleId) {
+      setUsages([]);
+      setCostSummary(null);
+      return;
+    }
     loadCycleInputs(selectedCycleId);
   }, [selectedCycleId, farmerId]);
-
-  const selectedCycle = cycles.find((c) => Number(c.id) === Number(selectedCycleId)) || cycles[0];
 
   // 4. Handle Recording Input Usage
   const handleRecordUsage = async (formData) => {
@@ -140,7 +122,7 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
       ]);
     } catch (err) {
       // Acceptance Criterion 2: Warning of insufficient stock or error
-      const message = err.response?.data?.message || err.message || 'Failed to record input consumption.';
+      const message = err?.message || 'Failed to record input consumption.';
       setServerError(message);
       showToast(message, 'warning');
     } finally {
@@ -160,7 +142,7 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
         loadInventory()
       ]);
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to remove input record.', 'warning');
+      showToast(err?.message || 'Failed to remove input record.', 'warning');
     }
   };
 
@@ -190,10 +172,14 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
           </div>
           <div>
             <h3 className="cycle-selection-title">
-              {selectedCycle?.name || 'Crop Cycle Inputs'}
+              {selectedCycle ? cycleLabel(selectedCycle) : 'Crop Cycle Inputs'}
             </h3>
             <p className="cycle-selection-subtitle">
-              Crop: <strong>{selectedCycle?.cropName || 'Maize'}</strong> · Cultivated Area: <strong>{selectedCycle?.acreage || 0} ha</strong> · Status: <strong>{selectedCycle?.status || 'ACTIVE'}</strong>
+              {selectedCycle ? (
+                <>Crop: <strong>{selectedCycle.cropName || '—'}</strong> · Cultivated Area: <strong>{selectedCycle.acreage ?? '—'} ha</strong> · Status: <strong>{selectedCycle.status}</strong></>
+              ) : cyclesLoading ? 'Loading your production cycles…'
+                : cyclesError ? <span style={{ color: 'var(--color-accent-red)' }}>{cyclesError} <button type="button" onClick={reloadCycles} style={{ background: 'none', border: 'none', color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}>Retry</button></span>
+                : 'No production cycle yet. Create one from Crop Production first.'}
             </p>
           </div>
         </div>
@@ -202,13 +188,14 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
           {/* Cycle Dropdown */}
           <select
             className="cycle-dropdown-select"
-            value={selectedCycleId}
+            disabled={cycles.length === 0}
+            value={selectedCycleId ?? ''}
             onChange={(e) => setSelectedCycleId(Number(e.target.value))}
             id="cycle-selector-dropdown"
           >
             {cycles.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name || `${c.cropName} (Plot ${c.plotId || c.id})`} — [{(c.status || 'ACTIVE').toUpperCase()}]
+                {cycleLabel(c)} — [{(c.status || '').toUpperCase()}]
               </option>
             ))}
           </select>
@@ -218,6 +205,9 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
             type="button"
             className="btn-open-record-form"
             id="btn-toggle-record-input-form"
+            disabled={!canRecord}
+            title={canRecord ? undefined : 'Inputs can only be recorded on an active cycle'}
+            style={canRecord ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
             onClick={() => {
               setShowForm((prev) => !prev);
               setServerError(null);
@@ -244,30 +234,30 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
           label="Total Input Cost"
           value={`XAF ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Real financial expenditure on crop"
-          icon={IconInputs}
+          icon={<IconInputs size={20} color="#2D7A52" />}
         />
         <MetricCard
           label="Inputs Consumed"
           value={`${consumedItemsCount}`}
           subtext="Times inputs were deducted"
-          icon={IconPackage}
+          icon={<IconPackage size={20} color="#2D7A52" />}
         />
         <MetricCard
           label="Top Cost Category"
           value={topCategoryEntry ? topCategoryEntry[0] : 'None'}
           subtext={topCategoryEntry ? `XAF ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
-          icon={IconSprout}
+          icon={<IconSprout size={20} color="#2D7A52" />}
         />
         <MetricCard
           label="Inventory Stock Items"
           value={`${availableInputs.length}`}
           subtext="Available items in farm inventory"
-          icon={IconPackage}
+          icon={<IconPackage size={20} color="#2D7A52" />}
         />
       </div>
 
       {/* Record Input Usage Form (Collapsible / Modal Drawer) */}
-      {showForm && (
+      {showForm && canRecord && (
         <CycleInputUsageForm
           cycle={selectedCycle}
           availableInputs={availableInputs}

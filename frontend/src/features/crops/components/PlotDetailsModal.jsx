@@ -41,7 +41,7 @@ function formatDate(dateStr) {
   }
 }
 
-export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId = 1 }) {
+export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId }) {
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
   if (!isOpen || !plot) return null;

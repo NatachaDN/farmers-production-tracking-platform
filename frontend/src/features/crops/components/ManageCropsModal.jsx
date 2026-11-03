@@ -22,7 +22,7 @@ function getCropIcon(cropName) {
   return <IconSprout size={18} color="#2D7A52" />;
 }
 
-export function ManageCropsModal({ isOpen, onClose, farmerId = 1, onCropsUpdated }) {
+export function ManageCropsModal({ isOpen, onClose, farmerId, onCropsUpdated }) {
   const [crops, setCrops] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

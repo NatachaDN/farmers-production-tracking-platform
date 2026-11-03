@@ -205,7 +205,7 @@ export function App() {
           )}
           {currentRoute === 'farms' && (
             <FarmsAndPlotsView
-              farmerId={currentUser?.id || 1}
+              farmerId={currentUser?.id}
               onNavigate={(r) => setCurrentRoute(r)}
               onSelectFarm={(id) => {
                 setSelectedFarmId(id);
@@ -230,7 +230,7 @@ export function App() {
           )}
           {currentRoute === 'crops' && (
             <CropProductionView
-              farmerId={currentUser?.id || 1}
+              farmerId={currentUser?.id}
               onNavigate={(r) => setCurrentRoute(r)}
             />
           )}
@@ -241,13 +241,13 @@ export function App() {
             <HarvestPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'inputs' && (
-            <FarmInputsView farmerId={currentUser?.id || 1} onNavigate={(r) => setCurrentRoute(r)} />
+            <FarmInputsView farmerId={currentUser?.id} onNavigate={(r) => setCurrentRoute(r)} />
           )}
           {currentRoute === 'cycle-inputs' && (
-            <CycleInputsPage farmerId={currentUser?.id || 1} />
+            <CycleInputsPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'incidents' && (
-            <CycleIncidentsPage farmerId={currentUser?.id || 1} />
+            <CycleIncidentsPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'settings' && (
             <FarmerProfileSettingsView

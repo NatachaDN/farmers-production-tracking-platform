@@ -142,6 +142,8 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
         purchasePrice: ''
       });
       onClose();
+    } catch (err) {
+      setErrors({ submit: err?.message || 'Could not save this input. Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -308,6 +310,12 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
               />
             </FieldGroup>
           </div>
+
+          {errors.submit && (
+            <div role="alert" style={{ color: '#B42318', backgroundColor: '#FEF3F2', border: '1px solid #FECDCA', borderRadius: '8px', padding: '10px 12px', fontSize: '0.8125rem' }}>
+              {errors.submit}
+            </div>
+          )}
 
           {/* Actions */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
