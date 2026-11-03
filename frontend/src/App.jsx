@@ -148,56 +148,6 @@ export function App() {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* Quick Screen Preview Switcher Bar */}
-      {!isAdminRoute && <div style={{
-        position: 'fixed',
-        bottom: '16px',
-        right: '20px',
-        zIndex: 9999,
-        backgroundColor: 'rgba(22, 66, 48, 0.94)',
-        backdropFilter: 'blur(8px)',
-        color: '#FFFFFF',
-        borderRadius: '9999px',
-        padding: '6px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
-        fontSize: '0.75rem',
-        border: '1px solid rgba(255, 255, 255, 0.15)'
-      }}>
-        <span style={{ color: 'rgba(255, 255, 255, 0.65)', fontWeight: 600, marginRight: '4px' }}>
-          DESIGNS:
-        </span>
-        {[
-          { id: 'dashboard', label: 'Dashboard' },
-          { id: 'farms', label: 'Farms & Plots' },
-          { id: 'crops', label: 'Crop Cycles' },
-          { id: 'activities', label: 'Activities' },
-          { id: 'production', label: 'Harvest / Production' },
-          { id: 'inputs', label: 'Farm Inputs' },
-          { id: 'login', label: 'Login' },
-          { id: 'register', label: 'Register' },
-          { id: 'forgot-password', label: 'Forgot Password' }
-        ].map((screen) => (
-          <button
-            key={screen.id}
-            onClick={() => setCurrentRoute(screen.id)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '9999px',
-              fontSize: '0.75rem',
-              fontWeight: currentRoute === screen.id ? 700 : 500,
-              backgroundColor: currentRoute === screen.id ? '#FFFFFF' : 'transparent',
-              color: currentRoute === screen.id ? '#164230' : 'rgba(255, 255, 255, 0.85)',
-              transition: 'all 150ms ease'
-            }}
-          >
-            {screen.label}
-          </button>
-        ))}
-      </div>}
-
       {/* Screen Views */}
       {currentRoute === 'login' ? (
         <LoginView
