@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
+import { CreateFarmView } from './features/farms/CreateFarmView';
+import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
@@ -34,6 +36,7 @@ export function App() {
     if (googleAuth.isCallback()) return 'google-callback';
     return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
   });
+  const [selectedFarmId, setSelectedFarmId] = useState(null);
   const [loginError, setLoginError] = useState('');
   const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
