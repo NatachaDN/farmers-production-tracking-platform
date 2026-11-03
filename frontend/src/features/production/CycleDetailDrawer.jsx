@@ -534,7 +534,7 @@ export function CycleDetailDrawer({ isOpen, cycle, farmerId, onClose, onCycleUpd
                     {/* Yield hero */}
                     <div style={{
                       backgroundColor: '#FFFFFF', border: '1px solid #C8E2D0',
-                      borderRadius: '16px', padding: '24px', backgroundColor: '#FFFFFF'
+                      borderRadius: '16px', padding: '24px'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                         <div style={{

@@ -1,7 +1,7 @@
 import React from 'react';
 import { IconPlus } from '../../shared/components/Icons';
 
-export function DashboardGreetingHeader({ user, onRecordProduction }) {
+export function DashboardGreetingHeader({ user, farmType = 'MIXED', onRecordProduction }) {
   // Display fullName, or username/email prefix, or fallback to 'Farmer'
   const displayName = user?.fullName
     ? user.fullName
@@ -52,7 +52,13 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)')}
       >
         <IconPlus size={16} />
-        <span>Record production</span>
+        <span>
+          {farmType === 'CROP'
+            ? 'Record crop production'
+            : farmType === 'LIVESTOCK'
+              ? 'Record livestock production'
+              : 'Record production'}
+        </span>
       </button>
     </div>
   );

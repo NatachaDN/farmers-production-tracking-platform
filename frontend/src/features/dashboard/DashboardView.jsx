@@ -3,6 +3,7 @@ import { MetricCard } from '../../shared/components/MetricCard';
 import {
   IconCrop,
   IconProduction,
+  IconLivestock,
   IconShoppingBag,
   IconShieldAlert,
   IconPlus,
@@ -17,6 +18,12 @@ import { QuickModuleCards } from './QuickModuleCards';
 
 export function DashboardView({ onNavigate, user }) {
   const farmerId = user?.id || 1;
+  const farmType = ['CROP', 'LIVESTOCK', 'MIXED'].includes(user?.farmType?.toUpperCase())
+    ? user.farmType.toUpperCase()
+    : 'MIXED';
+  const showCrops = farmType !== 'LIVESTOCK';
+  const showLivestock = farmType !== 'CROP';
+  const recordRoute = showCrops ? 'production' : 'animals';
 
   // Whether the farmer has any production data yet.
   // Defaults to true so the indicator summary is visible on first load (AC1).
@@ -34,7 +41,8 @@ export function DashboardView({ onNavigate, user }) {
       <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         <DashboardGreetingHeader
           user={user}
-          onRecordProduction={() => onNavigate && onNavigate('production')}
+          farmType={farmType}
+          onRecordProduction={() => onNavigate && onNavigate(recordRoute)}
         />
 
         <div style={{
@@ -72,7 +80,7 @@ export function DashboardView({ onNavigate, user }) {
             maxWidth: '420px',
             margin: '0 auto 24px'
           }}>
-            Your dashboard is empty. Add your first crop cycle, log an activity, or record a harvest to start tracking your farm.
+            Your dashboard is empty. Add production records to start tracking your farm.
           </p>
 
           <div style={{
@@ -83,7 +91,7 @@ export function DashboardView({ onNavigate, user }) {
           }}>
             <button
               type="button"
-              onClick={() => onNavigate && onNavigate('crops')}
+              onClick={() => onNavigate && onNavigate(showCrops ? 'crops' : 'animals')}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -101,50 +109,54 @@ export function DashboardView({ onNavigate, user }) {
               }}
             >
               <IconPlus size={16} color="#FFFFFF" />
-              <span>Add your first crop cycle</span>
+              <span>{showCrops ? 'Add your first crop cycle' : 'Add your first animal group'}</span>
             </button>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-              <button
-                type="button"
-                onClick={() => onNavigate && onNavigate('activities')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: 'transparent',
-                  color: 'var(--color-text-primary)',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 500,
-                  border: '1px solid var(--color-card-border)',
-                  cursor: 'pointer'
-                }}
-              >
-                <IconCalendar size={14} color="currentColor" />
-                <span>Log an activity</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate && onNavigate('production')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: 'transparent',
-                  color: 'var(--color-text-primary)',
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 500,
-                  border: '1px solid var(--color-card-border)',
-                  cursor: 'pointer'
-                }}
-              >
-                <IconArrowRight size={14} color="currentColor" />
-                <span>Record a harvest</span>
-              </button>
+              {showCrops && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('activities')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: 'transparent',
+                    color: 'var(--color-text-primary)',
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    border: '1px solid var(--color-card-border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <IconCalendar size={14} color="currentColor" />
+                  <span>Log an activity</span>
+                </button>
+              )}
+              {showCrops && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('production')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: 'transparent',
+                    color: 'var(--color-text-primary)',
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    border: '1px solid var(--color-card-border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <IconArrowRight size={14} color="currentColor" />
+                  <span>Record a harvest</span>
+                </button>
+              )}
             </div>
 
             <div style={{
@@ -178,31 +190,53 @@ export function DashboardView({ onNavigate, user }) {
       {/* Dynamic Greeting Header */}
       <DashboardGreetingHeader
         user={user}
-        onRecordProduction={() => onNavigate && onNavigate('production')}
+        farmType={farmType}
+        onRecordProduction={() => onNavigate && onNavigate(recordRoute)}
       />
 
-      {/* 4 Stat Cards Row — key indicators from the user story */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
         gap: '20px'
       }}>
+        {showCrops && (
+          <>
+            <MetricCard
+              label="Active crop cycles"
+              value="4"
+              subtext="3 on schedule · 1 due soon"
+              icon={<IconCrop size={20} color="#2D7A52" />}
+              iconBg="#EAF4ED"
+            />
+            <MetricCard
+              label="Latest crop yield"
+              value="12.8 t"
+              subtext="+8.4% this season"
+              icon={<IconProduction size={20} color="#0D9488" />}
+              iconBg="#E6F6F4"
+            />
+          </>
+        )}
+        {showLivestock && (
+          <>
+            <MetricCard
+              label="Animal groups"
+              value="4"
+              subtext="1,442 animals"
+              icon={<IconLivestock size={20} color="#B45309" />}
+              iconBg="#FEF3C7"
+            />
+            <MetricCard
+              label="Livestock production"
+              value="6,840"
+              subtext="units this month"
+              icon={<IconProduction size={20} color="#0D9488" />}
+              iconBg="#E6F6F4"
+            />
+          </>
+        )}
         <MetricCard
-          label="Active cycles"
-          value="4"
-          subtext="3 on schedule · 1 due soon"
-          icon={<IconCrop size={20} color="#2D7A52" />}
-          iconBg="#EAF4ED"
-        />
-        <MetricCard
-          label="Latest yield"
-          value="12.8 t"
-          subtext="+8.4% this season"
-          icon={<IconProduction size={20} color="#0D9488" />}
-          iconBg="#E6F6F4"
-        />
-        <MetricCard
-          label="Input stock"
+          label={showLivestock && !showCrops ? 'Feed & input stock' : 'Input stock'}
           value="12"
           subtext="2 items running low"
           icon={<IconShoppingBag size={20} color="#B45309" />}
@@ -223,18 +257,18 @@ export function DashboardView({ onNavigate, user }) {
         gridTemplateColumns: '1.7fr 1fr',
         gap: '20px'
       }}>
-        <ProductionOverviewChart />
-        <UpcomingActivitiesCard onNavigate={onNavigate} />
+        <ProductionOverviewChart farmType={farmType} />
+        <UpcomingActivitiesCard onNavigate={onNavigate} farmType={farmType} />
       </div>
 
       {/* Bottom Section: Recent Activities & Module Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1.2fr 1fr 1fr',
+        gridTemplateColumns: showCrops && showLivestock ? '1.2fr 1fr 1fr' : '1fr 1fr',
         gap: '20px'
       }}>
-        <RecentActivitiesCard onNavigate={onNavigate} />
-        <QuickModuleCards onNavigate={onNavigate} />
+        <RecentActivitiesCard onNavigate={onNavigate} farmType={farmType} />
+        <QuickModuleCards onNavigate={onNavigate} farmType={farmType} />
       </div>
     </div>
   );

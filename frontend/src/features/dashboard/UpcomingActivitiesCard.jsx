@@ -1,11 +1,13 @@
 import React from 'react';
 
-export function UpcomingActivitiesCard({ onNavigate }) {
+export function UpcomingActivitiesCard({ onNavigate, farmType = 'MIXED' }) {
   const activities = [
-    { time: '14:00', title: 'Irrigate tomatoes', location: 'Plot B' },
-    { time: 'Tomorrow', title: 'Weigh broilers', location: 'Batch C' },
-    { time: '04 Oct', title: 'Apply fertilizer', location: 'Plot A' }
-  ];
+    { type: 'CROP', time: '14:00', title: 'Irrigate tomatoes', location: 'Plot B' },
+    { type: 'LIVESTOCK', time: 'Tomorrow', title: 'Weigh broilers', location: 'Batch C' },
+    { type: 'CROP', time: '04 Oct', title: 'Apply fertilizer', location: 'Plot A' }
+  ].filter((activity) => farmType === 'MIXED' || activity.type === farmType);
+
+  const activityRoute = farmType === 'LIVESTOCK' ? 'animals' : 'activities';
 
   return (
     <div style={{
@@ -20,7 +22,7 @@ export function UpcomingActivitiesCard({ onNavigate }) {
           Upcoming Activities
         </h3>
         <button
-          onClick={() => onNavigate && onNavigate('activities')}
+          onClick={() => onNavigate && onNavigate(activityRoute)}
           style={{
             fontSize: '0.8125rem',
             color: 'var(--color-text-muted)',

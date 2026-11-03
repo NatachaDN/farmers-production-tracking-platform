@@ -611,7 +611,6 @@ export function ProductionView({ farmerId = 1 }) {
               {activeFilterCount > 0
                 ? 'No cycles match your filters'
                 : `No ${activeTab.toLowerCase() === 'all' ? '' : activeTab.toLowerCase() + ' '}cycles yet`}
-              }
             </h3>
             <p style={{ fontSize: '0.875rem', color: '#788680', maxWidth: '420px', margin: '0 auto' }}>
               {activeFilterCount > 0

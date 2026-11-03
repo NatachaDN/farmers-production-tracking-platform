@@ -50,28 +50,10 @@ export const apiClient = {
     method: 'PUT',
     body: body instanceof FormData ? body : JSON.stringify(body),
   }),
+  patch: (endpoint, body, options) => request(endpoint, {
+    ...options,
+    method: 'PATCH',
+    body: body instanceof FormData ? body : JSON.stringify(body),
+  }),
   delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
-
-  /** Upload a file using multipart/form-data. Do NOT set Content-Type — browser sets it with the boundary. */
-  async upload(endpoint, formData) {
-    const token = localStorage.getItem('acrea_token');
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const url = `${API_BASE_URL}${endpoint}`;
-    try {
-      const response = await fetch(url, { method: 'POST', headers, body: formData });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) {
-        const errorMessage = data?.message || 'Upload failed';
-        const error = new Error(errorMessage);
-        error.status = response.status;
-        throw error;
-      }
-      return data;
-    } catch (error) {
-      if (!error.status) {
-        error.message = 'Unable to connect to Acrea server. Please check your connection.';
-      }
-      throw error;
-    }
-  },
 };

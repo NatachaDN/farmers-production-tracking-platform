@@ -1,14 +1,15 @@
 import React from 'react';
 import { IconChevronRight } from '../../shared/components/Icons';
 
-export function RecentActivitiesCard({ onNavigate }) {
+export function RecentActivitiesCard({ onNavigate, farmType = 'MIXED' }) {
   const recentActivities = [
-    { title: 'Fertilization — Maize', meta: 'Plot A · Today, 08:30', bg: '#EAF4ED' },
-    { title: 'Feeding — Cattle Group 1', meta: 'Dairy unit · Today, 07:15', bg: '#FEF3C7' },
-    { title: 'Harvest — Tomatoes', meta: 'Plot B · Yesterday, 16:40', bg: '#E6F6F4' },
-    { title: 'Egg collection — Layer Group A', meta: 'Poultry house · Yesterday, 10:20', bg: '#FEF3C7' }
-  ];
+    { type: 'CROP', title: 'Fertilization — Maize', meta: 'Plot A · Today, 08:30', bg: '#EAF4ED' },
+    { type: 'LIVESTOCK', title: 'Feeding — Cattle Group 1', meta: 'Dairy unit · Today, 07:15', bg: '#FEF3C7' },
+    { type: 'CROP', title: 'Harvest — Tomatoes', meta: 'Plot B · Yesterday, 16:40', bg: '#E6F6F4' },
+    { type: 'LIVESTOCK', title: 'Egg collection — Layer Group A', meta: 'Poultry house · Yesterday, 10:20', bg: '#FEF3C7' }
+  ].filter((activity) => farmType === 'MIXED' || activity.type === farmType);
 
+  const activityRoute = farmType === 'LIVESTOCK' ? 'animals' : 'activities';
   return (
     <div style={{
       backgroundColor: '#FFFFFF',
@@ -22,7 +23,7 @@ export function RecentActivitiesCard({ onNavigate }) {
           Recent Activities
         </h3>
         <button
-          onClick={() => onNavigate && onNavigate('activities')}
+          onClick={() => onNavigate && onNavigate(activityRoute)}
           style={{
             fontSize: '0.8125rem',
             color: 'var(--color-text-muted)',
@@ -43,7 +44,7 @@ export function RecentActivitiesCard({ onNavigate }) {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '8px 4px',
-            borderBottom: i < 3 ? '1px solid #F4EFE6' : 'none'
+            borderBottom: i < recentActivities.length - 1 ? '1px solid #F4EFE6' : 'none'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
