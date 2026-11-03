@@ -35,6 +35,35 @@ public class Farmer {
     @Column(name = "agreed_to_terms", nullable = false)
     private boolean agreedToTerms = true;
 
+    /** LOCAL (email/phone + password) or GOOGLE. Null on rows created before this column existed. */
+    @Column(name = "auth_provider", length = 20)
+    private String authProvider = "LOCAL";
+
+    /** Google account identifier ("sub" claim); null for accounts that never used Google sign-in. */
+    @Column(name = "google_id", length = 64, unique = true)
+    private String googleId;
+
+    @Column(name = "avatar_url", length = 1024)
+    private String avatarUrl;
+
+    @Column(name = "farm_name", length = 120)
+    private String farmName;
+
+    @Column(name = "crops_grown", length = 255)
+    private String cropsGrown;
+
+    @Column(name = "total_area")
+    private Double totalArea = 0.0;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    @Column(name = "password_reset_token", length = 120)
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expires_at")
+    private LocalDateTime passwordResetExpiresAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -118,6 +147,62 @@ public class Farmer {
         this.agreedToTerms = agreedToTerms;
     }
 
+    public String getAuthProvider() {
+        return authProvider != null ? authProvider : "LOCAL";
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
+    }
+
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getFarmName() {
+        return farmName;
+    }
+
+    public void setFarmName(String farmName) {
+        this.farmName = farmName;
+    }
+
+    public String getCropsGrown() {
+        return cropsGrown;
+    }
+
+    public void setCropsGrown(String cropsGrown) {
+        this.cropsGrown = cropsGrown;
+    }
+
+    public Double getTotalArea() {
+        return totalArea;
+    }
+
+    public void setTotalArea(Double totalArea) {
+        this.totalArea = totalArea;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -132,5 +217,21 @@ public class Farmer {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+
+    public LocalDateTime getPasswordResetExpiresAt() {
+        return passwordResetExpiresAt;
+    }
+
+    public void setPasswordResetExpiresAt(LocalDateTime passwordResetExpiresAt) {
+        this.passwordResetExpiresAt = passwordResetExpiresAt;
     }
 }

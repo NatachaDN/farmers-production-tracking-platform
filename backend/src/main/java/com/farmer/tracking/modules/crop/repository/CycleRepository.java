@@ -16,4 +16,6 @@ public interface CycleRepository extends JpaRepository<Cycle, Long> {
     List<Cycle> findByFarmerIdAndStatusOrderByCreatedAtDesc(Long farmerId, CycleStatus status);
     Optional<Cycle> findByIdAndFarmerId(Long id, Long farmerId);
     Optional<Cycle> findFirstByPlotIdAndStatusOrderByIdDesc(Long plotId, CycleStatus status);
+    boolean existsByPlotIdAndStatus(Long plotId, CycleStatus status);
+    List<Cycle> findByPlotId(Long plotId);
 }

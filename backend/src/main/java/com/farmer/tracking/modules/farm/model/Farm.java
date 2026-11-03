@@ -216,6 +216,21 @@ public class Farm {
         this.additionalNotes = additionalNotes;
     }
 
+        public Long getFarmerId() {
+        return farmer != null ? farmer.getId() : null;
+    }
+
+    public String getLocation() {
+        if (district != null && region != null) {
+            return district + ", " + region;
+        }
+        return district != null ? district : (region != null ? region : country);
+    }
+
+    public boolean getIsDefault() {
+        return isDefault;
+    }
+
     public boolean isDefault() {
         return isDefault;
     }

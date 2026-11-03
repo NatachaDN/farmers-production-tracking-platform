@@ -7,8 +7,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Represents a crop production cycle.
 import java.util.ArrayList;
 import java.util.List;
 

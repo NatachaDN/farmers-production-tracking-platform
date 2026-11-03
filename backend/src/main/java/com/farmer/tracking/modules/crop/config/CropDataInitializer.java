@@ -24,22 +24,36 @@ public class CropDataInitializer implements CommandLineRunner {
     private final CycleRepository cycleRepository;
     private final CycleActivityRepository activityRepository;
     private final HarvestRepository harvestRepository;
+    private final com.farmer.tracking.modules.crop.repository.CropRepository cropRepository;
 
     public CropDataInitializer(CycleRepository cycleRepository,
-                               CycleActivityRepository activityRepository,
-                               HarvestRepository harvestRepository) {
+                                CycleActivityRepository activityRepository,
+                                HarvestRepository harvestRepository,
+                                com.farmer.tracking.modules.crop.repository.CropRepository cropRepository) {
         this.cycleRepository = cycleRepository;
         this.activityRepository = activityRepository;
         this.harvestRepository = harvestRepository;
+        this.cropRepository = cropRepository;
     }
 
     @Override
     public void run(String... args) {
+        // Seed default crop catalog for demo farmer 1
+        if (cropRepository.count() == 0) {
+            cropRepository.save(new com.farmer.tracking.modules.crop.entity.Crop(1L, "Maize", "Hybrid 614"));
+            cropRepository.save(new com.farmer.tracking.modules.crop.entity.Crop(1L, "Tomatoes", "Anna F1"));
+            cropRepository.save(new com.farmer.tracking.modules.crop.entity.Crop(1L, "Beans", "Rosecoco (GLP-2)"));
+            cropRepository.save(new com.farmer.tracking.modules.crop.entity.Crop(1L, "Cassava", "Migyera"));
+            cropRepository.save(new com.farmer.tracking.modules.crop.entity.Crop(1L, "Potatoes", "Shangi"));
+            cropRepository.save(new com.farmer.tracking.modules.crop.entity.Crop(1L, "Rice", "Basmati 370"));
+        }
+
         if (cycleRepository.count() == 0) {
-            // --- Seed 1: ACTIVE cycle (for activity tracking & harvesting) ---
+            // --- Seed 1: ACTIVE cycle (for activity tracking, input consumption & harvesting) ---
             Cycle activeCycle = new Cycle();
             activeCycle.setFarmerId(1L);
             activeCycle.setName("Maize Production (Field A)");
+            activeCycle.setCropName("Maize");
             activeCycle.setStatus(CycleStatus.ACTIVE);
             activeCycle.setStartDate(LocalDate.now().minusDays(30));
             Cycle savedActive = cycleRepository.save(activeCycle);
@@ -63,6 +77,7 @@ public class CropDataInitializer implements CommandLineRunner {
             Cycle completedCycle = new Cycle();
             completedCycle.setFarmerId(1L);
             completedCycle.setName("Rice Season 2025 (Field B)");
+            completedCycle.setCropName("Rice");
             completedCycle.setStatus(CycleStatus.COMPLETED);
             completedCycle.setStartDate(LocalDate.now().minusDays(180));
             completedCycle.setEndDate(LocalDate.now().minusDays(10));

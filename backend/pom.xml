@@ -38,6 +38,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- JavaMail — send password reset codes by email -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
 		<!-- JJWT for JWT Tokens -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

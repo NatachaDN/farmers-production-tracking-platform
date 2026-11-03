@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { AuthHeroBanner } from './AuthHeroBanner';
 import { AuthMetaHeader } from './AuthMetaHeader';
-import { IconUser, IconLock, IconEye, IconEyeOff } from '../../shared/components/Icons';
+import { IconUser, IconLock, IconEye, IconEyeOff, IconCheckCircle } from '../../shared/components/Icons';
 import { authService } from './services/authService';
+import { GoogleSignInSection } from './GoogleSignInSection';
 
-export function LoginView({ onNavigate, onLoginSuccess }) {
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initialIdentifier = '', initialSuccess = '' }) {
+  const [emailOrPhone, setEmailOrPhone] = useState(initialIdentifier);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
+  const [success, setSuccess] = useState(initialSuccess);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,6 +59,27 @@ export function LoginView({ onNavigate, onLoginSuccess }) {
           }}>
             Sign in to continue tracking your farm's work and production.
           </p>
+
+          {/* Success Alert */}
+          {success && (
+            <div style={{
+              backgroundColor: 'var(--color-brand-tint, #EAF4ED)',
+              border: '1px solid var(--color-brand-border, #C8E2D0)',
+              color: 'var(--color-brand-primary, #3E7B52)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.8125rem',
+              marginBottom: '20px',
+              lineHeight: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              animation: 'fadeIn 200ms ease forwards'
+            }}>
+              <IconCheckCircle size={18} color="var(--color-brand-primary, #3E7B52)" />
+              <span>{success}</span>
+            </div>
+          )}
 
           {/* Error Alert */}
           {error && (
@@ -130,7 +153,9 @@ export function LoginView({ onNavigate, onLoginSuccess }) {
                   Password
                 </label>
                 <button
+                  id="forgot-password-link"
                   type="button"
+                  onClick={() => onNavigate && onNavigate('forgot-password')}
                   style={{
                     fontSize: '0.8125rem',
                     color: 'var(--color-brand-primary)',
@@ -214,6 +239,8 @@ export function LoginView({ onNavigate, onLoginSuccess }) {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <GoogleSignInSection onError={setError} />
 
           {/* Switch to Register */}
           <div style={{

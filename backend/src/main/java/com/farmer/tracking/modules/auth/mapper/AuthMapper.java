@@ -29,7 +29,7 @@ public class AuthMapper {
             return null;
         }
 
-        return new FarmerProfileResponse(
+        FarmerProfileResponse response = new FarmerProfileResponse(
                 farmer.getId(),
                 farmer.getFullName(),
                 farmer.getEmailOrPhone(),
@@ -38,5 +38,11 @@ public class AuthMapper {
                 farmer.getRole(),
                 farmer.getCreatedAt()
         );
+        response.setAvatarUrl(farmer.getAvatarUrl());
+        response.setAuthProvider(farmer.getAuthProvider());
+        response.setFarmName(farmer.getFarmName());
+        response.setCropsGrown(farmer.getCropsGrown());
+        response.setTotalArea(farmer.getTotalArea());
+        return response;
     }
 }

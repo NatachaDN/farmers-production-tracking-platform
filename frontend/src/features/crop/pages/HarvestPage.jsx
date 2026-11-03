@@ -108,7 +108,7 @@ export function HarvestPage({ farmerId = 1 }) {
         };
       }
       setHarvest(recorded);
-      showToast('🌾 Harvest recorded successfully! Cycle marked as Completed.');
+      showToast('Harvest recorded successfully! Cycle marked as Completed.');
     } catch (err) {
       showToast(err?.message || 'Failed to record harvest. Please try again.', 'error');
     } finally {
