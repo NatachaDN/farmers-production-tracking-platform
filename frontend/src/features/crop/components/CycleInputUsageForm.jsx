@@ -45,7 +45,7 @@ export function CycleInputUsageForm({
   );
 
   const availableStock = selectedInput ? Number(selectedInput.quantity || 0) : 0;
-  const unitPrice = selectedInput ? Number(selectedInput.purchasePrice || 0) : 0;
+  const unitPrice = selectedInput ? Number(selectedInput.unitCost || 0) : 0;
   const unit = selectedInput ? selectedInput.unit || 'units' : '';
 
   const parsedQty = parseFloat(quantityUsed) || 0;
@@ -213,7 +213,7 @@ export function CycleInputUsageForm({
           >
             {availableInputs.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name} ({item.type}) — Stock: {Number(item.quantity || 0).toFixed(2)} {item.unit} · KES {Number(item.purchasePrice || 0).toFixed(2)}/{item.unit}
+                {item.name} ({item.type}) — Stock: {Number(item.quantity || 0).toFixed(2)} {item.unit} · XAF {Number(item.unitCost || 0).toFixed(2)}/{item.unit}
               </option>
             ))}
           </select>
@@ -248,7 +248,7 @@ export function CycleInputUsageForm({
               Available: {availableStock.toFixed(2)} {unit}
             </span>
             <span className="pill-price">
-              Price: KES {unitPrice.toFixed(2)} / {unit}
+              Price: XAF {unitPrice.toFixed(2)} / {unit}
             </span>
           </div>
         </div>
@@ -290,10 +290,10 @@ export function CycleInputUsageForm({
           <div>
             <div className="calc-stat-label">Calculated Real Cost</div>
             <div className="calc-stat-value">
-              KES {calculatedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              XAF {calculatedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="calc-stat-subtext">
-              {parsedQty} {unit} × KES {unitPrice.toFixed(2)} / {unit}
+              {parsedQty} {unit} × XAF {unitPrice.toFixed(2)} / {unit}
             </div>
           </div>
 

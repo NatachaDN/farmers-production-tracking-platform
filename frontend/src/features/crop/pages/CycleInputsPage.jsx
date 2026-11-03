@@ -128,7 +128,7 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
 
       // Successfully recorded!
       showToast(
-        `Recorded ${formData.quantityUsed} used of ${result?.inputName || 'input'}. Real cost: KES ${Number(result?.totalCost || 0).toLocaleString()} (Remaining stock: ${result?.remainingStock ?? 'updated'})`
+        `Recorded ${formData.quantityUsed} used of ${result?.inputName || 'input'}. Real cost: XAF ${Number(result?.totalCost || 0).toLocaleString()} (Remaining stock: ${result?.remainingStock ?? 'updated'})`
       );
 
       setShowForm(false);
@@ -242,7 +242,7 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
       <div className="inputs-metrics-grid">
         <MetricCard
           label="Total Input Cost"
-          value={`KES ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`XAF ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Real financial expenditure on crop"
           icon={IconInputs}
         />
@@ -255,7 +255,7 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
         <MetricCard
           label="Top Cost Category"
           value={topCategoryEntry ? topCategoryEntry[0] : 'None'}
-          subtext={topCategoryEntry ? `KES ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
+          subtext={topCategoryEntry ? `XAF ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
           icon={IconSprout}
         />
         <MetricCard
