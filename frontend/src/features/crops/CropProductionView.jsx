@@ -16,64 +16,6 @@ import {
   IconInputs
 } from '../../shared/components/Icons';
 
-const DEFAULT_CYCLES = [
-  {
-    id: 1,
-    cropName: 'Maize',
-    plotName: 'Plot A',
-    acreage: 2.5,
-    status: 'ACTIVE',
-    plantingDate: '2026-07-12',
-    plannedHarvestDate: '2026-11-28',
-    expectedQuantity: 5000,
-    expectedQuantityUnit: 'kg',
-    stage: 'Vegetative growth',
-    progress: 62,
-    subStatus: 'On track'
-  },
-  {
-    id: 2,
-    cropName: 'Tomatoes',
-    plotName: 'Plot B',
-    acreage: 1.0,
-    status: 'ACTIVE',
-    plantingDate: '2026-08-03',
-    plannedHarvestDate: '2026-10-18',
-    expectedQuantity: 2800,
-    expectedQuantityUnit: 'kg',
-    stage: 'Flowering',
-    progress: 74,
-    subStatus: 'On track'
-  },
-  {
-    id: 3,
-    cropName: 'Beans',
-    plotName: 'Plot C',
-    acreage: 0.8,
-    status: 'ACTIVE',
-    plantingDate: '2026-09-20',
-    plannedHarvestDate: '2026-12-14',
-    expectedQuantity: 1200,
-    expectedQuantityUnit: 'kg',
-    stage: 'Planting',
-    progress: 29,
-    subStatus: 'On track'
-  },
-  {
-    id: 4,
-    cropName: 'Cassava',
-    plotName: 'Plot D',
-    acreage: 2.0,
-    status: 'COMPLETED',
-    plantingDate: '2026-02-15',
-    plannedHarvestDate: '2026-11-30',
-    expectedQuantity: 7900,
-    expectedQuantityUnit: 'kg',
-    stage: 'Harvested',
-    progress: 100,
-    subStatus: 'Final yield 7.9 t'
-  }
-];
 
 function getCropIcon(cropName) {
   const name = (cropName || '').toLowerCase();
@@ -97,9 +39,10 @@ function formatDateDisplay(dateStr) {
   }
 }
 
-export function CropProductionView({ farmerId = 1, onNavigate }) {
+export function CropProductionView({ farmerId, onNavigate }) {
   const [activeTab, setActiveTab] = useState('Active');
-  const [cycles, setCycles] = useState(DEFAULT_CYCLES);
+  const [cycles, setCycles] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManageCropsOpen, setIsManageCropsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -123,17 +66,15 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
   }, [farmerId]);
 
   const loadCycles = async () => {
+    if (!farmerId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await cropCycleService.getCycles(farmerId);
-      if (data && data.length > 0) {
-        setCycles(data);
-      } else {
-        setCycles(DEFAULT_CYCLES);
-      }
+      setCycles(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Could not fetch cycles from API, using fallback defaults:', err);
-      setCycles(DEFAULT_CYCLES);
+      setCycles([]);
+      setLoadError(err?.message || 'Could not load your production cycles.');
     } finally {
       setLoading(false);
     }
@@ -158,13 +99,16 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
     setIsDeleting(true);
     try {
       await cropCycleService.deleteCycle(farmerId, cycleToDelete.id);
-    } catch {
-      /* Remove locally even if backend fails */
+      setCycles((prev) => prev.filter((c) => c.id !== cycleToDelete.id));
+      showToast(`"${cycleToDelete.cropName}" cycle removed.`);
+      setCycleToDelete(null);
+    } catch (err) {
+      // e.g. the backend refuses to delete an active cycle that already has records
+      showToast(err?.message || `Could not remove the "${cycleToDelete.cropName}" cycle.`);
+      setCycleToDelete(null);
+    } finally {
+      setIsDeleting(false);
     }
-    setCycles((prev) => prev.filter((c) => c.id !== cycleToDelete.id));
-    showToast(`"${cycleToDelete.cropName}" cycle removed.`);
-    setCycleToDelete(null);
-    setIsDeleting(false);
   };
 
   const filteredCycles = cycles.filter(c => {
@@ -485,8 +429,11 @@ export function CropProductionView({ farmerId = 1, onNavigate }) {
             </div>
           </div>
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '6px' }}>
-            No {activeTab.toLowerCase()} cycles found
+            {loading ? 'Loading your production cycles…' : loadError ? 'Could not load cycles' : `No ${activeTab.toLowerCase()} cycles found`}
           </h3>
+          {loadError && (
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-accent-red)', margin: '0 auto 12px auto' }}>{loadError}</p>
+          )}
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '400px', margin: '0 auto 20px auto' }}>
             Click "New Production Cycle" above to schedule planting, target outputs, and follow your crops through harvest.
           </p>

@@ -24,33 +24,19 @@ const TYPE_META = {
 };
 
 /* ─── Seed data for offline-first demo ─────────────────────────── */
-const SEED_INPUTS = [
-  {
-    id: 1, name: 'Hybrid Maize Seed 614D', type: 'SEEDS',
-    totalQuantity: 120, unit: 'kg', totalCost: 54000,
-    purchaseDate: '2026-09-10', lastUpdated: '2026-09-10'
-  },
-  {
-    id: 2, name: 'CAN Fertilizer (Calcium Ammonium Nitrate)', type: 'FERTILIZER',
-    totalQuantity: 200, unit: 'kg', totalCost: 32000,
-    purchaseDate: '2026-09-14', lastUpdated: '2026-09-14'
-  },
-  {
-    id: 3, name: 'Dimethoate Pesticide', type: 'PESTICIDE',
-    totalQuantity: 5, unit: 'L', totalCost: 8500,
-    purchaseDate: '2026-09-20', lastUpdated: '2026-09-20'
-  },
-  {
-    id: 4, name: 'NPK 17-17-17', type: 'FERTILIZER',
-    totalQuantity: 150, unit: 'kg', totalCost: 27000,
-    purchaseDate: '2026-09-22', lastUpdated: '2026-09-22'
-  },
-  {
-    id: 5, name: 'Tomato Seedlings F1', type: 'SEEDS',
-    totalQuantity: 2000, unit: 'unit', totalCost: 18000,
-    purchaseDate: '2026-10-01', lastUpdated: '2026-10-01'
-  }
-];
+/** Maps a FarmInputResponse from the API to the shape the cards display. */
+function toInputView(apiInput) {
+  return {
+    id: apiInput.id,
+    name: apiInput.name,
+    type: apiInput.type,
+    totalQuantity: apiInput.quantity,
+    unit: apiInput.unit,
+    totalCost: apiInput.cumulativeCost,
+    purchaseDate: apiInput.purchaseDate,
+    lastUpdated: (apiInput.updatedAt || apiInput.purchaseDate || '').slice(0, 10)
+  };
+}
 
 /* ─── Single Input Card ─────────────────────────────────────────── */
 function InputCard({ input, onDelete }) {
@@ -186,8 +172,10 @@ function StatChip({ label, value, accent }) {
 }
 
 /* ─── Main view ─────────────────────────────────────────────────── */
-export function FarmInputsView({ farmerId = 1, onNavigate }) {
-  const [inputs, setInputs] = useState(SEED_INPUTS);
+export function FarmInputsView({ farmerId, onNavigate }) {
+  const [inputs, setInputs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [filterType, setFilterType] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -204,47 +192,35 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
 
   /* Load from API */
   useEffect(() => {
+    let isMounted = true;
     async function load() {
+      if (!farmerId) return;
+      setIsLoading(true);
+      setLoadError(null);
       try {
         const data = await inputService.getInputs(farmerId);
-        if (Array.isArray(data) && data.length > 0) setInputs(data);
-      } catch {
-        /* Use seed data */
+        if (isMounted) setInputs(Array.isArray(data) ? data.map(toInputView) : []);
+      } catch (err) {
+        if (isMounted) {
+          setInputs([]);
+          setLoadError(err?.message || 'Could not load your inputs.');
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
     load();
+    return () => { isMounted = false; };
   }, [farmerId]);
 
   /* Add handler */
+  // Errors propagate to AddInputModal, which displays them and stays open.
   const handleAddInput = async (formData) => {
-    let saved;
-    try {
-      saved = await inputService.registerOrUpdateInput(farmerId, formData);
-    } catch {
-      /* offline-first: merge into local state */
-    }
-
-    const newItem = {
-      id: saved?.id || Date.now(),
-      name: formData.name,
-      type: formData.type,
-      totalQuantity: formData.quantity,
-      unit: formData.unit,
-      totalCost: formData.purchasePrice,
-      purchaseDate: formData.purchaseDate,
-      lastUpdated: formData.purchaseDate
-    };
+    const saved = toInputView(await inputService.registerOrUpdateInput(farmerId, formData));
 
     setInputs((prev) => {
-      if (saved?.id) {
-        const exists = prev.findIndex((i) => i.id === saved.id);
-        if (exists >= 0) {
-          const next = [...prev];
-          next[exists] = { ...next[exists], ...newItem };
-          return next;
-        }
-      }
-      return [newItem, ...prev];
+      const exists = prev.some((i) => i.id === saved.id);
+      return exists ? prev.map((i) => (i.id === saved.id ? saved : i)) : [saved, ...prev];
     });
 
     showToast(`"${formData.name}" added — ${formData.quantity} ${formData.unit} @ ${Number(formData.purchasePrice).toLocaleString('fr-CM')} XAF`);
@@ -256,13 +232,14 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
     setIsDeleting(true);
     try {
       await inputService.deleteInput(farmerId, inputToDelete.id);
-    } catch {
-      /* Remove locally even if backend fails */
+      setInputs((prev) => prev.filter((i) => i.id !== inputToDelete.id));
+      showToast(`"${inputToDelete.name}" removed from inventory.`);
+      setInputToDelete(null);
+    } catch (err) {
+      showToast(err?.message || `Could not remove "${inputToDelete.name}".`);
+    } finally {
+      setIsDeleting(false);
     }
-    setInputs((prev) => prev.filter((i) => i.id !== inputToDelete.id));
-    showToast(`"${inputToDelete.name}" removed from inventory.`);
-    setInputToDelete(null);
-    setIsDeleting(false);
   };
 
   /* Derived lists */
@@ -531,12 +508,16 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
             <IconPackage size={28} color="#788680" />
           </div>
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#19201C', marginBottom: '6px' }}>
-            No inputs found
+            {isLoading ? 'Loading your inputs…' : loadError ? 'Could not load inputs' : 'No inputs found'}
           </h3>
-          <p style={{ fontSize: '0.875rem', color: '#788680' }}>
-            {searchTerm || filterType !== 'ALL'
-              ? 'Try adjusting your filters or search term.'
-              : 'Click "Add Input" to register your first farm input.'}
+          <p style={{ fontSize: '0.875rem', color: loadError ? '#B42318' : '#788680' }}>
+            {isLoading
+              ? ''
+              : loadError
+                ? loadError
+                : searchTerm || filterType !== 'ALL'
+                  ? 'Try adjusting your filters or search term.'
+                  : 'Click "Add Input" to register your first farm input.'}
           </p>
         </div>
       ) : (

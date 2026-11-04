@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { CropTypeSelect } from './CropTypeSelect';
 import { IconPlus, IconCheck, IconClose, IconWarning } from '../../../shared/components/Icons';
 
-export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
+export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [location, setLocation] = useState('');
-  const [cropType, setCropType] = useState('Maize');
+  const [cropType, setCropType] = useState('');
   const [stage, setStage] = useState('Planting');
   const [validationError, setValidationError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +50,7 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
       setName('');
       setArea('');
       setLocation('');
-      setCropType('Maize');
+      setCropType('');
       setStage('Planting');
       onClose();
     } catch (err) {
@@ -224,9 +225,10 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
               <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
                 Crop Type
               </label>
-              <select
+              <CropTypeSelect
+                farmerId={farmerId}
                 value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
+                onChange={setCropType}
                 style={{
                   padding: '10px 14px',
                   borderRadius: 'var(--radius-md, 10px)',
@@ -237,14 +239,7 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
                   outline: 'none',
                   width: '100%'
                 }}
-              >
-                <option value="Maize">Maize</option>
-                <option value="Tomatoes">Tomatoes</option>
-                <option value="Beans">Beans</option>
-                <option value="Cassava">Cassava</option>
-                <option value="Wheat">Wheat</option>
-                <option value="Potatoes">Potatoes</option>
-              </select>
+              />
             </div>
 
             {/* Stage */}

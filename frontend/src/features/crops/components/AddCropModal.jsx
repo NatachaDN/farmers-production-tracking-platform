@@ -12,7 +12,7 @@ const POPULAR_SUGGESTIONS = [
   { name: 'Coffee', varieties: ['SL28', 'Ruiru 11', 'Batian'] }
 ];
 
-export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId = 1 }) {
+export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
   const [name, setName] = useState('');
   const [variety, setVariety] = useState('');
   const [submitting, setSubmitting] = useState(false);

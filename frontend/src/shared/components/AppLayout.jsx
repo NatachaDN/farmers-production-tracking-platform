@@ -15,7 +15,7 @@ export function AppLayout({
 }) {
   const initials = user?.fullName
     ? user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    : 'JM';
+    : '';
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-canvas-bg)' }}>
@@ -27,9 +27,9 @@ export function AppLayout({
         <TopBar
           title={title}
           subtitle={subtitle}
-          userName={user?.fullName || "Joyce M."}
+          userName={user?.fullName || ""}
           userInitials={initials}
-          farmName={user?.role === 'ROLE_ADMIN' ? 'Administrator' : (user?.farmName || user?.location || "Green Acres Farm")}
+          farmName={user?.role === 'ROLE_ADMIN' ? 'Administrator' : (user?.farmName || user?.location || "")}
           avatarUrl={user?.avatarUrl}
           onLogout={onLogout}
           onEditProfile={onEditProfile}

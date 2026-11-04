@@ -75,14 +75,16 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
             ));
         }
 
-        // 6. Deduct used quantity from inventory stock (Acceptance Criterion 1)
+        // 6. Real cost = quantity used x weighted-average cost of one unit in stock.
+        //    (purchasePrice is the total paid for a purchase, not a per-unit price.)
+        double unitPrice = farmInput.getUnitCost();
+        double totalCost = Math.round((request.getQuantityUsed() * unitPrice) * 100.0) / 100.0;
+
+        // 7. Deduct used quantity from inventory stock (Acceptance Criterion 1)
         double remainingStock = Math.round((farmInput.getQuantity() - request.getQuantityUsed()) * 100.0) / 100.0;
+        farmInput.setUnitCost(unitPrice);
         farmInput.setQuantity(remainingStock);
         farmInputRepository.save(farmInput);
-
-        // 7. Calculate real cost based on input purchase price
-        double unitPrice = (farmInput.getPurchasePrice() != null) ? farmInput.getPurchasePrice() : 0.0;
-        double totalCost = Math.round((request.getQuantityUsed() * unitPrice) * 100.0) / 100.0;
 
         LocalDate usageDate = (request.getUsageDate() != null) ? request.getUsageDate() : LocalDate.now();
 
@@ -171,7 +173,10 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
         // Restore deducted stock back to inventory
         FarmInput farmInput = usage.getFarmInput();
         if (farmInput != null) {
+            double currentValue = farmInput.getQuantity() * farmInput.getUnitCost();
+            double restoredValue = usage.getQuantityUsed() * (usage.getUnitPrice() != null ? usage.getUnitPrice() : 0.0);
             double restoredStock = Math.round((farmInput.getQuantity() + usage.getQuantityUsed()) * 100.0) / 100.0;
+            farmInput.setUnitCost(restoredStock > 0 ? (currentValue + restoredValue) / restoredStock : 0.0);
             farmInput.setQuantity(restoredStock);
             farmInputRepository.save(farmInput);
         }

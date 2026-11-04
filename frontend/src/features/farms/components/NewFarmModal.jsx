@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { farmService } from '../services/farmService';
 import { IconClose } from '../../../shared/components/Icons';
 
-export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId = 1 }) {
+export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId }) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
