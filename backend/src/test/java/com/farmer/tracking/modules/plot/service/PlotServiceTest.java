@@ -46,6 +46,12 @@ class PlotServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(plotRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> plotRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+        com.farmer.tracking.modules.farm.model.Farm defaultFarm = new com.farmer.tracking.modules.farm.model.Farm();
+        defaultFarm.setId(1L); defaultFarm.setSize(100.0); defaultFarm.setSizeUnit(com.farmer.tracking.modules.farm.model.SizeUnit.HECTARES);
+        org.mockito.Mockito.lenient().when(farmRepository.findFirstByFarmerIdAndIsDefaultTrue(org.mockito.ArgumentMatchers.anyLong())).thenReturn(Optional.of(defaultFarm));
+        org.mockito.Mockito.lenient().when(farmRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenReturn(Optional.of(defaultFarm));
+
         samplePlot = new Plot(farmerId, "Plot A — Maize", 2.5, "North Field", "Maize", "Vegetative growth");
         samplePlot.setId(plotId);
         samplePlot.setCreatedAt(LocalDateTime.now());

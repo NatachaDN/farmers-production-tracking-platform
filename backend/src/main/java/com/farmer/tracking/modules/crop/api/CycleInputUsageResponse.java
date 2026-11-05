@@ -40,6 +40,9 @@ public class CycleInputUsageResponse {
     @Schema(description = "Total real cost for this consumption (quantityUsed * unitPrice)", example = "8000.0")
     private Double totalCost;
 
+    private boolean costVerified = true;
+    public boolean isCostVerified() { return costVerified; }
+
     @Schema(description = "Remaining available stock in inventory after this deduction", example = "150.0")
     private Double remainingStock;
 
@@ -77,7 +80,7 @@ public class CycleInputUsageResponse {
 
     public static CycleInputUsageResponse fromEntity(CycleInputUsage usage, Double remainingStock) {
         if (usage == null) return null;
-        return new CycleInputUsageResponse(
+        CycleInputUsageResponse response = new CycleInputUsageResponse(
                 usage.getId(),
                 usage.getCycle() != null ? usage.getCycle().getId() : null,
                 usage.getFarmInput() != null ? usage.getFarmInput().getId() : null,
@@ -86,13 +89,15 @@ public class CycleInputUsageResponse {
                 usage.getInputType(),
                 usage.getQuantityUsed(),
                 usage.getUnit(),
-                usage.getUnitPrice(),
-                usage.getTotalCost(),
+                usage.isCostVerified() ? usage.getUnitPrice() : null,
+                usage.isCostVerified() ? usage.getTotalCost() : null,
                 remainingStock != null ? remainingStock : (usage.getFarmInput() != null ? usage.getFarmInput().getQuantity() : null),
                 usage.getUsageDate(),
                 usage.getNotes(),
                 usage.getCreatedAt()
         );
+        response.costVerified = usage.isCostVerified();
+        return response;
     }
 
     public static CycleInputUsageResponse fromEntity(CycleInputUsage usage) {

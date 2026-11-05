@@ -31,6 +31,10 @@ public class CycleCostSummaryResponse {
 
     public CycleCostSummaryResponse() {}
 
+    public boolean isCostVerified() {
+        return items == null || items.stream().allMatch(CycleInputUsageResponse::isCostVerified);
+    }
+
     public CycleCostSummaryResponse(Long cycleId, String cycleName, String cropName,
                                     Double totalInputCost, Integer inputCount,
                                     Map<String, Double> costByType, List<CycleInputUsageResponse> items) {

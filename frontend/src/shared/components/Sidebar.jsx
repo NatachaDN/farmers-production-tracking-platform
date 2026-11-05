@@ -150,7 +150,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             color: 'rgba(255, 255, 255, 0.6)',
             marginBottom: '4px'
           }}>
-            CURRENT SEASON
+            YOUR WORKSPACE
           </div>
           <div style={{
             fontSize: '0.875rem',
@@ -158,7 +158,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             color: '#FFFFFF',
             marginBottom: '6px'
           }}>
-            2026 Main Season
+            Farm records
           </div>
           <div style={{
             display: 'flex',
@@ -173,7 +173,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
               borderRadius: '50%',
               backgroundColor: '#E5A638'
             }} />
-            <span>4 cycles in progress</span>
+            <span>See your dashboard summary</span>
           </div>
         </div>
         )}

@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.util.ProductionRules;
 import com.farmer.tracking.modules.crop.api.HarvestRequest;
 import com.farmer.tracking.modules.crop.api.HarvestResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -34,7 +35,7 @@ public class HarvestService {
      */
     @Transactional
     public HarvestResponse recordHarvest(Long farmerId, Long cycleId, HarvestRequest request) {
-        Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
+        Cycle cycle = cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
 
         if (cycle.getStatus() != CycleStatus.ACTIVE) {
@@ -45,6 +46,8 @@ public class HarvestService {
             throw new IllegalStateException("Harvest has already been recorded for this cycle.");
         }
 
+        ProductionRules.eventDate(cycle, request.getHarvestDate());
+        ProductionRules.positiveFinite(request.getQuantity(), "Harvest quantity");
         // Calculate yield
         Double calculatedYield;
         String yieldDisplay;
@@ -69,6 +72,8 @@ public class HarvestService {
         // Mark the cycle COMPLETED. Its end date keeps the *planned* harvest date (US-12):
         // the actual date is stored on the Harvest so both can be compared (US-17).
         cycle.setStatus(CycleStatus.COMPLETED);
+        cycle.setProgress(100);
+        cycle.setSubStatus("Completed");
         cycleRepository.save(cycle);
 
         return toResponse(savedHarvest, cycle, yieldDisplay);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AddInputModal } from './components/AddInputModal';
 import { inputService } from './services/inputService';
+import { UnitCostConfirmation } from '../../shared/components/UnitCostConfirmation';
 import {
   IconSprout,
   IconFlask,
@@ -33,13 +34,15 @@ function toInputView(apiInput) {
     totalQuantity: apiInput.quantity,
     unit: apiInput.unit,
     totalCost: apiInput.cumulativeCost,
+    unitCost: apiInput.unitCost,
+    valuationRequired: apiInput.valuationRequired,
     purchaseDate: apiInput.purchaseDate,
     lastUpdated: (apiInput.updatedAt || apiInput.purchaseDate || '').slice(0, 10)
   };
 }
 
 /* ─── Single Input Card ─────────────────────────────────────────── */
-function InputCard({ input, onDelete }) {
+function InputCard({ input, onDelete, onConfirmCost }) {
   const meta = TYPE_META[input.type] || TYPE_META.OTHER;
   const IconComponent = meta.icon;
   const formattedCost = (input.totalCost || 0).toLocaleString('fr-CM');
@@ -137,6 +140,10 @@ function InputCard({ input, onDelete }) {
       </div>
 
       {/* Divider */}
+      {input.valuationRequired && <div style={{ color: '#92400E' }}>
+        <p>Confirm this existing stock's unit cost before consumption or restocking.</p>
+        <UnitCostConfirmation name={input.name} quantity={input.totalQuantity} unit={input.unit} onConfirm={cost => onConfirmCost(input.id, cost)} />
+      </div>}
       <div style={{ height: '1px', backgroundColor: '#F4EFE6' }} />
 
       {/* Metrics row */}
@@ -526,6 +533,10 @@ export function FarmInputsView({ farmerId, onNavigate }) {
             <InputCard
               key={input.id}
               input={input}
+              onConfirmCost={async (id, cost) => {
+                const saved = toInputView(await inputService.confirmUnitCost(farmerId, id, cost));
+                setInputs(prev => prev.map(item => item.id === id ? saved : item));
+              }}
               onDelete={(inp) => setInputToDelete(inp)}
             />
           ))}

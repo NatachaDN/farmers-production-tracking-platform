@@ -49,12 +49,12 @@ class FarmInputTest {
     }
 
     @Test
-    @DisplayName("Legacy rows without a stored unit cost fall back to cumulative cost / quantity")
+    @DisplayName("Legacy rows without a stored cost require confirmation instead of inventing a price")
     void unitCost_LegacyFallback() {
         FarmInput input = new FarmInput();
         input.setQuantity(200.0);
         input.setCumulativeCost(12000.0);
 
-        assertThat(input.getUnitCost()).isEqualTo(60.0);
+        assertThat(input.getUnitCost()).isNull();
     }
 }

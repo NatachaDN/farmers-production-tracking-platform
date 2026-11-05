@@ -7,6 +7,7 @@ import com.farmer.tracking.modules.crop.api.CycleInputUsageResponse;
 import java.util.List;
 
 public interface CycleInputUsageService {
+    CycleInputUsageResponse confirmUsageCost(Long farmerId, Long cycleId, Long usageId, Double unitCost);
 
     CycleInputUsageResponse recordInputUsage(Long farmerId, Long cycleId, CycleInputUsageRequest request);
 

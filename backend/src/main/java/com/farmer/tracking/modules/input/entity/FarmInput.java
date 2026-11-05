@@ -79,7 +79,10 @@ public class FarmInput {
      */
     public void addStock(double addedQuantity, double totalPrice) {
         double currentQuantity = quantity != null ? quantity : 0.0;
-        double currentValue = currentQuantity * getUnitCost();
+        if (currentQuantity > 0 && unitCost == null) {
+            throw new com.farmer.tracking.common.exception.ConflictException("Confirm the unit cost of this existing stock before restocking.");
+        }
+        double currentValue = currentQuantity > 0 ? currentQuantity * unitCost : 0.0;
         this.quantity = currentQuantity + addedQuantity;
         this.unitCost = this.quantity > 0 ? (currentValue + totalPrice) / this.quantity : 0.0;
         this.cumulativeCost = (cumulativeCost != null ? cumulativeCost : 0.0) + totalPrice;
@@ -164,14 +167,9 @@ public class FarmInput {
     }
 
     public Double getUnitCost() {
-        if (unitCost != null) {
-            return unitCost;
-        }
-        // Legacy rows created before unit_cost existed: best available estimate.
-        if (quantity != null && quantity > 0 && cumulativeCost != null) {
-            return cumulativeCost / quantity;
-        }
-        return 0.0;
+        // Historic purchase expenditure divided by remaining quantity is not a stock valuation.
+        // Null explicitly means that the farmer must confirm the legacy unit cost.
+        return unitCost;
     }
 
     public void setUnitCost(Double unitCost) {

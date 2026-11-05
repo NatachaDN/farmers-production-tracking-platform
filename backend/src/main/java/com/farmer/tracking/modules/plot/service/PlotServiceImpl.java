@@ -2,6 +2,8 @@ package com.farmer.tracking.modules.plot.service;
 
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.modules.farm.model.SizeUnit;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleStatus;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
@@ -34,7 +36,7 @@ public class PlotServiceImpl implements PlotService {
 
     @Override
     public PlotResponse createPlot(Long farmerId, PlotRequest request) {
-        if (request.getArea() == null || request.getArea() <= 0) {
+        if (request.getArea() == null || !Double.isFinite(request.getArea()) || request.getArea() <= 0) {
             throw new IllegalArgumentException("Area must be a positive number");
         }
         if (request.getName() == null || request.getName().trim().isEmpty()) {
@@ -44,15 +46,8 @@ public class PlotServiceImpl implements PlotService {
             throw new IllegalArgumentException("Location is required");
         }
 
-        Farm targetFarm = null;
-        if (request.getFarmId() != null) {
-            targetFarm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElse(null);
-        }
-        if (targetFarm == null) {
-            targetFarm = farmRepository.findFirstByFarmerIdAndIsDefaultTrue(farmerId)
-                    .orElse(null);
-        }
+        Farm targetFarm = resolveFarm(farmerId, request.getFarmId());
+        validateFarmArea(targetFarm, request.getArea(), null);
 
         Plot plot = new Plot(
                 farmerId,
@@ -86,7 +81,7 @@ public class PlotServiceImpl implements PlotService {
 
     @Override
     public PlotResponse updatePlot(Long farmerId, Long plotId, PlotRequest request) {
-        if (request.getArea() == null || request.getArea() <= 0) {
+        if (request.getArea() == null || !Double.isFinite(request.getArea()) || request.getArea() <= 0) {
             throw new IllegalArgumentException("Area must be a positive number");
         }
         if (request.getName() == null || request.getName().trim().isEmpty()) {
@@ -96,13 +91,18 @@ public class PlotServiceImpl implements PlotService {
             throw new IllegalArgumentException("Location is required");
         }
 
-        Plot plot = plotRepository.findByIdAndFarmerId(plotId, farmerId)
+        Plot plot = plotRepository.findLockedByIdAndFarmerId(plotId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot", plotId));
 
-        if (request.getFarmId() != null) {
-            Farm targetFarm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElse(null);
-            plot.setFarm(targetFarm);
+        Long requestedFarm = request.getFarmId() != null ? request.getFarmId()
+                : (plot.getFarm() == null ? null : plot.getFarm().getId());
+        Farm targetFarm = resolveFarm(farmerId, requestedFarm);
+        validateFarmArea(targetFarm, request.getArea(), plotId);
+        plot.setFarm(targetFarm);
+        for (Cycle cycle : cycleRepository.findByPlotId(plotId)) {
+            if (cycle.getAcreage() != null && cycle.getAcreage() > request.getArea()) {
+                throw new BadRequestException("Plot area cannot be smaller than an existing production cycle's area.");
+            }
         }
 
         plot.setName(request.getName().trim());
@@ -126,7 +126,7 @@ public class PlotServiceImpl implements PlotService {
 
     @Override
     public void deletePlot(Long farmerId, Long plotId, boolean force) {
-        Plot plot = plotRepository.findByIdAndFarmerId(plotId, farmerId)
+        Plot plot = plotRepository.findLockedByIdAndFarmerId(plotId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot", plotId));
 
         Optional<Cycle> activeCycle = cycleRepository.findFirstByPlotIdAndStatusOrderByIdDesc(plotId, CycleStatus.ACTIVE);
@@ -144,5 +144,23 @@ public class PlotServiceImpl implements PlotService {
         }
 
         plotRepository.delete(plot);
+    }
+
+    private Farm resolveFarm(Long farmerId, Long requestedId) {
+        Long id = requestedId;
+        if (id == null) {
+            id = farmRepository.findFirstByFarmerIdAndIsDefaultTrue(farmerId)
+                    .map(Farm::getId).orElseThrow(() -> new BadRequestException("Create a farm before registering a plot."));
+        }
+        return farmRepository.findLockedByIdAndFarmerId(id, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm not found for this farmer."));
+    }
+
+    private void validateFarmArea(Farm farm, Double area, Long excludeId) {
+        double capacity = farm.getSizeUnit() == SizeUnit.ACRES ? farm.getSize() * 0.40468564224 : farm.getSize();
+        Double otherArea = plotRepository.totalAreaInFarm(farm.getId(), excludeId);
+        if ((otherArea == null ? 0 : otherArea) + area > capacity + 0.000001) {
+            throw new BadRequestException("Combined plot area cannot exceed the farm's registered area.");
+        }
     }
 }

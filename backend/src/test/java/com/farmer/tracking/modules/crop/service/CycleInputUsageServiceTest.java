@@ -61,6 +61,10 @@ class CycleInputUsageServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(cycleRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> cycleRepository.findById(i.getArgument(0)));
+        org.mockito.Mockito.lenient().when(farmInputRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> farmInputRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+        org.mockito.Mockito.lenient().when(cycleInputUsageRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> cycleInputUsageRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+
         SecurityContextHolder.clearContext();
 
         activeCycle = new Cycle();
@@ -257,6 +261,7 @@ class CycleInputUsageServiceTest {
 
         // Before delete, inventory had 150 kg
         sampleInput.setQuantity(150.0);
+        when(farmInputRepository.findByIdAndFarmerId(sampleInput.getId(), farmerId)).thenReturn(Optional.of(sampleInput));
 
         when(cycleInputUsageRepository.findByIdAndFarmerId(100L, farmerId)).thenReturn(Optional.of(usage));
 

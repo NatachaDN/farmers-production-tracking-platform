@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.util.ProductionRules;
 import com.farmer.tracking.modules.crop.api.CycleIncidentRequest;
 import com.farmer.tracking.modules.crop.api.CycleIncidentResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -73,7 +74,7 @@ public class CycleIncidentService {
     @Transactional
     public CycleIncidentResponse createIncident(Long farmerId, Long cycleId,
                                                 CycleIncidentRequest request) {
-        Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+        Cycle cycle = getCycleForFarmerForUpdate(farmerId, cycleId);
 
         if (cycle.getStatus() != null && cycle.getStatus() != CycleStatus.ACTIVE) {
             throw new IllegalStateException(
@@ -81,6 +82,7 @@ public class CycleIncidentService {
                             + cycle.getStatus());
         }
 
+        ProductionRules.eventDate(cycle, request.getIncidentDate());
         CycleIncident incident = new CycleIncident(
                 farmerId,
                 cycle,
@@ -102,10 +104,11 @@ public class CycleIncidentService {
     public CycleIncidentResponse updateIncident(Long farmerId, Long cycleId,
                                                 Long incidentId,
                                                 CycleIncidentRequest request) {
-        Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+        Cycle cycle = getCycleForFarmerForUpdate(farmerId, cycleId);
         CycleIncident incident = incidentRepository.findByIdAndCycleId(incidentId, cycle.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Incident", incidentId));
 
+        ProductionRules.eventDate(cycle, request.getIncidentDate());
         incident.setIncidentType(request.getIncidentType());
         incident.setIncidentDate(request.getIncidentDate());
         incident.setDescription(request.getDescription());
@@ -121,7 +124,7 @@ public class CycleIncidentService {
      */
     @Transactional
     public void deleteIncident(Long farmerId, Long cycleId, Long incidentId) {
-        Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+        Cycle cycle = getCycleForFarmerForUpdate(farmerId, cycleId);
         CycleIncident incident = incidentRepository.findByIdAndCycleId(incidentId, cycle.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Incident", incidentId));
         incidentRepository.delete(incident);
@@ -156,4 +159,9 @@ public class CycleIncidentService {
                 incident.getUpdatedAt()
         );
     }
+    private Cycle getCycleForFarmerForUpdate(Long farmerId, Long cycleId) {
+        return cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle", cycleId));
+    }
+
 }

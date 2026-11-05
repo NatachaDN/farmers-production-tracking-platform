@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { passwordMeetsPolicy, passwordPolicyMessage } from './services/passwordRules';
 import { AuthHeroBanner } from './AuthHeroBanner';
 import { AuthMetaHeader } from './AuthMetaHeader';
 import { FarmTypeSelector } from './FarmTypeSelector';
@@ -25,8 +26,8 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
       setError('Passwords do not match. Please verify both fields.');
       return;
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    if (!passwordMeetsPolicy(password)) {
+      setError(passwordPolicyMessage);
       return;
     }
 

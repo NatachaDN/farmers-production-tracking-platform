@@ -43,6 +43,17 @@ export function App() {
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   useEffect(() => {
+    const expireSession = () => {
+      authService.logout();
+      setCurrentUser(null);
+      setCurrentRoute('login');
+      setLoginError('Your session is no longer valid. Please sign in again.');
+    };
+    window.addEventListener('acrea-session-expired', expireSession);
+    return () => window.removeEventListener('acrea-session-expired', expireSession);
+  }, []);
+
+  useEffect(() => {
     if (currentRoute !== 'google-callback') return;
     authService.completeGoogleSignIn()
       .then((response) => {
@@ -90,6 +101,7 @@ export function App() {
   };
 
   const routeHeaders = {
+    'farm-details': { title: 'Farm details', subtitle: 'Saved farm information and production records' },
     'admin-overview': { title: 'Platform overview', subtitle: `${todayLabel()} · Every farmer, one view` },
     'admin-farmers': { title: 'Farmers', subtitle: 'Accounts, farms and production by farmer' },
     'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
@@ -97,7 +109,7 @@ export function App() {
     'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
     dashboard: {
       title: 'Dashboard',
-      subtitle: 'Tuesday, 2 October · Green Acres Farm'
+      subtitle: `${todayLabel()}${currentUser?.farmName ? ` · ${currentUser.farmName}` : ''}`
     },
     farms: {
       title: 'Farms & Plots',
@@ -224,6 +236,7 @@ export function App() {
           )}
           {currentRoute === 'farm-details' && (
             <FarmDetailsView
+              user={currentUser}
               farmId={selectedFarmId}
               onNavigate={(r) => setCurrentRoute(r)}
             />

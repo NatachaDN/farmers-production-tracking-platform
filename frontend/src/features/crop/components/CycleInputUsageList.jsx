@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './CycleInputUsageList.css';
+import { UnitCostConfirmation } from '../../../shared/components/UnitCostConfirmation';
 import {
   IconInputs,
   IconTrash,
@@ -15,6 +16,7 @@ export function CycleInputUsageList({
   usages = [],
   costSummary = null,
   onDeleteUsage,
+  onConfirmCost,
   isLoading = false
 }) {
   const [deletingId, setDeletingId] = useState(null);
@@ -27,13 +29,14 @@ export function CycleInputUsageList({
     }
   };
 
-  const totalCost = costSummary?.totalInputCost ?? usages.reduce((sum, u) => sum + (u.totalCost || 0), 0);
+  const verified = usages.every(u => u.costVerified !== false);
+  const totalCost = verified ? (costSummary?.totalInputCost ?? usages.reduce((sum, u) => sum + (u.totalCost || 0), 0)) : null;
   const costByType = costSummary?.costByType || {};
 
   return (
     <div className="cycle-input-list-container" id="cycle-input-usage-list-container">
       {/* Category Cost Breakdown Bar */}
-      {usages.length > 0 && Object.keys(costByType).length > 0 && (
+      {verified && usages.length > 0 && Object.keys(costByType).length > 0 && (
         <div className="cost-breakdown-bar">
           <span className="cost-breakdown-title">Cost by Category:</span>
           {Object.entries(costByType).map(([type, cost]) => (
@@ -50,7 +53,7 @@ export function CycleInputUsageList({
           <div>
             <h4>Consumed Inputs & Expenditure</h4>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted, #788680)', marginTop: '2px' }}>
-              {usages.length} {usages.length === 1 ? 'item' : 'items'} applied · Real Cost: XAF {Number(totalCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {usages.length} {usages.length === 1 ? 'item' : 'items'} applied · {verified ? `Real Cost: XAF ${Number(totalCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Confirm historical costs to calculate the total.'}
             </div>
           </div>
         </div>
@@ -98,11 +101,11 @@ export function CycleInputUsageList({
                       </span>
                     </td>
                     <td>
-                      XAF {Number(usage.unitPrice || 0).toFixed(2)} / {usage.unit}
+                      {usage.costVerified === false ? 'Needs review' : `XAF ${Number(usage.unitPrice || 0).toFixed(2)} / ${usage.unit}`}
                     </td>
                     <td>
                       <span className="cost-highlight">
-                        XAF {Number(usage.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {usage.costVerified === false ? 'Needs review' : `XAF ${Number(usage.totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </span>
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
@@ -112,12 +115,13 @@ export function CycleInputUsageList({
                       {usage.notes || '—'}
                     </td>
                     <td style={{ textAlign: 'right' }}>
+                      {usage.costVerified === false && <UnitCostConfirmation historical name={usage.inputName} quantity={usage.quantityUsed} unit={usage.unit} onConfirm={cost => onConfirmCost(usage.id, cost)} />}
                       <button
                         type="button"
                         className="btn-delete-usage"
                         title="Delete record and restore stock to inventory"
                         onClick={() => handleDeleteClick(usage)}
-                        disabled={deletingId === usage.id}
+                        disabled={deletingId === usage.id || usage.costVerified === false}
                       >
                         <IconTrash size={14} />
                         <span>{deletingId === usage.id ? 'Restoring...' : 'Remove'}</span>

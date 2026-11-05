@@ -53,6 +53,7 @@ public class GoogleAuthService {
         return new GoogleConfigResponse(googleClient.isConfigured(), googleClient.isConfigured() ? googleClient.getClientId() : null);
     }
 
+    @Transactional
     public GoogleLoginResult login(String code, String redirectUri, String codeVerifier) {
         GoogleIdentity identity = googleClient.exchangeCode(code, redirectUri, codeVerifier);
         return signIn(identity);
@@ -60,9 +61,9 @@ public class GoogleAuthService {
 
     @Transactional
     public GoogleLoginResult signIn(GoogleIdentity identity) {
-        Optional<Farmer> existing = farmerRepository.findByGoogleId(identity.subject());
+        Optional<Farmer> existing = farmerRepository.findLockedByGoogleId(identity.subject());
         if (existing.isEmpty()) {
-            existing = farmerRepository.findByEmailOrPhone(identity.email());
+            existing = farmerRepository.findLockedByEmailOrPhone(identity.email());
         }
 
         boolean created = existing.isEmpty();
@@ -76,6 +77,7 @@ public class GoogleAuthService {
                 farmer.setGoogleId(identity.subject());
                 farmer.setAuthProvider("GOOGLE");
                 farmer.setPasswordHash(unusablePasswordHash());
+                farmer.setTokenVersion(farmer.getTokenVersion() + 1);
                 log.info("Linked existing farmer account {} to Google and retired its password", farmer.getId());
             }
             if (identity.pictureUrl() != null) {
@@ -91,7 +93,7 @@ public class GoogleAuthService {
         farmer.setLastLoginAt(LocalDateTime.now());
         Farmer saved = farmerRepository.save(farmer);
 
-        String token = tokenProvider.generateToken(saved.getId(), saved.getEmailOrPhone());
+        String token = tokenProvider.generateToken(saved.getId(), saved.getEmailOrPhone(), saved.getTokenVersion());
         FarmerProfileResponse profile = authMapper.toProfileResponse(saved);
         String message = created ? "Account created with Google." : "Signed in with Google.";
         return new GoogleLoginResult(new AuthResponse(token, profile, message), created);

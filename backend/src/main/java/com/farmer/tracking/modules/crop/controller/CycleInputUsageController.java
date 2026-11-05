@@ -26,6 +26,13 @@ import java.util.List;
 @Tag(name = "Cycle Input Consumptions", description = "Record inputs used on crop cycles, deduct inventory stock, and calculate real cost")
 public class CycleInputUsageController {
 
+    @PutMapping("/{usageId}/unit-cost")
+    public CycleInputUsageResponse confirmUsageCost(@PathVariable Long farmerId, @PathVariable Long cycleId,
+                                                    @PathVariable Long usageId,
+                                                    @Valid @RequestBody com.farmer.tracking.modules.input.api.UnitCostRequest request) {
+        return cycleInputUsageService.confirmUsageCost(farmerId, cycleId, usageId, request.unitCost());
+    }
+
     private final CycleInputUsageService cycleInputUsageService;
 
     public CycleInputUsageController(CycleInputUsageService cycleInputUsageService) {

@@ -14,6 +14,9 @@ public class UserPrincipal implements UserDetails {
     private final String emailOrPhone;
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
+    private long tokenVersion;
+
+    public long getTokenVersion() { return tokenVersion; }
 
     public UserPrincipal(Long id, String emailOrPhone, String password, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
@@ -24,12 +27,14 @@ public class UserPrincipal implements UserDetails {
 
     public static UserPrincipal create(Farmer farmer) {
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(farmer.getRole()));
-        return new UserPrincipal(
+        UserPrincipal principal = new UserPrincipal(
                 farmer.getId(),
                 farmer.getEmailOrPhone(),
                 farmer.getPasswordHash(),
                 authorities
         );
+        principal.tokenVersion = farmer.getTokenVersion();
+        return principal;
     }
 
     public Long getId() {

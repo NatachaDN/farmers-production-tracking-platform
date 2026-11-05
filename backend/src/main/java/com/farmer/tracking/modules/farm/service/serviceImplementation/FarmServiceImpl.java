@@ -10,6 +10,10 @@ import com.farmer.tracking.modules.farm.dto.UpdateFarmRequest;
 import com.farmer.tracking.modules.farm.mapper.FarmMapper;
 import com.farmer.tracking.modules.farm.model.Farm;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
+import com.farmer.tracking.modules.plot.repository.PlotRepository;
+import com.farmer.tracking.modules.farm.model.SizeUnit;
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.util.ProductionRules;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,18 +25,21 @@ public class FarmServiceImpl implements FarmService {
     private final FarmRepository farmRepository;
     private final FarmerRepository farmerRepository;
     private final FarmMapper farmMapper;
+    private final PlotRepository plotRepository;
 
     public FarmServiceImpl(FarmRepository farmRepository,
                            FarmerRepository farmerRepository,
-                           FarmMapper farmMapper) {
+                           FarmMapper farmMapper, PlotRepository plotRepository) {
         this.farmRepository = farmRepository;
         this.farmerRepository = farmerRepository;
         this.farmMapper = farmMapper;
+        this.plotRepository = plotRepository;
     }
 
     @Override
     @Transactional
     public FarmResponse createFarm(Long farmerId, CreateFarmRequest request) {
+        ProductionRules.positiveFinite(request.getSize(), "Farm size");
         Farmer farmer = farmerRepository.findById(farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated farmer account not found with ID: " + farmerId));
 
@@ -67,10 +74,17 @@ public class FarmServiceImpl implements FarmService {
     @Override
     @Transactional
     public FarmResponse updateFarm(Long id, Long farmerId, UpdateFarmRequest request) {
-        Farm farm = farmRepository.findById(id)
+        ProductionRules.positiveFinite(request.getSize(), "Farm size");
+        Farm farm = farmRepository.findLockedByIdAndFarmerId(id, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm not found with ID: " + id));
 
         validateOwnership(farm, farmerId);
+
+        double capacity = request.getSizeUnit() == SizeUnit.ACRES ? request.getSize() * 0.40468564224 : request.getSize();
+        Double plotArea = plotRepository.totalAreaInFarm(id, null);
+        if (plotArea != null && plotArea > capacity + 0.000001) {
+            throw new BadRequestException("Farm area cannot be smaller than its registered plots.");
+        }
 
         farmMapper.updateEntityFromDto(request, farm);
         Farm updatedFarm = farmRepository.save(farm);
