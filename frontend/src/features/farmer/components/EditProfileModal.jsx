@@ -31,11 +31,11 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
     if (user && isOpen) {
       setFormData({
         fullName: user.fullName || '',
-        farmName: user.farmName || 'Green Acres Farm',
-        cropsGrown: user.cropsGrown || 'Maize, Tomatoes, Beans, Cassava',
-        totalArea: user.totalArea !== undefined && user.totalArea !== null ? user.totalArea : 8.7,
+        farmName: user.farmName || '',
+        cropsGrown: user.cropsGrown || '',
+        totalArea: user.totalArea !== undefined && user.totalArea !== null ? user.totalArea : 0,
         avatarUrl: user.avatarUrl || '',
-        location: user.location || 'Nakuru County, Kenya',
+        location: user.location || '',
         farmType: user.farmType || 'MIXED'
       });
       setErrors({});

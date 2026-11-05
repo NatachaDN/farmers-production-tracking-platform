@@ -1,6 +1,8 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.exception.ConflictException;
+import com.farmer.tracking.common.util.ProductionRules;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.exception.UnauthorizedException;
 import com.farmer.tracking.common.security.UserPrincipal;
@@ -47,8 +49,7 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
         validateFarmerAccess(farmerId);
 
         // 1. Verify cycle existence and ownership
-        Cycle cycle = cycleRepository.findById(cycleId)
-                .filter(c -> c.getFarmerId().equals(farmerId))
+        Cycle cycle = cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
 
         // 2. Validate cycle status (must be ACTIVE)
@@ -57,12 +58,12 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
         }
 
         // 3. Validate quantity
-        if (request.getQuantityUsed() == null || request.getQuantityUsed() <= 0) {
+        if (request.getQuantityUsed() == null || !Double.isFinite(request.getQuantityUsed()) || request.getQuantityUsed() < 0.01) {
             throw new IllegalArgumentException("Quantity used must be greater than 0");
         }
 
         // 4. Verify inventory input existence and ownership
-        FarmInput farmInput = farmInputRepository.findByIdAndFarmerId(request.getInputId(), farmerId)
+        FarmInput farmInput = farmInputRepository.findLockedByIdAndFarmerId(request.getInputId(), farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm input not found with id: " + request.getInputId() + " for farmer: " + farmerId));
 
         // 5. Stock check: ensure available stock is sufficient (Acceptance Criterion 2)
@@ -77,6 +78,9 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
 
         // 6. Real cost = quantity used x weighted-average cost of one unit in stock.
         //    (purchasePrice is the total paid for a purchase, not a per-unit price.)
+        if (farmInput.getUnitCost() == null) {
+            throw new ConflictException("Confirm this inventory item's unit cost in Farm Inputs before recording consumption.");
+        }
         double unitPrice = farmInput.getUnitCost();
         double totalCost = Math.round((request.getQuantityUsed() * unitPrice) * 100.0) / 100.0;
 
@@ -87,6 +91,7 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
         farmInputRepository.save(farmInput);
 
         LocalDate usageDate = (request.getUsageDate() != null) ? request.getUsageDate() : LocalDate.now();
+        ProductionRules.eventDate(cycle, usageDate);
 
         // 8. Create and persist cycle input consumption record
         CycleInputUsage usage = new CycleInputUsage(
@@ -138,6 +143,7 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
         Map<String, Double> costByType = new LinkedHashMap<>();
 
         for (CycleInputUsage usage : usages) {
+            if (!usage.isCostVerified()) continue;
             double cost = usage.getTotalCost() != null ? usage.getTotalCost() : 0.0;
             totalInputCost += cost;
 
@@ -155,9 +161,9 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
                 cycle.getId(),
                 cycle.getName(),
                 cycle.getCropName(),
-                totalInputCost,
+                usages.stream().allMatch(CycleInputUsage::isCostVerified) ? totalInputCost : null,
                 usages.size(),
-                costByType,
+                usages.stream().allMatch(CycleInputUsage::isCostVerified) ? costByType : Map.of(),
                 items
         );
     }
@@ -166,14 +172,22 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
     public void deleteInputUsage(Long farmerId, Long cycleId, Long usageId) {
         validateFarmerAccess(farmerId);
 
-        CycleInputUsage usage = cycleInputUsageRepository.findByIdAndFarmerId(usageId, farmerId)
+        CycleInputUsage usage = cycleInputUsageRepository.findLockedByIdAndFarmerId(usageId, farmerId)
                 .filter(u -> u.getCycle().getId().equals(cycleId))
                 .orElseThrow(() -> new ResourceNotFoundException("Input usage not found with id: " + usageId + " for cycle: " + cycleId));
 
         // Restore deducted stock back to inventory
-        FarmInput farmInput = usage.getFarmInput();
+        if (!usage.isCostVerified()) {
+            throw new ConflictException("Confirm this historical usage cost before removing it and restoring stock.");
+        }
+        FarmInput farmInput = usage.getFarmInput() == null ? null : farmInputRepository
+                .findLockedByIdAndFarmerId(usage.getFarmInput().getId(), farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input", usage.getFarmInput().getId()));
         if (farmInput != null) {
-            double currentValue = farmInput.getQuantity() * farmInput.getUnitCost();
+            if (farmInput.getQuantity() > 0 && farmInput.getUnitCost() == null) {
+                throw new ConflictException("Confirm the remaining inventory unit cost before restoring stock.");
+            }
+            double currentValue = farmInput.getQuantity() > 0 ? farmInput.getQuantity() * farmInput.getUnitCost() : 0;
             double restoredValue = usage.getQuantityUsed() * (usage.getUnitPrice() != null ? usage.getUnitPrice() : 0.0);
             double restoredStock = Math.round((farmInput.getQuantity() + usage.getQuantityUsed()) * 100.0) / 100.0;
             farmInput.setUnitCost(restoredStock > 0 ? (currentValue + restoredValue) / restoredStock : 0.0);
@@ -182,6 +196,22 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
         }
 
         cycleInputUsageRepository.delete(usage);
+    }
+
+    @Override
+    public CycleInputUsageResponse confirmUsageCost(Long farmerId, Long cycleId, Long usageId, Double unitCost) {
+        validateFarmerAccess(farmerId);
+        if (unitCost == null || !Double.isFinite(unitCost) || unitCost < 0) {
+            throw new BadRequestException("Unit cost must be a finite, non-negative amount.");
+        }
+        CycleInputUsage usage = cycleInputUsageRepository.findLockedByIdAndFarmerId(usageId, farmerId)
+                .filter(u -> u.getCycle().getId().equals(cycleId))
+                .orElseThrow(() -> new ResourceNotFoundException("Input usage", usageId));
+        if (usage.isCostVerified()) throw new ConflictException("This usage already has a confirmed cost.");
+        usage.setUnitPrice(unitCost);
+        usage.setTotalCost(Math.round(usage.getQuantityUsed() * unitCost * 100.0) / 100.0);
+        usage.setCostBasisVersion(1);
+        return CycleInputUsageResponse.fromEntity(cycleInputUsageRepository.save(usage));
     }
 
     private void validateFarmerAccess(Long farmerId) {

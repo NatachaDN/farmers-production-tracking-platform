@@ -20,6 +20,11 @@ async function request(endpoint, options = {}) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
+      if (response.status === 401 && token) {
+        localStorage.removeItem('acrea_token');
+        localStorage.removeItem('acrea_user');
+        window.dispatchEvent(new Event('acrea-session-expired'));
+      }
       const validationMsg = data?.validationErrors ? Object.values(data.validationErrors).join('. ') : null;
       const errorMessage = validationMsg || data?.message || 'Request failed';
       const error = new Error(errorMessage);
@@ -61,6 +66,11 @@ export const apiClient = {
       const response = await fetch(url, { method: 'POST', headers, body: formData });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
+        if (response.status === 401 && token) {
+          localStorage.removeItem('acrea_token');
+          localStorage.removeItem('acrea_user');
+          window.dispatchEvent(new Event('acrea-session-expired'));
+        }
         const errorMessage = data?.message || 'Upload failed';
         const error = new Error(errorMessage);
         error.status = response.status;

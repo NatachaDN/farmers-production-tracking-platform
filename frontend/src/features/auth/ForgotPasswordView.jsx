@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { passwordMeetsPolicy, passwordPolicyMessage } from './services/passwordRules';
 import { AuthHeroBanner } from './AuthHeroBanner';
 import { AuthMetaHeader } from './AuthMetaHeader';
 import {
@@ -25,7 +26,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const isMinLength = newPassword.length >= 8;
+  const isMinLength = passwordMeetsPolicy(newPassword);
   const isMatching = newPassword.length > 0 && newPassword === confirmPassword;
   const isFormValid = isMinLength && isMatching && resetCode.trim().length >= 4;
 
@@ -49,7 +50,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (!isMinLength) {
-      setError('Password must be at least 8 characters long.');
+      setError(passwordPolicyMessage);
       return;
     }
     if (!isMatching) {
@@ -480,7 +481,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                     color: isMinLength ? 'var(--color-brand-primary, #3E7B52)' : 'var(--color-text-muted)'
                   }}>
                     <IconCheck size={14} color={isMinLength ? 'var(--color-brand-primary, #3E7B52)' : '#A4B0AA'} />
-                    <span>At least 8 characters long</span>
+                    <span>8+ characters, including a letter and a number (maximum 72 bytes)</span>
                   </div>
                   <div style={{
                     display: 'flex',

@@ -12,6 +12,7 @@ import {
 } from '../../../shared/components/Icons';
 import { inputService } from '../../inputs/services/inputService';
 import { cycleInputService } from '../services/cycleInputService';
+import { UnitCostConfirmation } from '../../../shared/components/UnitCostConfirmation';
 
 const INPUT_TYPE_LABELS = {
   SEEDS: 'Seeds',
@@ -107,7 +108,8 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
   const qty = parseFloat(quantityUsed) || 0;
   const stockAvailable = selectedInput ? (selectedInput.quantity || 0) : 0;
   const isOverStock = qty > 0 && selectedInput && qty > stockAvailable;
-  const estimatedCost = selectedInput ? qty * (selectedInput.unitCost || 0) : 0;
+  const valuationRequired = !!selectedInput && selectedInput.unitCost == null;
+  const estimatedCost = selectedInput && !valuationRequired ? qty * selectedInput.unitCost : null;
 
   // --- Handlers ---
   const resetForm = () => {
@@ -123,13 +125,18 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
     setError(null);
     setSuccessMsg(null);
 
-    if (!selectedInputId || qty <= 0) {
+    if (!selectedInputId || !Number.isFinite(qty) || qty <= 0) {
       setError('Please select an input and enter a valid quantity.');
       return;
     }
 
     if (isOverStock) {
       setError(`Insufficient stock! Only ${stockAvailable.toFixed(2)} ${selectedInput.unit || 'units'} available for "${selectedInput.name}".`);
+      return;
+    }
+
+    if (valuationRequired) {
+      setError('Confirm this item’s unit cost in Farm Inputs before using it.');
       return;
     }
 
@@ -334,7 +341,8 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
             )}
 
             {/* ━━ Live Cost Preview ━━ */}
-            {selectedInput && qty > 0 && !isOverStock && (
+            {valuationRequired && <p role="alert">This item’s cost needs review. Confirm its unit cost in Farm Inputs before recording consumption.</p>}
+            {selectedInput && qty > 0 && !isOverStock && !valuationRequired && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '10px 14px', borderRadius: '8px',
@@ -359,6 +367,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
                 <input
                   id="cycle-input-date"
                   type="date"
+                  max={new Date().toISOString().split('T')[0]}
                   value={usageDate}
                   onChange={(e) => setUsageDate(e.target.value)}
                   style={inputStyle}
@@ -381,7 +390,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
             <button
               type="submit"
               id="cycle-input-submit"
-              disabled={submitting || !selectedInputId || qty <= 0 || isOverStock}
+              disabled={submitting || !selectedInputId || qty <= 0 || isOverStock || valuationRequired}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 gap: '8px', padding: '11px 22px', borderRadius: '10px',
@@ -412,7 +421,8 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
           </form>
 
           {/* ━━━━━━━━ COST SUMMARY STRIP ━━━━━━━━ */}
-          {costSummary && costSummary.totalInputCost > 0 && (
+          {costSummary?.costVerified === false && <p>Confirm historical input costs below to calculate this cycle’s total expenditure.</p>}
+          {costSummary && costSummary.costVerified !== false && costSummary.totalInputCost > 0 && (
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: '14px'
@@ -543,12 +553,12 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
 
                       {/* Unit Price */}
                       <span style={{ color: 'var(--color-text-muted)' }}>
-                        {formatCurrency(u.unitPrice)}
+                        {u.costVerified === false ? 'Needs review' : formatCurrency(u.unitPrice)}
                       </span>
 
                       {/* Total Cost */}
                       <span style={{ fontWeight: 600, color: '#164230' }}>
-                        {formatCurrency(u.totalCost)}
+                        {u.costVerified === false ? 'Needs review' : formatCurrency(u.totalCost)}
                       </span>
 
                       {/* Date */}
@@ -557,9 +567,10 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
                       </span>
 
                       {/* Delete */}
+                      {u.costVerified === false && <UnitCostConfirmation historical name={u.inputName} quantity={u.quantityUsed} unit={u.unit} onConfirm={cost => cycleInputService.confirmUsageCost(farmerId, cycleId, u.id, cost)} onConfirmed={loadUsages} />}
                       <button
                         onClick={() => handleDeleteUsage(u.id)}
-                        disabled={deletingId === u.id}
+                        disabled={deletingId === u.id || u.costVerified === false}
                         title="Remove and restore stock"
                         style={{
                           width: '32px', height: '32px', borderRadius: '8px',

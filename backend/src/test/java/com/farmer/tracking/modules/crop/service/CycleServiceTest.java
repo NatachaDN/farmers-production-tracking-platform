@@ -44,6 +44,9 @@ class CycleServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(plotRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> plotRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+        org.mockito.Mockito.lenient().when(cycleRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> cycleRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+
         samplePlot = new Plot();
         samplePlot.setId(plotId);
         samplePlot.setFarmerId(farmerId);

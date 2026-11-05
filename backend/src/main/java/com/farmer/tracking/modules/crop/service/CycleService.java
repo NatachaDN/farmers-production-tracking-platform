@@ -2,6 +2,8 @@ package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.util.ProductionRules;
 import com.farmer.tracking.modules.crop.api.CycleRequest;
 import com.farmer.tracking.modules.crop.api.CycleResponse;
 import com.farmer.tracking.modules.crop.api.PlotConflictCheckResponse;
@@ -43,7 +45,7 @@ public class CycleService {
     @Transactional
     public CycleResponse createCycle(Long farmerId, CycleRequest request) {
         // 1. Verify Plot ownership
-        Plot plot = plotRepository.findByIdAndFarmerId(request.getPlotId(), farmerId)
+        Plot plot = plotRepository.findLockedByIdAndFarmerId(request.getPlotId(), farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot not found with id: " + request.getPlotId() + " for farmer: " + farmerId));
 
         // 2. Check for active plot collision / conflict
@@ -62,6 +64,13 @@ public class CycleService {
                 : request.getCropName() + " — " + plot.getName();
 
         Double acreage = request.getAcreage() != null ? request.getAcreage() : plot.getArea();
+        ProductionRules.positiveFinite(acreage, "Cycle area");
+        if (acreage > plot.getArea()) throw new BadRequestException("Cycle area cannot exceed the selected plot area.");
+        if (request.getPlantingDate() == null) throw new BadRequestException("Planting date is required.");
+        if (request.getPlannedHarvestDate() != null && request.getPlannedHarvestDate().isBefore(request.getPlantingDate())) {
+            throw new BadRequestException("Planned harvest date cannot be before the planting date.");
+        }
+        if (request.getExpectedQuantity() != null) ProductionRules.positiveFinite(request.getExpectedQuantity(), "Expected quantity");
         String stage = (request.getStage() != null && !request.getStage().isBlank()) ? request.getStage() : "Planting";
         String unit = (request.getExpectedQuantityUnit() != null && !request.getExpectedQuantityUnit().isBlank())
                 ? request.getExpectedQuantityUnit()
@@ -145,8 +154,11 @@ public class CycleService {
      */
     @Transactional
     public void deleteCycle(Long farmerId, Long cycleId) {
-        Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
+        Cycle cycle = cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
+        if (cycleRepository.hasRecordedHistory(cycleId)) {
+            throw new ConflictException("This cycle has production records. Keep its history; correct the individual records instead.");
+        }
         cycleRepository.delete(cycle);
     }
 

@@ -30,6 +30,8 @@ class FarmInputServiceTest {
     @Mock
     private FarmInputRepository farmInputRepository;
 
+    @Mock private com.farmer.tracking.modules.auth.repository.FarmerRepository farmerRepository;
+
     @InjectMocks
     private FarmInputServiceImpl farmInputService;
 
@@ -40,6 +42,10 @@ class FarmInputServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(farmerRepository.findLockedById(org.mockito.ArgumentMatchers.anyLong())).thenReturn(Optional.of(new com.farmer.tracking.modules.auth.model.Farmer()));
+        org.mockito.Mockito.lenient().when(farmInputRepository.findLockedByFarmerIdAndName(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString())).thenAnswer(i -> farmInputRepository.findByFarmerIdAndNameIgnoreCase(i.getArgument(0), i.getArgument(1)));
+        org.mockito.Mockito.lenient().when(farmInputRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> farmInputRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+
         seedsInput = new FarmInput(
                 farmerId, "Maize Seeds", InputType.SEEDS,
                 50.0, "kg", purchaseDate, 4500.0, 4500.0

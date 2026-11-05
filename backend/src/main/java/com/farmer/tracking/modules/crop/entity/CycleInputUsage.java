@@ -56,6 +56,13 @@ public class CycleInputUsage {
     @Column(name = "total_cost", nullable = false)
     private Double totalCost;
 
+    // Null on historical rows whose old total-price/unit-price interpretation was ambiguous.
+    @Column(name = "cost_basis_version")
+    private Integer costBasisVersion = 1;
+
+    public boolean isCostVerified() { return costBasisVersion != null && costBasisVersion >= 1; }
+    public void setCostBasisVersion(Integer version) { this.costBasisVersion = version; }
+
     @Column(name = "usage_date", nullable = false)
     private LocalDate usageDate;
 

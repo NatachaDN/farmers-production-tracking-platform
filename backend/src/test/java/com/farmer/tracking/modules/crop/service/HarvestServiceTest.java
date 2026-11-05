@@ -48,6 +48,8 @@ class HarvestServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(cycleRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> cycleRepository.findByIdAndFarmerId(i.getArgument(0), i.getArgument(1)));
+
         activeCycle = new Cycle();
         activeCycle.setId(cycleId);
         activeCycle.setFarmerId(farmerId);

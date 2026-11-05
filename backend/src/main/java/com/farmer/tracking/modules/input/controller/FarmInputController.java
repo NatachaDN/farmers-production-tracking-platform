@@ -2,6 +2,7 @@ package com.farmer.tracking.modules.input.controller;
 
 import com.farmer.tracking.modules.input.api.FarmInputRequest;
 import com.farmer.tracking.modules.input.api.FarmInputResponse;
+import com.farmer.tracking.modules.input.api.UnitCostRequest;
 import com.farmer.tracking.modules.input.entity.InputType;
 import com.farmer.tracking.modules.input.service.FarmInputService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -100,5 +101,12 @@ public class FarmInputController {
             @Parameter(description = "Input ID")  @PathVariable Long inputId) {
         farmInputService.deleteInput(farmerId, inputId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{inputId}/unit-cost")
+    @Operation(summary = "Confirm the unit cost of legacy stock with an unknown cost basis")
+    public FarmInputResponse confirmUnitCost(@PathVariable Long farmerId, @PathVariable Long inputId,
+                                            @Valid @RequestBody UnitCostRequest request) {
+        return farmInputService.confirmUnitCost(farmerId, inputId, request.unitCost());
     }
 }

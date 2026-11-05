@@ -44,6 +44,7 @@ class FarmServiceTest {
     @Mock
     private FarmerRepository farmerRepository;
 
+    @Mock private com.farmer.tracking.modules.plot.repository.PlotRepository plotRepository;
     private FarmServiceImpl farmService;
 
     private static final Long OWNER_ID = 1L;
@@ -55,7 +56,9 @@ class FarmServiceTest {
 
     @BeforeEach
     void setUp() {
-        farmService = new FarmServiceImpl(farmRepository, farmerRepository, new FarmMapper());
+        org.mockito.Mockito.lenient().when(farmRepository.findLockedByIdAndFarmerId(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong())).thenAnswer(i -> farmRepository.findById(i.getArgument(0)));
+
+        farmService = new FarmServiceImpl(farmRepository, farmerRepository, new FarmMapper(), plotRepository);
 
         owner = new Farmer();
         owner.setId(OWNER_ID);

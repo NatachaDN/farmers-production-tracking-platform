@@ -21,6 +21,7 @@ import java.time.LocalDate;
  */
 // Demo data for local development only: never seed fake records into a real farmer account.
 @Profile("local")
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.demo.seed-enabled", havingValue = "true")
 @Component
 public class CropDataInitializer implements CommandLineRunner {
 

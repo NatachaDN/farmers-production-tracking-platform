@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { passwordMeetsPolicy } from './services/passwordRules';
 import { IconEye, IconEyeOff } from '../../shared/components/Icons';
 
 export function RegisterPasswordFields({
@@ -12,7 +13,7 @@ export function RegisterPasswordFields({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
-  const isPasswordStrongEnough = password.length >= 8;
+  const isPasswordStrongEnough = passwordMeetsPolicy(password);
 
   return (
     <div className="grid-two-cols">
@@ -24,7 +25,7 @@ export function RegisterPasswordFields({
               fontSize: '0.75rem',
               color: isPasswordStrongEnough ? 'var(--color-brand-primary)' : 'var(--color-accent-amber)'
             }}>
-              {isPasswordStrongEnough ? '✓ 8+ chars' : 'Min 8 chars'}
+              {isPasswordStrongEnough ? '✓ Meets requirements' : '8+ chars, letter + number'}
             </span>
           )}
         </div>

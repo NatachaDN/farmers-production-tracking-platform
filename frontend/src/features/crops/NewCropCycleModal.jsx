@@ -139,6 +139,17 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
       return;
     }
 
+    const selectedPlot = plots.find((p) => p.id === Number(selectedPlotId));
+    const area = Number(acreage);
+    if (!Number.isFinite(area) || area <= 0 || (selectedPlot && area > selectedPlot.area)) {
+      setErrorMsg('Cycle area must be positive and cannot exceed the selected plot area.');
+      return;
+    }
+    if (plannedHarvestDate && plannedHarvestDate < plantingDate) {
+      setErrorMsg('Planned harvest date cannot be before the planting date.');
+      return;
+    }
+
     if (conflictWarning && conflictWarning.hasConflict && !allowConflict) {
       setErrorMsg('Please acknowledge the plot occupancy conflict or choose another plot.');
       return;

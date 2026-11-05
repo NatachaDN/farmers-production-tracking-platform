@@ -49,7 +49,11 @@ export const authService = {
       const user = await apiClient.get('/auth/me');
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return user;
-    } catch {
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        this.logout();
+        return null;
+      }
       return this.getStoredUser();
     }
   },
@@ -65,7 +69,14 @@ export const authService = {
   },
 
   isAuthenticated() {
-    return Boolean(localStorage.getItem(TOKEN_KEY));
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (typeof payload.exp === 'number' && payload.exp * 1000 > Date.now()) return true;
+    } catch { /* Invalid session data must not open an authenticated workspace. */ }
+    this.logout();
+    return false;
   },
 
   async updateProfile(profileData) {

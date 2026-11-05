@@ -51,8 +51,12 @@ public class FarmInputResponse {
                 input.getCreatedAt(),
                 input.getUpdatedAt()
         );
-        response.setUnitCost(Math.round(input.getUnitCost() * 100.0) / 100.0);
+        response.setUnitCost(input.getUnitCost() == null ? null : Math.round(input.getUnitCost() * 100.0) / 100.0);
         return response;
+    }
+
+    public boolean isValuationRequired() {
+        return unitCost == null;
     }
 
     public Double getUnitCost() {

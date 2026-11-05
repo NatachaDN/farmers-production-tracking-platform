@@ -147,7 +147,8 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
   };
 
   // Calculate metrics
-  const totalExpenditure = costSummary?.totalInputCost ?? usages.reduce((s, u) => s + (u.totalCost || 0), 0);
+  const costsVerified = usages.every(u => u.costVerified !== false);
+  const totalExpenditure = costsVerified ? (costSummary?.totalInputCost ?? usages.reduce((s, u) => s + (u.totalCost || 0), 0)) : null;
   const consumedItemsCount = costSummary?.inputCount ?? usages.length;
 
   const topCategoryEntry = costSummary?.costByType
@@ -232,7 +233,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
       <div className="inputs-metrics-grid">
         <MetricCard
           label="Total Input Cost"
-          value={`XAF ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={costsVerified ? `XAF ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Needs review'}
           subtext="Real financial expenditure on crop"
           icon={<IconInputs size={20} color="#2D7A52" />}
         />
@@ -244,8 +245,8 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
         />
         <MetricCard
           label="Top Cost Category"
-          value={topCategoryEntry ? topCategoryEntry[0] : 'None'}
-          subtext={topCategoryEntry ? `XAF ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
+          value={!costsVerified ? 'Needs review' : topCategoryEntry ? topCategoryEntry[0] : 'None'}
+          subtext={!costsVerified ? 'Confirm historical costs first' : topCategoryEntry ? `XAF ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
           icon={<IconSprout size={20} color="#2D7A52" />}
         />
         <MetricCard
@@ -273,6 +274,10 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
 
       {/* Consumed Inputs Table & Cost Breakdown */}
       <CycleInputUsageList
+        onConfirmCost={async (id, cost) => {
+          await cycleInputService.confirmUsageCost(farmerId, selectedCycleId, id, cost);
+          await loadCycleInputs(selectedCycleId);
+        }}
         usages={usages}
         costSummary={costSummary}
         onDeleteUsage={handleDeleteUsage}
