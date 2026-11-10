@@ -22,10 +22,30 @@ export function GoogleSignInSection({ onError, dividerLabel = 'or' }) {
 
   useEffect(() => {
     let active = true;
-    googleAuth.getConfig()
-      .then((c) => active && setConfig({ status: c?.enabled ? 'ready' : 'unconfigured', clientId: c?.clientId }))
-      .catch(() => active && setConfig({ status: 'unavailable', clientId: null }));
-    return () => { active = false; };
+    let timer = null;
+
+    const fetchConfig = () => {
+      googleAuth.getConfig()
+        .then((c) => {
+          if (active) {
+            setConfig({ status: c?.enabled ? 'ready' : 'unconfigured', clientId: c?.clientId });
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setConfig((prev) => (prev.status === 'ready' ? prev : { status: 'unavailable', clientId: null }));
+            timer = setTimeout(() => {
+              if (active) fetchConfig();
+            }, 3000);
+          }
+        });
+    };
+
+    fetchConfig();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const handleClick = async () => {
