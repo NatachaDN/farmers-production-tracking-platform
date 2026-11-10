@@ -1,7 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || 'http://localhost:8080/api/v1';
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('acrea_token');
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('acrea_token') : null;
   const isFormData = options.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),

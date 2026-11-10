@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.dashboard.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.modules.animal.repository.AnimalGroupRepository;
 import com.farmer.tracking.modules.auth.model.Farmer;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -37,6 +38,7 @@ public class FarmerDashboardService {
     private final HarvestRepository harvestRepository;
     private final CycleActivityRepository activityRepository;
     private final FarmInputRepository inputRepository;
+    private final AnimalGroupRepository animalGroupRepository;
 
     public FarmerDashboardService(
             FarmerRepository farmerRepository,
@@ -45,7 +47,8 @@ public class FarmerDashboardService {
             CycleRepository cycleRepository,
             HarvestRepository harvestRepository,
             CycleActivityRepository activityRepository,
-            FarmInputRepository inputRepository
+            FarmInputRepository inputRepository,
+            AnimalGroupRepository animalGroupRepository
     ) {
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
@@ -54,6 +57,7 @@ public class FarmerDashboardService {
         this.harvestRepository = harvestRepository;
         this.activityRepository = activityRepository;
         this.inputRepository = inputRepository;
+        this.animalGroupRepository = animalGroupRepository;
     }
 
     public FarmerDashboardResponse getDashboardSummary(Long farmerId) {
@@ -162,6 +166,9 @@ public class FarmerDashboardService {
             monthlyProduction.add(new MonthlyProductionItem(monthName, Math.round(sumMonthKg * 10.0) / 10.0));
         }
 
+        int animalGroupsCount = (int) animalGroupRepository.countByFarmerId(farmerId);
+        long totalAnimalPopulation = animalGroupRepository.sumActivePopulationByFarmerId(farmerId);
+
         return new FarmerDashboardResponse(
                 farmerName,
                 farmName,
@@ -176,6 +183,8 @@ public class FarmerDashboardService {
                 totalInputsCount,
                 totalInputsCost,
                 activitiesCount,
+                animalGroupsCount,
+                totalAnimalPopulation,
                 recentActivities,
                 upcoming,
                 monthlyProduction

@@ -17,10 +17,52 @@ public record FarmerDashboardResponse(
         int totalInputsCount,
         double totalInputsCost,
         int activitiesCount,
+        int animalGroupsCount,
+        long totalAnimalPopulation,
         List<RecentActivityItem> recentActivities,
         List<UpcomingActivityItem> upcomingActivities,
         List<MonthlyProductionItem> monthlyProduction
 ) {
+    public FarmerDashboardResponse(
+            String farmerName,
+            String farmName,
+            int activeCyclesCount,
+            int completedCyclesCount,
+            int totalCyclesCount,
+            int plotsCount,
+            double totalAreaHa,
+            int farmsCount,
+            double totalHarvestKg,
+            int harvestCount,
+            int totalInputsCount,
+            double totalInputsCost,
+            int activitiesCount,
+            List<RecentActivityItem> recentActivities,
+            List<UpcomingActivityItem> upcomingActivities,
+            List<MonthlyProductionItem> monthlyProduction
+    ) {
+        this(
+                farmerName,
+                farmName,
+                activeCyclesCount,
+                completedCyclesCount,
+                totalCyclesCount,
+                plotsCount,
+                totalAreaHa,
+                farmsCount,
+                totalHarvestKg,
+                harvestCount,
+                totalInputsCount,
+                totalInputsCost,
+                activitiesCount,
+                0,
+                0L,
+                recentActivities,
+                upcomingActivities,
+                monthlyProduction
+        );
+    }
+
     public record RecentActivityItem(
             Long id,
             Long cycleId,
@@ -45,4 +87,3 @@ public record FarmerDashboardResponse(
             double quantityKg
     ) {}
 }
-

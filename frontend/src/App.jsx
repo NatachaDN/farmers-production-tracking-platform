@@ -21,6 +21,7 @@ import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
+import { LivestockView } from './features/livestock/LivestockView';
 import './features/admin/admin.css';
 
 const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
@@ -235,7 +236,10 @@ export function App() {
               }}
             />
           )}
-          {['livestock', 'reports'].includes(currentRoute) && (
+          {currentRoute === 'livestock' && (
+            <LivestockView user={currentUser} />
+          )}
+          {currentRoute === 'reports' && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',

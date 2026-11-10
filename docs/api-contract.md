@@ -356,3 +356,95 @@ All plot endpoints require an authenticated user with a valid Bearer token. Owne
 }
 ```
 - **Forced Deletion:** When called with `?force=true`, any linked cycles are unlinked from the plot and the plot is deleted.
+
+
+---
+
+## 6. Animal Group Management Module (Livestock)
+
+Base path: `/api/v1/animals/groups` (also supports `/api/animals/groups`)
+
+### 6.1 Register Animal Group
+- **Endpoint:** `POST /api/v1/animals/groups`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Request Body:**
+```json
+{
+  "name": "Dairy Herd A",
+  "animalType": "CATTLE",
+  "breed": "Holstein Friesian",
+  "initialPopulation": 30,
+  "currentPopulation": 30,
+  "location": "Barn 2 — East Pasture",
+  "farmId": 1,
+  "purpose": "Milk Production",
+  "status": "ACTIVE",
+  "startDate": "2026-10-15",
+  "notes": "Healthy dairy herd with vaccination schedule up to date."
+}
+```
+- **Response (201 Created):**
+```json
+{
+  "id": 1,
+  "farmerId": 1,
+  "farmId": 1,
+  "farmName": "Green Acres Farm",
+  "name": "Dairy Herd A",
+  "animalType": "CATTLE",
+  "animalTypeDisplay": "Cattle",
+  "breed": "Holstein Friesian",
+  "initialPopulation": 30,
+  "currentPopulation": 30,
+  "location": "Barn 2 — East Pasture",
+  "purpose": "Milk Production",
+  "status": "ACTIVE",
+  "startDate": "2026-10-15",
+  "notes": "Healthy dairy herd with vaccination schedule up to date.",
+  "createdAt": "2026-11-10T12:00:00",
+  "updatedAt": "2026-11-10T12:00:00"
+}
+```
+- **Error (400 Bad Request):** If `initialPopulation` <= 0, `currentPopulation` < 0, or missing required fields (`name`, `animalType`).
+
+### 6.2 List Farmer's Animal Groups
+- **Endpoint:** `GET /api/v1/animals/groups`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Response (200 OK):** Array of `AnimalGroupResponse` items owned by the authenticated farmer.
+
+### 6.3 Get Animal Group Details
+- **Endpoint:** `GET /api/v1/animals/groups/{id}`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Response (200 OK):** `AnimalGroupResponse` object.
+- **Error (403 Forbidden):** If the group belongs to another farmer (enforcing multi-tenant isolation).
+- **Error (404 Not Found):** If the animal group ID does not exist.
+
+### 6.4 Update Animal Group
+- **Endpoint:** `PUT /api/v1/animals/groups/{id}`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Request Body:**
+```json
+{
+  "name": "Dairy Herd A — Milking Phase",
+  "animalType": "CATTLE",
+  "breed": "Holstein Friesian",
+  "currentPopulation": 28,
+  "initialPopulation": 30,
+  "location": "Barn 2 — East Pasture",
+  "purpose": "Milk Production",
+  "status": "ACTIVE",
+  "notes": "Two heads culled for health reasons."
+}
+```
+- **Response (200 OK):** Updated `AnimalGroupResponse` object.
+- **Error (400 Bad Request):** If population values are invalid.
+- **Error (403 Forbidden):** If the group belongs to another farmer.
+- **Error (404 Not Found):** If group ID does not exist.
+
+### 6.5 Delete Animal Group
+- **Endpoint:** `DELETE /api/v1/animals/groups/{id}`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Response (204 No Content):** Group successfully deleted when no historical dependencies exist.
+- **Error (403 Forbidden):** If the group belongs to another farmer.
+- **Error (404 Not Found):** If group ID does not exist.
+- **Error (409 Conflict):** If the group is protected by historical records or active production logs.
