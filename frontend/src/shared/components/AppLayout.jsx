@@ -13,9 +13,14 @@ export function AppLayout({
   onUserUpdate,
   children
 }) {
+  const displayName = user?.fullName || (user?.emailOrPhone ? user.emailOrPhone.split('@')[0] : 'Farmer');
   const initials = user?.fullName
-    ? user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    : 'JM';
+    ? user.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    : displayName.substring(0, 2).toUpperCase();
+
+  const farmDisplayName = user?.role === 'ROLE_ADMIN'
+    ? 'Administrator'
+    : (user?.farmName || user?.location || 'My Farm');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-canvas-bg)' }}>
@@ -27,9 +32,9 @@ export function AppLayout({
         <TopBar
           title={title}
           subtitle={subtitle}
-          userName={user?.fullName || "Joyce M."}
+          userName={displayName}
           userInitials={initials}
-          farmName={user?.role === 'ROLE_ADMIN' ? 'Administrator' : (user?.farmName || user?.location || "Green Acres Farm")}
+          farmName={farmDisplayName}
           avatarUrl={user?.avatarUrl}
           onLogout={onLogout}
           onEditProfile={onEditProfile}

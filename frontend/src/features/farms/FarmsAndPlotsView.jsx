@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlotCard } from '../../shared/components/PlotCard';
 import { AddPlotModal } from './components/AddPlotModal';
+import { NewFarmModal } from './components/NewFarmModal';
 import { PlotDetailsModal } from '../crops/components/PlotDetailsModal';
 import { plotService } from './services/plotService';
 import { farmService } from './services/farmService';
@@ -67,7 +68,7 @@ const primaryButtonStyle = {
   border: 'none'
 };
 
-export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
+export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   const [farms, setFarms] = useState([]);
   const [plots, setPlots] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +76,7 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState(null);
 
+  const [isNewFarmModalOpen, setIsNewFarmModalOpen] = useState(false);
   const [isAddPlotModalOpen, setIsAddPlotModalOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -179,6 +181,16 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
         </div>
       )}
 
+      <NewFarmModal
+        isOpen={isNewFarmModalOpen}
+        onClose={() => setIsNewFarmModalOpen(false)}
+        onFarmCreated={(newFarm) => {
+          setFarms((prev) => [newFarm, ...prev]);
+          showNotification(`Farm "${newFarm.name}" created successfully!`);
+        }}
+        farmerId={farmerId}
+      />
+
       <AddPlotModal
         isOpen={isAddPlotModalOpen}
         onClose={() => setIsAddPlotModalOpen(false)}
@@ -205,7 +217,7 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
               {farms.length} farm{farms.length === 1 ? '' : 's'} · {totalArea} ha in registered plots
             </p>
           </div>
-          <button type="button" style={primaryButtonStyle} onClick={() => onNavigate && onNavigate('farms-create')}>
+          <button type="button" style={primaryButtonStyle} onClick={() => setIsNewFarmModalOpen(true)}>
             <IconPlus size={16} color="#FFFFFF" />
             New Farm
           </button>
@@ -224,7 +236,7 @@ export function FarmsAndPlotsView({ farmerId = 1, onNavigate, onSelectFarm }) {
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '12px' }}>
               You have no farm yet. Create your first farm to start organizing plots.
             </p>
-            <button type="button" style={primaryButtonStyle} onClick={() => onNavigate && onNavigate('farms-create')}>
+            <button type="button" style={primaryButtonStyle} onClick={() => setIsNewFarmModalOpen(true)}>
               <IconPlus size={16} color="#FFFFFF" />
               Create your first farm
             </button>

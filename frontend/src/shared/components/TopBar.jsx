@@ -4,11 +4,11 @@ import { authService } from '../../features/auth/services/authService';
 
 export function TopBar({
   title = "Dashboard",
-  subtitle = "Tuesday, 2 October · Green Acres Farm",
-  userName = "Joyce M.",
-  userInitials = "JM",
+  subtitle = "",
+  userName = "Farmer",
+  userInitials = "F",
   avatarUrl = null,
-  farmName = "Green Acres Farm",
+  farmName = "My Farm",
   onSearch,
   onNotificationClick,
   onLogout,

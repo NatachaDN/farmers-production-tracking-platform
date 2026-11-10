@@ -23,35 +23,6 @@ const TYPE_META = {
   OTHER:      { icon: IconPackage,     label: 'Other',      bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
 };
 
-/* ─── Seed data for offline-first demo ─────────────────────────── */
-const SEED_INPUTS = [
-  {
-    id: 1, name: 'Hybrid Maize Seed 614D', type: 'SEEDS',
-    totalQuantity: 120, unit: 'kg', totalCost: 54000,
-    purchaseDate: '2026-09-10', lastUpdated: '2026-09-10'
-  },
-  {
-    id: 2, name: 'CAN Fertilizer (Calcium Ammonium Nitrate)', type: 'FERTILIZER',
-    totalQuantity: 200, unit: 'kg', totalCost: 32000,
-    purchaseDate: '2026-09-14', lastUpdated: '2026-09-14'
-  },
-  {
-    id: 3, name: 'Dimethoate Pesticide', type: 'PESTICIDE',
-    totalQuantity: 5, unit: 'L', totalCost: 8500,
-    purchaseDate: '2026-09-20', lastUpdated: '2026-09-20'
-  },
-  {
-    id: 4, name: 'NPK 17-17-17', type: 'FERTILIZER',
-    totalQuantity: 150, unit: 'kg', totalCost: 27000,
-    purchaseDate: '2026-09-22', lastUpdated: '2026-09-22'
-  },
-  {
-    id: 5, name: 'Tomato Seedlings F1', type: 'SEEDS',
-    totalQuantity: 2000, unit: 'unit', totalCost: 18000,
-    purchaseDate: '2026-10-01', lastUpdated: '2026-10-01'
-  }
-];
-
 /* ─── Single Input Card ─────────────────────────────────────────── */
 function InputCard({ input, onDelete }) {
   const meta = TYPE_META[input.type] || TYPE_META.OTHER;
@@ -186,8 +157,8 @@ function StatChip({ label, value, accent }) {
 }
 
 /* ─── Main view ─────────────────────────────────────────────────── */
-export function FarmInputsView({ farmerId = 1, onNavigate }) {
-  const [inputs, setInputs] = useState(SEED_INPUTS);
+export function FarmInputsView({ farmerId, onNavigate }) {
+  const [inputs, setInputs] = useState([]);
   const [filterType, setFilterType] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -205,11 +176,13 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
   /* Load from API */
   useEffect(() => {
     async function load() {
+      if (!farmerId) return;
       try {
         const data = await inputService.getInputs(farmerId);
-        if (Array.isArray(data) && data.length > 0) setInputs(data);
-      } catch {
-        /* Use seed data */
+        setInputs(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to load inputs:', err);
+        setInputs([]);
       }
     }
     load();

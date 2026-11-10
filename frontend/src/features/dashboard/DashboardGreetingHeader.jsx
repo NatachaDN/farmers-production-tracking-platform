@@ -1,8 +1,15 @@
 import React from 'react';
 import { IconPlus } from '../../shared/components/Icons';
 
+function getTimeBasedGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export function DashboardGreetingHeader({ user, onRecordProduction }) {
-  // Display fullName, or username/email prefix, or fallback to 'Farmer'
+  const greeting = getTimeBasedGreeting();
   const displayName = user?.fullName
     ? user.fullName
     : (user?.emailOrPhone ? user.emailOrPhone.split('@')[0] : 'Farmer');
@@ -20,14 +27,14 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
           color: 'var(--color-text-primary)',
           letterSpacing: '-0.02em'
         }}>
-          Good morning, {displayName}
+          {greeting}, {displayName}
         </h2>
         <p style={{
           fontSize: '0.875rem',
           color: 'var(--color-text-muted)',
           marginTop: '2px'
         }}>
-          Here's an overview of your farm today.
+          Here's an overview of your real farm production.
         </p>
       </div>
 

@@ -24,11 +24,11 @@ const SUGGESTED_CROPS = ['Maize', 'Tomatoes', 'Beans', 'Cassava', 'Potatoes', 'O
 export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
-    farmName: user?.farmName || 'Green Acres Farm',
-    cropsGrown: user?.cropsGrown || 'Maize, Tomatoes, Beans, Cassava',
-    totalArea: user?.totalArea !== undefined && user?.totalArea !== null ? user.totalArea : 8.7,
+    farmName: user?.farmName || '',
+    cropsGrown: user?.cropsGrown || '',
+    totalArea: user?.totalArea !== undefined && user?.totalArea !== null ? user.totalArea : '',
     avatarUrl: user?.avatarUrl || '',
-    location: user?.location || 'Nakuru County, Kenya',
+    location: user?.location || '',
     farmType: user?.farmType || 'MIXED'
   });
 
@@ -46,11 +46,11 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
     if (user) {
       const synced = {
         fullName: user.fullName || '',
-        farmName: user.farmName || 'Green Acres Farm',
-        cropsGrown: user.cropsGrown || 'Maize, Tomatoes, Beans, Cassava',
-        totalArea: user.totalArea !== undefined && user.totalArea !== null ? user.totalArea : 8.7,
+        farmName: user.farmName || '',
+        cropsGrown: user.cropsGrown || '',
+        totalArea: user.totalArea !== undefined && user.totalArea !== null ? user.totalArea : '',
         avatarUrl: user.avatarUrl || '',
-        location: user.location || 'Nakuru County, Kenya',
+        location: user.location || '',
         farmType: user.farmType || 'MIXED'
       };
       setFormData(synced);
@@ -347,7 +347,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary, #19201C)', margin: 0 }}>
-                {formData.fullName || 'Joyce Muthoni'}
+                {formData.fullName || user?.emailOrPhone || 'Farmer'}
               </h3>
               <span style={{
                 fontSize: '0.75rem',
@@ -363,8 +363,8 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
 
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary, #4B5752)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <IconFarms size={15} color="var(--color-brand-primary, #164230)" />
-              <strong style={{ color: 'var(--color-text-primary)' }}>{formData.farmName || 'Green Acres Farm'}</strong>
-              <span style={{ color: 'var(--color-text-muted)' }}>· {formData.location || 'Nakuru County'}</span>
+              <strong style={{ color: 'var(--color-text-primary)' }}>{formData.farmName || 'My Farm'}</strong>
+              {formData.location && <span style={{ color: 'var(--color-text-muted)' }}>· {formData.location}</span>}
             </p>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '10px', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>

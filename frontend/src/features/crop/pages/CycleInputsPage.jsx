@@ -16,23 +16,10 @@ import {
   IconWarning
 } from '../../../shared/components/Icons';
 
-const FALLBACK_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)', cropName: 'Maize', plotName: 'Plot A', status: 'ACTIVE', acreage: 2.5, stage: 'Vegetative growth' },
-  { id: 2, name: 'Tomatoes (Plot B)', cropName: 'Tomatoes', plotName: 'Plot B', status: 'ACTIVE', acreage: 1.0, stage: 'Flowering' },
-  { id: 3, name: 'Beans (Plot C)', cropName: 'Beans', plotName: 'Plot C', status: 'ACTIVE', acreage: 0.8, stage: 'Planting' },
-];
-
-const FALLBACK_INPUTS = [
-  { id: 1, name: 'Hybrid Maize Seed 614', type: 'SEEDS', quantity: 45.0, unit: 'kg', purchasePrice: 480.0 },
-  { id: 2, name: 'CAN Fertilizer', type: 'FERTILIZER', quantity: 200.0, unit: 'kg', purchasePrice: 160.0 },
-  { id: 3, name: 'DAP Planting Fertilizer', type: 'FERTILIZER', quantity: 150.0, unit: 'kg', purchasePrice: 180.0 },
-  { id: 4, name: 'Belt Expert Pesticide', type: 'PESTICIDE', quantity: 12.0, unit: 'litres', purchasePrice: 1250.0 },
-];
-
-export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
-  const [cycles, setCycles] = useState(FALLBACK_CYCLES);
-  const [selectedCycleId, setSelectedCycleId] = useState(initialCycleId || 1);
-  const [availableInputs, setAvailableInputs] = useState(FALLBACK_INPUTS);
+export function CycleInputsPage({ farmerId, initialCycleId = null }) {
+  const [cycles, setCycles] = useState([]);
+  const [selectedCycleId, setSelectedCycleId] = useState(initialCycleId || null);
+  const [availableInputs, setAvailableInputs] = useState([]);
   const [usages, setUsages] = useState([]);
   const [costSummary, setCostSummary] = useState(null);
 
@@ -50,18 +37,18 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
   // 1. Load Farmer's Cycles
   useEffect(() => {
     async function fetchCycles() {
+      if (!farmerId) return;
       try {
         const data = await cropCycleService.getCycles(farmerId);
-        if (Array.isArray(data) && data.length > 0) {
-          setCycles(data);
-          if (!initialCycleId) {
-            // Default to first active cycle
-            const activeOne = data.find((c) => (c.status || '').toUpperCase() === 'ACTIVE');
-            setSelectedCycleId(activeOne ? activeOne.id : data[0].id);
-          }
+        const list = Array.isArray(data) ? data : [];
+        setCycles(list);
+        if (list.length > 0 && !selectedCycleId) {
+          const activeOne = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
+          setSelectedCycleId(activeOne.id);
         }
       } catch (err) {
-        console.warn('Using default demo cycles:', err);
+        console.warn('Failed to fetch cycles:', err);
+        setCycles([]);
       }
     }
     fetchCycles();
@@ -69,13 +56,13 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
 
   // 2. Load Inventory Inputs for farmer
   const loadInventory = async () => {
+    if (!farmerId) return;
     try {
       const data = await inputService.getInputs(farmerId);
-      if (Array.isArray(data) && data.length > 0) {
-        setAvailableInputs(data);
-      }
+      setAvailableInputs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Using default demo inputs:', err);
+      console.warn('Failed to load inputs:', err);
+      setAvailableInputs([]);
     }
   };
 

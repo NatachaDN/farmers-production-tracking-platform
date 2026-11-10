@@ -1,79 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import './CycleIncidentsPage.css';
 import { cycleIncidentService } from '../services/cycleIncidentService';
+import { cropCycleService } from '../../crops/services/cropCycleService';
 import { IncidentForm } from '../components/IncidentForm';
 import { IncidentList } from '../components/IncidentList';
 import { MetricCard } from '../../../shared/components/MetricCard';
 
-// ------------------------------------------------------------------ //
-//  Demo / fallback data (used when API is unreachable)                //
-// ------------------------------------------------------------------ //
-const DEMO_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)',    crop: 'Maize',    plot: 'Plot A', status: 'ACTIVE', area: '2.5 ha' },
-  { id: 2, name: 'Tomatoes (Plot B)', crop: 'Tomatoes', plot: 'Plot B', status: 'ACTIVE', area: '1.0 ha' },
-  { id: 3, name: 'Beans (Plot C)',    crop: 'Beans',    plot: 'Plot C', status: 'ACTIVE', area: '0.8 ha' },
-];
-
-const INITIAL_DEMO_INCIDENTS = [
-  {
-    id: 1,
-    cycleId: 1,
-    incidentType: 'DISEASE',
-    incidentDate: '2026-10-10',
-    description: 'Early blight (Alternaria solani) detected on lower leaves of plants in rows 3–7. Yellowing margins visible on approximately 30% of foliage.',
-    severityLevel: 3,
-    actionTaken: 'Applied copper-based fungicide at 2g/L concentration across all affected rows at 08:00.',
-    createdAt: '2026-10-10T09:30:00',
-  },
-  {
-    id: 2,
-    cycleId: 1,
-    incidentType: 'PEST',
-    incidentDate: '2026-10-05',
-    description: 'Aphid infestation spotted on stems and undersides of leaves near irrigation channels. Ant activity observed suggesting honey-dew secretion.',
-    severityLevel: 2,
-    actionTaken: 'Sprayed neem oil solution (5mL/L) and released ladybug colony.',
-    createdAt: '2026-10-05T14:15:00',
-  },
-  {
-    id: 3,
-    cycleId: 1,
-    incidentType: 'WEATHER',
-    incidentDate: '2026-09-28',
-    description: 'Heavy rainfall (87mm in 4 hours) caused waterlogging in low-lying section of Plot A. Standing water observed for 18+ hours.',
-    severityLevel: 4,
-    actionTaken: 'Opened drainage channels, added emergency ridge furrows, applied potassium boost to aid root recovery.',
-    createdAt: '2026-09-28T11:00:00',
-  },
-  {
-    id: 4,
-    cycleId: 2,
-    incidentType: 'PEST',
-    incidentDate: '2026-10-08',
-    description: 'Whitefly colony detected on tomato foliage. Honeydew deposits and sooty mold beginning to develop.',
-    severityLevel: 2,
-    actionTaken: 'Yellow sticky traps deployed, insecticidal soap spray applied.',
-    createdAt: '2026-10-08T10:00:00',
-  },
-];
-
-// ------------------------------------------------------------------ //
-//  Page component                                                     //
-// ------------------------------------------------------------------ //
-
 /**
  * CycleIncidentsPage — Record and view incidents (disease, pest, damage) per cycle.
  */
-export function CycleIncidentsPage({ farmerId = 1 }) {
-  const [selectedCycleId, setSelectedCycleId] = useState(1);
-  const [incidents, setIncidents] = useState(INITIAL_DEMO_INCIDENTS);
+export function CycleIncidentsPage({ farmerId }) {
+  const [cycles, setCycles] = useState([]);
+  const [selectedCycleId, setSelectedCycleId] = useState(null);
+  const [incidents, setIncidents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingIncident, setEditingIncident] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
+  // Fetch cycles from database
+  useEffect(() => {
+    async function fetchCycles() {
+      if (!farmerId) return;
+      try {
+        const data = await cropCycleService.getCycles(farmerId);
+        const list = Array.isArray(data) ? data : [];
+        setCycles(list);
+        if (list.length > 0) {
+          const active = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
+          setSelectedCycleId(active.id);
+        }
+      } catch (err) {
+        console.error('Failed to load cycles for incidents:', err);
+        setCycles([]);
+      }
+    }
+    fetchCycles();
+  }, [farmerId]);
+
+  const selectedCycle = cycles.find((c) => c.id === selectedCycleId) || (cycles.length > 0 ? cycles[0] : null);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
@@ -82,73 +48,55 @@ export function CycleIncidentsPage({ farmerId = 1 }) {
 
   // ---- Load incidents from API ----
   const loadIncidents = async (cycleId) => {
+    if (!cycleId || !farmerId) {
+      setIncidents([]);
+      return;
+    }
     setIsLoading(true);
     try {
       const data = await cycleIncidentService.getIncidents(farmerId, cycleId);
-      if (Array.isArray(data) && data.length > 0) {
-        setIncidents((prev) => {
-          // Merge: keep other cycle data, replace this cycle's data
-          const others = prev.filter((i) => i.cycleId !== cycleId);
-          return [...others, ...data];
-        });
-      }
+      setIncidents(Array.isArray(data) ? data : []);
     } catch {
-      // Fallback to demo state — already set
-      console.info('Using session state for incidents (API unreachable).');
+      setIncidents([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadIncidents(selectedCycleId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCycleId]);
+    if (selectedCycleId) {
+      loadIncidents(selectedCycleId);
+    } else {
+      setIncidents([]);
+    }
+  }, [selectedCycleId, farmerId]);
 
-  // ---- Save (Create or Update) ----
+  // ---- Create or update ----
   const handleSaveIncident = async (formData) => {
+    if (!selectedCycleId) return;
     setIsSubmitting(true);
     try {
       if (editingIncident) {
-        // UPDATE
-        try {
-          const updated = await cycleIncidentService.updateIncident(
-            farmerId, selectedCycleId, editingIncident.id, formData
-          );
-          setIncidents((prev) =>
-            prev.map((i) => (i.id === editingIncident.id ? { ...i, ...updated } : i))
-          );
-        } catch {
-          // Optimistic local update on API failure
-          setIncidents((prev) =>
-            prev.map((i) =>
-              i.id === editingIncident.id
-                ? { ...i, ...formData, updatedAt: new Date().toISOString() }
-                : i
-            )
-          );
-        }
-        showToast('Incident record updated successfully.');
+        const updated = await cycleIncidentService.updateIncident(
+          farmerId,
+          selectedCycleId,
+          editingIncident.id,
+          formData
+        );
+        setIncidents((prev) =>
+          prev.map((i) => (i.id === editingIncident.id ? { ...i, ...updated } : i))
+        );
+        showToast('Incident updated successfully.');
         setEditingIncident(null);
         setShowForm(false);
       } else {
-        // CREATE
-        try {
-          const created = await cycleIncidentService.createIncident(
-            farmerId, selectedCycleId, formData
-          );
-          setIncidents((prev) => [created, ...prev]);
-        } catch {
-          // Optimistic local create on API failure
-          const localNew = {
-            id: Date.now(),
-            cycleId: selectedCycleId,
-            ...formData,
-            createdAt: new Date().toISOString(),
-          };
-          setIncidents((prev) => [localNew, ...prev]);
-        }
-        showToast('Incident logged successfully to this cycle.');
+        const created = await cycleIncidentService.createIncident(
+          farmerId,
+          selectedCycleId,
+          formData
+        );
+        setIncidents((prev) => [created, ...prev]);
+        showToast('Incident recorded successfully.');
         setShowForm(false);
       }
     } catch (err) {
@@ -162,11 +110,7 @@ export function CycleIncidentsPage({ farmerId = 1 }) {
   const handleDeleteIncident = async (incidentId) => {
     if (!window.confirm('Are you sure you want to delete this incident record?')) return;
     try {
-      try {
-        await cycleIncidentService.deleteIncident(farmerId, selectedCycleId, incidentId);
-      } catch {
-        // continue with local removal
-      }
+      await cycleIncidentService.deleteIncident(farmerId, selectedCycleId, incidentId);
       setIncidents((prev) => prev.filter((i) => i.id !== incidentId));
       showToast('Incident record deleted.');
       if (editingIncident?.id === incidentId) {
@@ -178,25 +122,25 @@ export function CycleIncidentsPage({ farmerId = 1 }) {
     }
   };
 
-  // ---- Edit trigger ----
+  // ---- Trigger edit form ----
   const handleEditTrigger = (incident) => {
     setEditingIncident(incident);
     setShowForm(true);
-    setTimeout(() => {
-      const el = document.getElementById('incident-form-container');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
+    const formEl = document.getElementById('incident-form-container');
+    if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // ---- KPI metrics ----
-  const cycleIncidents = incidents.filter((i) => i.cycleId === selectedCycleId);
-  const totalCount     = cycleIncidents.length;
-  const diseaseCount   = cycleIncidents.filter((i) => i.incidentType === 'DISEASE').length;
-  const pestCount      = cycleIncidents.filter((i) => i.incidentType === 'PEST').length;
-  const highSeverity   = cycleIncidents.filter((i) => (i.severityLevel || 0) >= 4).length;
+  // ---- KPIs ----
+  const cycleIncidents = incidents;
+  const totalIncidents = cycleIncidents.length;
+  const diseaseCount = cycleIncidents.filter((i) => i.incidentType === 'DISEASE').length;
+  const pestCount = cycleIncidents.filter((i) => i.incidentType === 'PEST').length;
+  const highSeverity = cycleIncidents.filter(
+    (i) => i.severityLevel && i.severityLevel >= 4
+  ).length;
 
   return (
-    <div className="incidents-page fade-in">
+    <div className="cycle-incidents-page">
       {/* Toast */}
       {toastMessage && (
         <div className={`toast-bar ${toastMessage.type}`}>
@@ -215,68 +159,44 @@ export function CycleIncidentsPage({ farmerId = 1 }) {
       <div className="control-bar">
         <div className="cycle-pills">
           <span className="cycle-pills-label">Select Cycle:</span>
-          {DEMO_CYCLES.map((c) => (
-            <button
-              key={c.id}
-              className={`cycle-pill ${selectedCycleId === c.id ? 'selected' : ''}`}
-              onClick={() => setSelectedCycleId(c.id)}
-            >
-              {c.name}
-            </button>
-          ))}
+          {cycles.length > 0 ? (
+            cycles.map((c) => (
+              <button
+                key={c.id}
+                className={`cycle-pill ${selectedCycleId === c.id ? 'selected' : ''}`}
+                onClick={() => setSelectedCycleId(c.id)}
+              >
+                {c.name || `${c.cropName || 'Crop'} (${c.plotName || 'Plot'})`}
+              </button>
+            ))
+          ) : (
+            <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+              No crop cycles registered yet
+            </span>
+          )}
         </div>
 
-        <button
-          type="button"
-          className="record-btn"
-          style={{
-            backgroundColor:
-              showForm && !editingIncident ? 'var(--color-text-muted)' : '#DC2626',
-          }}
-          onClick={() => {
-            setEditingIncident(null);
-            setShowForm((v) => !v);
-          }}
-        >
-          {showForm && !editingIncident ? '✕ Close Form' : '+ Record Incident'}
-        </button>
+        {selectedCycle && (
+          <button
+            type="button"
+            className="record-btn"
+            style={{
+              backgroundColor:
+                showForm && !editingIncident ? 'var(--color-text-muted)' : '#DC2626',
+            }}
+            onClick={() => {
+              setEditingIncident(null);
+              setShowForm((v) => !v);
+            }}
+          >
+            {showForm ? '✕ Close Form' : '+ Record Incident'}
+          </button>
+        )}
       </div>
 
-      {/* KPI Cards */}
-      <div className="kpi-grid">
-        <MetricCard
-          label="Active Cycle"
-          value={selectedCycle.name}
-          subtext={`${selectedCycle.area} · Status: ${selectedCycle.status}`}
-          icon={<span style={{ fontSize: '1.25rem' }}>🌱</span>}
-          iconBg="#EAF4ED"
-        />
-        <MetricCard
-          label="Total Incidents"
-          value={totalCount}
-          subtext={totalCount === 0 ? 'No problems recorded' : 'Problems encountered'}
-          icon={<span style={{ fontSize: '1.25rem' }}>⚠️</span>}
-          iconBg="#FEF3C7"
-        />
-        <MetricCard
-          label="Disease & Pest"
-          value={`${diseaseCount + pestCount} logged`}
-          subtext={`${diseaseCount} disease · ${pestCount} pest`}
-          icon={<span style={{ fontSize: '1.25rem' }}>🦠</span>}
-          iconBg="#EDE9FE"
-        />
-        <MetricCard
-          label="High Severity (4–5)"
-          value={highSeverity}
-          subtext={highSeverity === 0 ? 'No critical issues' : 'Require urgent attention'}
-          icon={<span style={{ fontSize: '1.25rem' }}>🚨</span>}
-          iconBg="#FEE2E2"
-        />
-      </div>
-
-      {/* Form drawer */}
-      {showForm && (
-        <div className="form-container">
+      {/* Form area */}
+      {showForm && selectedCycle && (
+        <div id="incident-form-container" className="form-wrapper">
           <IncidentForm
             onSubmit={handleSaveIncident}
             isSubmitting={isSubmitting}
@@ -289,14 +209,70 @@ export function CycleIncidentsPage({ farmerId = 1 }) {
         </div>
       )}
 
-      {/* Incident list */}
-      <div className="list-container">
-        <IncidentList
-          incidents={cycleIncidents}
-          isLoading={isLoading}
-          onEdit={handleEditTrigger}
-          onDelete={handleDeleteIncident}
+      {/* KPI Row */}
+      <div className="kpi-row">
+        <MetricCard
+          label="Total Incidents"
+          value={String(totalIncidents)}
+          subtext={`Cycle: ${selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}`}
+          icon={<span style={{ fontSize: '1.25rem' }}>⚠️</span>}
+          iconBg="#FEF2F2"
         />
+        <MetricCard
+          label="Disease Reports"
+          value={String(diseaseCount)}
+          subtext="Fungal / bacterial / viral"
+          icon={<span style={{ fontSize: '1.25rem' }}>🦠</span>}
+          iconBg="#FFFBEB"
+        />
+        <MetricCard
+          label="Pest Infestations"
+          value={String(pestCount)}
+          subtext="Insects / mites / nematodes"
+          icon={<span style={{ fontSize: '1.25rem' }}>🐛</span>}
+          iconBg="#FEF3C7"
+        />
+        <MetricCard
+          label="High Severity"
+          value={String(highSeverity)}
+          subtext="Level 4 (Severe) or 5 (Critical)"
+          icon={<span style={{ fontSize: '1.25rem' }}>🚨</span>}
+          iconBg="#FEE2E2"
+        />
+      </div>
+
+      {/* Incident List */}
+      <div className="incident-list-container">
+        <div className="list-header">
+          <div>
+            <h3>Cycle Incident Log</h3>
+            <p>Pests, diseases, damages, and remedial actions recorded for this cycle.</p>
+          </div>
+        </div>
+
+        {cycles.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '48px 20px',
+            backgroundColor: '#FAF8F5',
+            borderRadius: '12px',
+            border: '1px dashed #ECE7DC'
+          }}>
+            <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+              No crop cycles registered
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              Create a crop cycle in the Crop Production module before logging incidents.
+            </p>
+          </div>
+        ) : (
+          <IncidentList
+            incidents={incidents}
+            isLoading={isLoading}
+            onEdit={handleEditTrigger}
+            onDelete={handleDeleteIncident}
+          />
+        )}
       </div>
     </div>
   );
