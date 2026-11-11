@@ -343,7 +343,12 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
             </div>
 
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            {uploadError && <p style={{ color: '#DC2626', fontSize: '0.75rem', marginBottom: '10px' }}>⚠ {uploadError}</p>}
+            {uploadError && (
+              <p style={{ color: '#DC2626', fontSize: '0.75rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <IconAlertCircle size={14} color="#DC2626" />
+                <span>{uploadError}</span>
+              </p>
+            )}
 
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0 12px' }}>

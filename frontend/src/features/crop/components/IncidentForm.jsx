@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './IncidentForm.css';
+import {
+  IconShieldAlert,
+  IconBug,
+  IconZap,
+  IconCloudRain,
+  IconClipboard,
+} from '../../../shared/components/Icons';
 
 const INCIDENT_TYPES = [
-  { value: 'DISEASE',  label: 'Disease',  emoji: '🦠', color: '#7C3AED' },
-  { value: 'PEST',     label: 'Pest',     emoji: '🐛', color: '#DC2626' },
-  { value: 'DAMAGE',   label: 'Damage',   emoji: '⚡', color: '#D97706' },
-  { value: 'WEATHER',  label: 'Weather',  emoji: '🌧️', color: '#3A86C8' },
-  { value: 'OTHER',    label: 'Other',    emoji: '📋', color: '#4F8A64' },
+  { value: 'DISEASE',  label: 'Disease',  Icon: IconShieldAlert, color: '#7C3AED' },
+  { value: 'PEST',     label: 'Pest',     Icon: IconBug,         color: '#DC2626' },
+  { value: 'DAMAGE',   label: 'Damage',   Icon: IconZap,         color: '#D97706' },
+  { value: 'WEATHER',  label: 'Weather',  Icon: IconCloudRain,   color: '#3A86C8' },
+  { value: 'OTHER',    label: 'Other',    Icon: IconClipboard,   color: '#4F8A64' },
 ];
 
 const SEVERITY_LABELS = ['', 'Low', 'Minor', 'Moderate', 'Serious', 'Critical'];
@@ -123,6 +130,7 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
         <div className="incident-type-grid">
           {INCIDENT_TYPES.map((type) => {
             const isSelected = formData.incidentType === type.value;
+            const TypeIcon = type.Icon;
             return (
               <button
                 type="button"
@@ -130,8 +138,8 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
                 className={`type-pill ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleTypeSelect(type.value)}
               >
-                <span className="type-pill-icon" style={{ fontSize: '1.25rem' }}>
-                  {type.emoji}
+                <span className="type-pill-icon">
+                  <TypeIcon size={18} color={isSelected ? '#FFFFFF' : type.color} />
                 </span>
                 <span className="type-pill-label">{type.label}</span>
               </button>

@@ -5,6 +5,14 @@ import { cropCycleService } from '../../crops/services/cropCycleService';
 import { IncidentForm } from '../components/IncidentForm';
 import { IncidentList } from '../components/IncidentList';
 import { MetricCard } from '../../../shared/components/MetricCard';
+import {
+  IconAlertTriangle,
+  IconShieldAlert,
+  IconBug,
+  IconAlertCircle,
+  IconClose,
+  IconPlus,
+} from '../../../shared/components/Icons';
 
 /**
  * CycleIncidentsPage — Record and view incidents (disease, pest, damage) per cycle.
@@ -149,8 +157,9 @@ export function CycleIncidentsPage({ farmerId }) {
             type="button"
             className="toast-close-btn"
             onClick={() => setToastMessage(null)}
+            aria-label="Close"
           >
-            ✕
+            <IconClose size={14} />
           </button>
         </div>
       )}
@@ -183,13 +192,24 @@ export function CycleIncidentsPage({ farmerId }) {
             style={{
               backgroundColor:
                 showForm && !editingIncident ? 'var(--color-text-muted)' : '#DC2626',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
             onClick={() => {
               setEditingIncident(null);
               setShowForm((v) => !v);
             }}
           >
-            {showForm ? '✕ Close Form' : '+ Record Incident'}
+            {showForm ? (
+              <>
+                <IconClose size={16} /> Close Form
+              </>
+            ) : (
+              <>
+                <IconPlus size={16} /> Record Incident
+              </>
+            )}
           </button>
         )}
       </div>
@@ -215,28 +235,28 @@ export function CycleIncidentsPage({ farmerId }) {
           label="Total Incidents"
           value={String(totalIncidents)}
           subtext={`Cycle: ${selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}`}
-          icon={<span style={{ fontSize: '1.25rem' }}>⚠️</span>}
+          icon={<IconAlertTriangle size={20} color="#DC2626" />}
           iconBg="#FEF2F2"
         />
         <MetricCard
           label="Disease Reports"
           value={String(diseaseCount)}
           subtext="Fungal / bacterial / viral"
-          icon={<span style={{ fontSize: '1.25rem' }}>🦠</span>}
+          icon={<IconShieldAlert size={20} color="#7C3AED" />}
           iconBg="#FFFBEB"
         />
         <MetricCard
           label="Pest Infestations"
           value={String(pestCount)}
           subtext="Insects / mites / nematodes"
-          icon={<span style={{ fontSize: '1.25rem' }}>🐛</span>}
+          icon={<IconBug size={20} color="#D97706" />}
           iconBg="#FEF3C7"
         />
         <MetricCard
           label="High Severity"
           value={String(highSeverity)}
           subtext="Level 4 (Severe) or 5 (Critical)"
-          icon={<span style={{ fontSize: '1.25rem' }}>🚨</span>}
+          icon={<IconAlertCircle size={20} color="#DC2626" />}
           iconBg="#FEE2E2"
         />
       </div>

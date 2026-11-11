@@ -786,7 +786,8 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
 
               {uploadError && (
                 <p style={{ color: '#DC2626', fontSize: '0.8rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>⚠</span> {uploadError}
+                  <IconAlertCircle size={15} color="#DC2626" />
+                  <span>{uploadError}</span>
                 </p>
               )}
 

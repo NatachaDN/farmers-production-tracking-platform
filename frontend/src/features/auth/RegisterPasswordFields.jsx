@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IconEye, IconEyeOff } from '../../shared/components/Icons';
+import { IconEye, IconEyeOff, IconCheck } from '../../shared/components/Icons';
 
 export function RegisterPasswordFields({
   password,
@@ -22,9 +22,17 @@ export function RegisterPasswordFields({
           {password.length > 0 && (
             <span style={{
               fontSize: '0.75rem',
-              color: isPasswordStrongEnough ? 'var(--color-brand-primary)' : 'var(--color-accent-amber)'
+              color: isPasswordStrongEnough ? 'var(--color-brand-primary)' : 'var(--color-accent-amber)',
+              display: 'inline-flex',
+              alignItems: 'center'
             }}>
-              {isPasswordStrongEnough ? '✓ 8+ chars' : 'Min 8 chars'}
+              {isPasswordStrongEnough ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <IconCheck size={12} /> 8+ chars
+                </span>
+              ) : (
+                'Min 8 chars'
+              )}
             </span>
           )}
         </div>
@@ -64,9 +72,17 @@ export function RegisterPasswordFields({
           {confirmPassword.length > 0 && (
             <span style={{
               fontSize: '0.75rem',
-              color: passwordsMatch ? 'var(--color-brand-primary)' : 'var(--color-accent-red)'
+              color: passwordsMatch ? 'var(--color-brand-primary)' : 'var(--color-accent-red)',
+              display: 'inline-flex',
+              alignItems: 'center'
             }}>
-              {passwordsMatch ? '✓ Matches' : 'Mismatch'}
+              {passwordsMatch ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <IconCheck size={12} /> Matches
+                </span>
+              ) : (
+                'Mismatch'
+              )}
             </span>
           )}
         </div>
