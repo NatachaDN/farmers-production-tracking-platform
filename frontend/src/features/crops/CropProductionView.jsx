@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../../shared/components/Skeleton.css';
 import { CropCycleCard } from '../../shared/components/CropCycleCard';
 import { NewCropCycleModal } from './NewCropCycleModal';
 import { PlotDetailsModal } from './components/PlotDetailsModal';
@@ -367,7 +368,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
             Active cycles
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-            {activeCyclesCount}
+            {loading ? <div className="acrea-skeleton" style={{ width: '40px', height: '30px', borderRadius: '4px' }} /> : activeCyclesCount}
           </div>
         </div>
 
@@ -382,7 +383,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
             Cultivated area
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-            {totalCultivatedArea.toFixed(1)} ha
+            {loading ? <div className="acrea-skeleton" style={{ width: '70px', height: '30px', borderRadius: '4px' }} /> : `${totalCultivatedArea.toFixed(1)} ha`}
           </div>
         </div>
 
@@ -397,13 +398,29 @@ export function CropProductionView({ farmerId, onNavigate }) {
             Expected production
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-            {totalExpectedTons > 0 ? `${totalExpectedTons.toFixed(1)} t` : '—'}
+            {loading ? <div className="acrea-skeleton" style={{ width: '70px', height: '30px', borderRadius: '4px' }} /> : (totalExpectedTons > 0 ? `${totalExpectedTons.toFixed(1)} t` : '—')}
           </div>
         </div>
       </div>
 
       {/* 2-Column Crop Cycles Grid */}
-      {filteredCycles.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+          {[1, 2].map((n) => (
+            <div key={n} style={{ border: '1px solid var(--color-card-border)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', backgroundColor: '#FFFFFF' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div className="acrea-skeleton" style={{ width: '45%', height: '22px', borderRadius: '4px' }} />
+                <div className="acrea-skeleton" style={{ width: '70px', height: '22px', borderRadius: '9999px' }} />
+              </div>
+              <div className="acrea-skeleton" style={{ width: '30%', height: '14px', borderRadius: '4px' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
+                <div className="acrea-skeleton" style={{ height: '36px', borderRadius: '6px' }} />
+                <div className="acrea-skeleton" style={{ height: '36px', borderRadius: '6px' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredCycles.length === 0 ? (
         <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--radius-xl)',

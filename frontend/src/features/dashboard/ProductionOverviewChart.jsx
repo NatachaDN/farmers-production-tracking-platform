@@ -1,6 +1,43 @@
 import React from 'react';
+import '../../shared/components/Skeleton.css';
 
-export function ProductionOverviewChart({ data = [], totalKg = 0 }) {
+export function ProductionOverviewChart({ data = [], totalKg = 0, loading = false }) {
+  if (loading) {
+    return (
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        border: '1px solid var(--color-card-border)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '24px',
+        boxShadow: 'var(--shadow-card)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <div className="acrea-skeleton" style={{ width: '160px', height: '22px', borderRadius: '4px' }} />
+            <div className="acrea-skeleton" style={{ width: '240px', height: '14px', borderRadius: '4px', marginTop: '6px' }} />
+          </div>
+          <div className="acrea-skeleton" style={{ width: '100px', height: '26px', borderRadius: '4px' }} />
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          height: '180px',
+          paddingTop: '30px',
+          paddingBottom: '10px',
+          borderBottom: '1px solid #F0EAE1'
+        }}>
+          {[40, 60, 30, 80, 50, 70, 90, 40, 60, 85, 30, 50].map((h, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '8px' }}>
+              <div className="acrea-skeleton" style={{ width: '6px', height: `${h}%`, borderRadius: '3px' }} />
+              <div className="acrea-skeleton" style={{ width: '20px', height: '10px', borderRadius: '2px' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // If data is passed as array of { month: 'Jan', quantityKg: 120 }
   const months = data.length > 0
     ? data

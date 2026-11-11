@@ -35,6 +35,7 @@ export function AppLayout({
         onNavigate={onNavigate}
         isAdmin={isUserAdmin}
         isManager={isUserManager}
+        user={user}
       />
 
       {/* Main Workspace */}

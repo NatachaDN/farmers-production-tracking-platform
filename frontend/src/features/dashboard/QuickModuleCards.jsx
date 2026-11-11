@@ -1,7 +1,62 @@
 import React from 'react';
 import { IconCrop, IconFarms } from '../../shared/components/Icons';
+import '../../shared/components/Skeleton.css';
 
-export function QuickModuleCards({ summary, onNavigate }) {
+export function QuickModuleCards({ summary, onNavigate, loading = false }) {
+  if (loading) {
+    return (
+      <>
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid var(--color-card-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div className="acrea-skeleton" style={{ width: '38px', height: '38px', borderRadius: '50%' }} />
+              <div className="acrea-skeleton" style={{ width: '90px', height: '20px', borderRadius: '9999px' }} />
+            </div>
+            <div className="acrea-skeleton" style={{ width: '140px', height: '20px', borderRadius: '4px', marginBottom: '8px' }} />
+            <div className="acrea-skeleton" style={{ width: '95%', height: '14px', borderRadius: '4px' }} />
+          </div>
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F4EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="acrea-skeleton" style={{ width: '120px', height: '14px', borderRadius: '4px' }} />
+            <div className="acrea-skeleton" style={{ width: '80px', height: '14px', borderRadius: '4px' }} />
+          </div>
+        </div>
+
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid var(--color-card-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div className="acrea-skeleton" style={{ width: '38px', height: '38px', borderRadius: '50%' }} />
+              <div className="acrea-skeleton" style={{ width: '90px', height: '20px', borderRadius: '9999px' }} />
+            </div>
+            <div className="acrea-skeleton" style={{ width: '140px', height: '20px', borderRadius: '4px', marginBottom: '8px' }} />
+            <div className="acrea-skeleton" style={{ width: '95%', height: '14px', borderRadius: '4px' }} />
+          </div>
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F4EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="acrea-skeleton" style={{ width: '120px', height: '14px', borderRadius: '4px' }} />
+            <div className="acrea-skeleton" style={{ width: '80px', height: '14px', borderRadius: '4px' }} />
+          </div>
+        </div>
+      </>
+    );
+  }
+
   const activeCycles = summary?.activeCyclesCount ?? 0;
   const totalHarvestKg = summary?.totalHarvestKg ?? 0;
   const harvestDisplay = totalHarvestKg >= 1000

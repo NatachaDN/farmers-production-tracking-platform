@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AcreaLogo,
   IconDashboard,
@@ -15,7 +15,9 @@ import {
   IconPulse,
   IconServer
 } from './Icons';
+import { cropCycleService } from '../../features/crops/services/cropCycleService';
 import './Sidebar.css';
+import './Skeleton.css';
 
 const ADMIN_NAV = [
   { id: 'admin-overview', label: 'Overview', icon: IconDashboard },
@@ -31,9 +33,34 @@ const MANAGER_NAV = [
   { id: 'manager-reports', label: 'Consolidated Reports', icon: IconReports },
 ];
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false }) {
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false, user = null }) {
   const adminMode = isAdmin && activeRoute.startsWith('admin-');
   const managerMode = (isManager || isAdmin) && activeRoute.startsWith('manager-');
+
+  const [activeCyclesCount, setActiveCyclesCount] = useState(null);
+  const [loadingCycles, setLoadingCycles] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id || adminMode || managerMode) {
+      setLoadingCycles(false);
+      return;
+    }
+    let isMounted = true;
+    cropCycleService.getCycles(user.id)
+      .then((cycles) => {
+        if (!isMounted) return;
+        const list = Array.isArray(cycles) ? cycles : [];
+        const inProgress = list.filter(c => (c.status || '').toUpperCase() === 'ACTIVE').length;
+        setActiveCyclesCount(inProgress);
+      })
+      .catch(() => {
+        if (isMounted) setActiveCyclesCount(0);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingCycles(false);
+      });
+    return () => { isMounted = false; };
+  }, [user?.id, adminMode, managerMode]);
 
   const farmerNav = [
     { id: 'dashboard', label: 'Dashboard', icon: IconDashboard },
@@ -184,23 +211,31 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             color: '#FFFFFF',
             marginBottom: '6px'
           }}>
-            2026 Main Season
+            {`${new Date().getFullYear()} Season`}
           </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            color: 'rgba(255, 255, 255, 0.75)'
-          }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: '#E5A638'
-            }} />
-            <span>4 cycles in progress</span>
-          </div>
+          {loadingCycles ? (
+            <div className="acrea-skeleton-dark" style={{ width: '120px', height: '14px', borderRadius: '4px' }} />
+          ) : (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.75rem',
+              color: 'rgba(255, 255, 255, 0.75)'
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: activeCyclesCount > 0 ? '#E5A638' : 'rgba(255, 255, 255, 0.35)'
+              }} />
+              <span>
+                {activeCyclesCount > 0
+                  ? `${activeCyclesCount} ${activeCyclesCount === 1 ? 'cycle' : 'cycles'} in progress`
+                  : 'No active cycles'}
+              </span>
+            </div>
+          )}
         </div>
         )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../../shared/components/Skeleton.css';
 import { PlotCard } from '../../shared/components/PlotCard';
 import { AddPlotModal } from './components/AddPlotModal';
 import { NewFarmModal } from './components/NewFarmModal';
@@ -223,15 +224,19 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
           </button>
         </div>
 
-        {loading && (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Loading farms...</p>
-        )}
-
-        {!loading && loadError && (
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            {[1, 2].map((n) => (
+              <div key={n} style={{ border: '1px solid var(--color-card-border)', borderRadius: 'var(--radius-xl)', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="acrea-skeleton" style={{ width: '60%', height: '20px', borderRadius: '4px' }} />
+                <div className="acrea-skeleton" style={{ width: '40%', height: '14px', borderRadius: '4px' }} />
+                <div className="acrea-skeleton" style={{ width: '80%', height: '14px', borderRadius: '4px', marginTop: '10px' }} />
+              </div>
+            ))}
+          </div>
+        ) : loadError ? (
           <p style={{ color: '#B42318', fontSize: '0.875rem' }}>{loadError}</p>
-        )}
-
-        {!loading && !loadError && farms.length === 0 && (
+        ) : farms.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '24px' }}>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '12px' }}>
               You have no farm yet. Create your first farm to start organizing plots.
@@ -241,7 +246,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
               Create your first farm
             </button>
           </div>
-        )}
+        ) : null}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
           {farms.map((farm) => (
@@ -324,7 +329,20 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
           </div>
         </div>
 
-        {filteredPlots.length === 0 ? (
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+            {[1, 2].map((n) => (
+              <div key={n} style={{ border: '1px solid var(--color-card-border)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', backgroundColor: '#FFFFFF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="acrea-skeleton" style={{ width: '50%', height: '22px', borderRadius: '4px' }} />
+                  <div className="acrea-skeleton" style={{ width: '80px', height: '20px', borderRadius: '9999px' }} />
+                </div>
+                <div className="acrea-skeleton" style={{ width: '35%', height: '14px', borderRadius: '4px' }} />
+                <div className="acrea-skeleton" style={{ width: '100%', height: '8px', borderRadius: '4px', marginTop: '8px' }} />
+              </div>
+            ))}
+          </div>
+        ) : filteredPlots.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '24px' }}>
             {plots.length === 0 ? 'No plots registered yet.' : 'No plot matches your search.'}
           </p>

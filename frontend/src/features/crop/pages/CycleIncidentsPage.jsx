@@ -237,6 +237,7 @@ export function CycleIncidentsPage({ farmerId }) {
           subtext={`Cycle: ${selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}`}
           icon={<IconAlertTriangle size={20} color="#DC2626" />}
           iconBg="#FEF2F2"
+          loading={isLoading}
         />
         <MetricCard
           label="Disease Reports"
@@ -244,6 +245,7 @@ export function CycleIncidentsPage({ farmerId }) {
           subtext="Fungal / bacterial / viral"
           icon={<IconShieldAlert size={20} color="#7C3AED" />}
           iconBg="#FFFBEB"
+          loading={isLoading}
         />
         <MetricCard
           label="Pest Infestations"
@@ -251,6 +253,7 @@ export function CycleIncidentsPage({ farmerId }) {
           subtext="Insects / mites / nematodes"
           icon={<IconBug size={20} color="#D97706" />}
           iconBg="#FEF3C7"
+          loading={isLoading}
         />
         <MetricCard
           label="High Severity"
@@ -258,6 +261,7 @@ export function CycleIncidentsPage({ farmerId }) {
           subtext="Level 4 (Severe) or 5 (Critical)"
           icon={<IconAlertCircle size={20} color="#DC2626" />}
           iconBg="#FEE2E2"
+          loading={isLoading}
         />
       </div>
 

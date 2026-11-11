@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../shared/components/Skeleton.css';
 
 function formatScheduleTime(dateStr) {
   if (!dateStr) return '—';
@@ -20,7 +21,36 @@ function formatScheduleTime(dateStr) {
   }
 }
 
-export function UpcomingActivitiesCard({ activities = [], onNavigate }) {
+export function UpcomingActivitiesCard({ activities = [], onNavigate, loading = false }) {
+  if (loading) {
+    return (
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        border: '1px solid var(--color-card-border)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '24px',
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="acrea-skeleton" style={{ width: '150px', height: '20px', borderRadius: '4px' }} />
+          <div className="acrea-skeleton" style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#FAF8F5' }}>
+              <div className="acrea-skeleton" style={{ width: '65px', height: '24px', borderRadius: '6px' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div className="acrea-skeleton" style={{ width: '70%', height: '16px', borderRadius: '4px' }} />
+                <div className="acrea-skeleton" style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{
       backgroundColor: '#FFFFFF',

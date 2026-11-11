@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconChevronRight } from '../../shared/components/Icons';
+import '../../shared/components/Skeleton.css';
 
 function formatActivityDate(dateStr) {
   if (!dateStr) return '—';
@@ -29,7 +30,38 @@ const TYPE_COLORS = {
   PLANTING: '#EAF4ED'
 };
 
-export function RecentActivitiesCard({ activities = [], onNavigate }) {
+export function RecentActivitiesCard({ activities = [], onNavigate, loading = false }) {
+  if (loading) {
+    return (
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        border: '1px solid var(--color-card-border)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '24px',
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="acrea-skeleton" style={{ width: '130px', height: '20px', borderRadius: '4px' }} />
+          <div className="acrea-skeleton" style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                <div className="acrea-skeleton" style={{ width: '34px', height: '34px', borderRadius: '50%' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  <div className="acrea-skeleton" style={{ width: '65%', height: '14px', borderRadius: '4px' }} />
+                  <div className="acrea-skeleton" style={{ width: '45%', height: '12px', borderRadius: '4px' }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{
       backgroundColor: '#FFFFFF',

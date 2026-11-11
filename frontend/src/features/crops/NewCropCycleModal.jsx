@@ -14,15 +14,6 @@ import {
   IconPlus
 } from '../../shared/components/Icons';
 
-const DEFAULT_FALLBACK_CROPS = [
-  { id: 1, name: 'Maize', variety: 'Hybrid 614', displayName: 'Maize (Hybrid 614)' },
-  { id: 2, name: 'Tomatoes', variety: 'Anna F1', displayName: 'Tomatoes (Anna F1)' },
-  { id: 3, name: 'Beans', variety: 'Rosecoco (GLP-2)', displayName: 'Beans (Rosecoco (GLP-2))' },
-  { id: 4, name: 'Cassava', variety: 'Migyera', displayName: 'Cassava (Migyera)' },
-  { id: 5, name: 'Potatoes', variety: 'Shangi', displayName: 'Potatoes (Shangi)' },
-  { id: 6, name: 'Rice', variety: 'Basmati 370', displayName: 'Rice (Basmati 370)' }
-];
-
 export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 1 }) {
   const [plots, setPlots] = useState([]);
   const [loadingPlots, setLoadingPlots] = useState(false);
@@ -61,24 +52,15 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
     setLoadingCrops(true);
     try {
       const data = await cropService.getCrops(farmerId);
-      if (data && data.length > 0) {
-        setCrops(data);
-        if (!selectedCrop) {
-          const firstCropLabel = data[0].displayName || data[0].name;
-          setSelectedCrop(firstCropLabel);
-        }
-      } else {
-        setCrops(DEFAULT_FALLBACK_CROPS);
-        if (!selectedCrop) {
-          setSelectedCrop(DEFAULT_FALLBACK_CROPS[0].displayName);
-        }
+      const list = Array.isArray(data) ? data : [];
+      setCrops(list);
+      if (list.length > 0 && !selectedCrop) {
+        const firstCropLabel = list[0].displayName || list[0].name;
+        setSelectedCrop(firstCropLabel);
       }
     } catch (err) {
-      console.warn('Could not load crops from API, using fallback catalog:', err);
-      setCrops(DEFAULT_FALLBACK_CROPS);
-      if (!selectedCrop) {
-        setSelectedCrop(DEFAULT_FALLBACK_CROPS[0].displayName);
-      }
+      console.warn('Could not load crops from API:', err);
+      setCrops([]);
     } finally {
       setLoadingCrops(false);
     }
@@ -419,7 +401,10 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
                   cursor: 'pointer'
                 }}
               >
-                <option value="" disabled>-- Choose a crop from your personal list --</option>
+                <option value="" disabled>-- Choose a crop from your catalog --</option>
+                {crops.length === 0 && (
+                  <option value="" disabled>No registered crops found — Click '+ Add New Crop' above</option>
+                )}
                 {crops.map((crop) => {
                   const label = crop.displayName || crop.name;
                   return (

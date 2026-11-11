@@ -91,31 +91,35 @@ export function DashboardView({ onNavigate, user }) {
       }}>
         <MetricCard
           label="Active crop cycles"
-          value={loading ? '…' : String(activeCycles)}
+          value={String(activeCycles)}
           subtext={activeCycles > 0 ? `${activeCycles} in progress · ${completedCycles} completed` : 'No active cycles'}
           icon={<IconCrop size={20} color="#2D7A52" />}
           iconBg="#EAF4ED"
+          loading={loading}
         />
         <MetricCard
           label="Plots & Cultivation"
-          value={loading ? '…' : String(plotsCount)}
+          value={String(plotsCount)}
           subtext={plotsCount > 0 ? `${totalAreaHa} ha total area` : 'No plots registered'}
           icon={<IconFarms size={20} color="#D97706" />}
           iconBg="#FEF3C7"
+          loading={loading}
         />
         <MetricCard
           label="Total production"
-          value={loading ? '…' : harvestDisplay}
+          value={harvestDisplay}
           subtext={harvestCount > 0 ? `${harvestCount} harvest record${harvestCount === 1 ? '' : 's'}` : 'No harvests recorded yet'}
           icon={<IconProduction size={20} color="#0D9488" />}
           iconBg="#E6F6F4"
+          loading={loading}
         />
         <MetricCard
           label="Upcoming activities"
-          value={loading ? '…' : String(summary?.upcomingActivities?.length ?? 0)}
+          value={String(summary?.upcomingActivities?.length ?? 0)}
           subtext={nextActivityText}
           icon={<IconActivities size={20} color="#2D7A52" />}
           iconBg="#E8F5E9"
+          loading={loading}
         />
       </div>
 
@@ -128,10 +132,12 @@ export function DashboardView({ onNavigate, user }) {
         <ProductionOverviewChart
           data={summary?.monthlyProduction || []}
           totalKg={totalHarvestKg}
+          loading={loading}
         />
         <UpcomingActivitiesCard
           activities={summary?.upcomingActivities || []}
           onNavigate={onNavigate}
+          loading={loading}
         />
       </div>
 
@@ -144,10 +150,12 @@ export function DashboardView({ onNavigate, user }) {
         <RecentActivitiesCard
           activities={summary?.recentActivities || []}
           onNavigate={onNavigate}
+          loading={loading}
         />
         <QuickModuleCards
           summary={summary}
           onNavigate={onNavigate}
+          loading={loading}
         />
       </div>
     </div>

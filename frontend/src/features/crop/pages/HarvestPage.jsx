@@ -197,6 +197,7 @@ export function HarvestPage({ farmerId }) {
               subtext={`${selectedCycle?.acreage || selectedCycle?.area || 0} ha · Status: ${harvest ? 'COMPLETED' : (selectedCycle?.status || '—')}`}
               icon={<IconSprout size={20} color="#2D7A52" />}
               iconBg="#EAF4ED"
+              loading={isLoading}
             />
             <MetricCard
               label="Harvest Status"
@@ -204,6 +205,7 @@ export function HarvestPage({ farmerId }) {
               subtext={harvest ? `${harvest.quantity?.toLocaleString()} ${harvest.unit}` : 'Awaiting harvest log'}
               icon={<IconProduction size={20} color="#0D9488" />}
               iconBg="#E6F6F4"
+              loading={isLoading}
             />
             <MetricCard
               label="Calculated Yield"
@@ -211,6 +213,7 @@ export function HarvestPage({ farmerId }) {
               subtext={harvest ? 'Final yield rate' : 'Available post-harvest'}
               icon={<IconCrop size={20} color="#D97706" />}
               iconBg="#FEF3C7"
+              loading={isLoading}
             />
             <MetricCard
               label="Harvest Date"
@@ -218,6 +221,7 @@ export function HarvestPage({ farmerId }) {
               subtext={harvest ? 'End of cycle' : 'Pending record'}
               icon={<IconCheck size={20} color="#2D7A52" />}
               iconBg="#E8F5E9"
+              loading={isLoading}
             />
           </div>
 
@@ -227,11 +231,16 @@ export function HarvestPage({ farmerId }) {
               backgroundColor: '#FFFFFF',
               borderRadius: 'var(--radius-xl)',
               border: '1px solid var(--color-card-border)',
-              padding: '48px 24px',
-              textAlign: 'center',
-              color: 'var(--color-text-muted)'
+              padding: '32px',
+              boxShadow: 'var(--shadow-card)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
             }}>
-              <p>Loading harvest records...</p>
+              <div className="acrea-skeleton" style={{ width: '200px', height: '24px', borderRadius: '4px' }} />
+              <div className="acrea-skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
+              <div className="acrea-skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
+              <div className="acrea-skeleton" style={{ width: '140px', height: '40px', borderRadius: '8px', alignSelf: 'flex-end' }} />
             </div>
           ) : harvest ? (
             <div style={{

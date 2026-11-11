@@ -233,24 +233,28 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
           value={`KES ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Real financial expenditure on crop"
           icon={<IconInputs size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
         <MetricCard
           label="Inputs Consumed"
           value={`${consumedItemsCount}`}
           subtext="Times inputs were deducted"
           icon={<IconPackage size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
         <MetricCard
           label="Top Cost Category"
           value={topCategoryEntry ? topCategoryEntry[0] : 'None'}
           subtext={topCategoryEntry ? `KES ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
           icon={<IconSprout size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
         <MetricCard
           label="Inventory Stock Items"
           value={`${availableInputs.length}`}
           subtext="Available items in farm inventory"
           icon={<IconPackage size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
       </div>
 

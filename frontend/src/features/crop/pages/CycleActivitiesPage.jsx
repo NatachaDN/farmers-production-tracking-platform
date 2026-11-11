@@ -267,6 +267,7 @@ export function CycleActivitiesPage({ farmerId }) {
           subtext={`Cycle: ${selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}`}
           icon={<IconActivities size={20} color="#2D7A52" />}
           iconBg="#EAF4ED"
+          loading={isLoading}
         />
         <MetricCard
           label="Watering / Irrigation"
@@ -274,6 +275,7 @@ export function CycleActivitiesPage({ farmerId }) {
           subtext="Moisture maintenance"
           icon={<IconWater size={20} color="#0284C7" />}
           iconBg="#E0F2FE"
+          loading={isLoading}
         />
         <MetricCard
           label="Crop Nutrition"
@@ -281,6 +283,7 @@ export function CycleActivitiesPage({ farmerId }) {
           subtext="Fertilization & compost"
           icon={<IconSprout size={20} color="#D97706" />}
           iconBg="#FEF3C7"
+          loading={isLoading}
         />
         <MetricCard
           label="Pest / Treatments"
@@ -288,6 +291,7 @@ export function CycleActivitiesPage({ farmerId }) {
           subtext={`Last: ${lastIntervention}`}
           icon={<IconCheck size={20} color="#2563EB" />}
           iconBg="#EFF6FF"
+          loading={isLoading}
         />
       </div>
 

@@ -219,31 +219,35 @@ export function LivestockView({ user }) {
       >
         <MetricCard
           label="Animal Groups"
-          value={loading ? '…' : String(totalGroups)}
+          value={String(totalGroups)}
           subtext={totalGroups > 0 ? `${activeGroupsCount} active groups` : 'No groups registered'}
           icon={<IconLivestock size={20} color="#D97706" />}
           iconBg="#FEF3C7"
+          loading={loading}
         />
         <MetricCard
           label="Total Headcount"
-          value={loading ? '…' : totalHeadcount.toLocaleString()}
+          value={totalHeadcount.toLocaleString()}
           subtext={totalGroups > 0 ? `Across ${distinctSpeciesCount} species` : '0 live animals'}
           icon={<IconLivestock size={20} color="#2D7A52" />}
           iconBg="#EAF4ED"
+          loading={loading}
         />
         <MetricCard
           label="Active Breeding / Rearing"
-          value={loading ? '…' : String(activeGroupsCount)}
+          value={String(activeGroupsCount)}
           subtext={activeGroupsCount > 0 ? `${Math.round((activeGroupsCount / (totalGroups || 1)) * 100)}% of registered groups` : 'None in progress'}
           icon={<IconLivestock size={20} color="#0D9488" />}
           iconBg="#E6F6F4"
+          loading={loading}
         />
         <MetricCard
           label="Species Categories"
-          value={loading ? '…' : String(distinctSpeciesCount)}
+          value={String(distinctSpeciesCount)}
           subtext={distinctSpeciesCount > 0 ? 'Livestock diversity' : 'No species recorded'}
           icon={<IconFilter size={20} color="#788680" />}
           iconBg="#F4EFE6"
+          loading={loading}
         />
       </div>
 
