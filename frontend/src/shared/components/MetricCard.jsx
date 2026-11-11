@@ -8,7 +8,7 @@ import React from 'react';
  */
 function valueFontSize(value) {
   const len = String(value).length;
-  if (len <= 6)  return '2rem';
+  if (len <= 6) return '2rem';
   if (len <= 14) return '1.125rem';
   return '0.9375rem';
 }
@@ -47,7 +47,7 @@ export function MetricCard({ label, value, subtext, icon, iconBg = "#EAF4ED" }) 
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            {icon}
+            {typeof icon === 'function' ? React.createElement(icon, { size: 20 }) : icon}
           </div>
         )}
       </div>

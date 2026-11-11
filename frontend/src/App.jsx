@@ -63,9 +63,25 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      authService.logout();
+      setCurrentUser(null);
+      setCurrentRoute('login');
+      setLoginError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('acrea:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('acrea:unauthorized', handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
     if (authService.isAuthenticated()) {
       authService.getCurrentUser().then((user) => {
-        if (user) setCurrentUser(user);
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
+          setCurrentRoute('login');
+        }
       }).catch(() => {});
     }
   }, []);

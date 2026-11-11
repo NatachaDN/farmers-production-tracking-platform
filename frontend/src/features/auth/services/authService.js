@@ -53,7 +53,11 @@ export const authService = {
       const user = await apiClient.get('/auth/me');
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return user;
-    } catch {
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        this.logout();
+        return null;
+      }
       return this.getStoredUser();
     }
   },

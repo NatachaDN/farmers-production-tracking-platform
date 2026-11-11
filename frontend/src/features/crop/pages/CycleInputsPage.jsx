@@ -189,10 +189,11 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
           {/* Cycle Dropdown */}
           <select
             className="cycle-dropdown-select"
-            value={selectedCycleId}
-            onChange={(e) => setSelectedCycleId(Number(e.target.value))}
+            value={selectedCycleId || ''}
+            onChange={(e) => setSelectedCycleId(e.target.value ? Number(e.target.value) : null)}
             id="cycle-selector-dropdown"
           >
+            {cycles.length === 0 && <option value="">No cycles available</option>}
             {cycles.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name || `${c.cropName} (Plot ${c.plotId || c.id})`} — [{(c.status || 'ACTIVE').toUpperCase()}]
@@ -231,25 +232,25 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
           label="Total Input Cost"
           value={`KES ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Real financial expenditure on crop"
-          icon={IconInputs}
+          icon={<IconInputs size={20} color="var(--color-brand-primary, #3E7B52)" />}
         />
         <MetricCard
           label="Inputs Consumed"
           value={`${consumedItemsCount}`}
           subtext="Times inputs were deducted"
-          icon={IconPackage}
+          icon={<IconPackage size={20} color="var(--color-brand-primary, #3E7B52)" />}
         />
         <MetricCard
           label="Top Cost Category"
           value={topCategoryEntry ? topCategoryEntry[0] : 'None'}
           subtext={topCategoryEntry ? `KES ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
-          icon={IconSprout}
+          icon={<IconSprout size={20} color="var(--color-brand-primary, #3E7B52)" />}
         />
         <MetricCard
           label="Inventory Stock Items"
           value={`${availableInputs.length}`}
           subtext="Available items in farm inventory"
-          icon={IconPackage}
+          icon={<IconPackage size={20} color="var(--color-brand-primary, #3E7B52)" />}
         />
       </div>
 

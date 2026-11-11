@@ -20,6 +20,9 @@ async function request(endpoint, options = {}) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
+      if (response.status === 401 && typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
+        window.dispatchEvent(new CustomEvent('acrea:unauthorized'));
+      }
       const validationMsg = data?.validationErrors ? Object.values(data.validationErrors).join('. ') : null;
       const errorMessage = validationMsg || data?.message || 'Request failed';
       const error = new Error(errorMessage);
