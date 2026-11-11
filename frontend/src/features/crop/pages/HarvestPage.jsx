@@ -20,6 +20,16 @@ export function HarvestPage({ farmerId }) {
     isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
   } = useFarmerCycles(farmerId);
   const [harvest, setHarvest] = useState(null);
+  const [correcting, setCorrecting] = useState(false);
+  const [corrections, setCorrections] = useState([]);
+  const [historyError, setHistoryError] = useState('');
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (!correcting) return;
+    const form = document.getElementById('harvest-form-container');
+    form?.scrollIntoView({ block: 'start' });
+    form?.querySelector('input')?.focus({ preventScroll: true });
+  }, [correcting]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,12 +51,20 @@ export function HarvestPage({ farmerId }) {
 
   useEffect(() => {
     setHarvest(null);
+    setCorrecting(false); setCorrections([]); setHistoryError('');
     setLoadError(null);
     if (!selectedCycleId) return;
     let isMounted = true;
     setIsLoading(true);
     harvestService.getHarvest(farmerId, selectedCycleId)
-      .then((data) => { if (isMounted) setHarvest(data || null); })
+      .then(async (data) => {
+        if (!isMounted) return;
+        setHarvest(data || null);
+        if (data) {
+          try { const history = await harvestService.getCorrections(farmerId, selectedCycleId); if (isMounted) setCorrections(history); }
+          catch (error) { if (isMounted) setHistoryError(error.message || 'Could not load correction history.'); }
+        }
+      })
       .catch((err) => {
         if (!isMounted) return;
         // 404 simply means no harvest has been recorded for this cycle yet.
@@ -54,7 +72,7 @@ export function HarvestPage({ farmerId }) {
       })
       .finally(() => { if (isMounted) setIsLoading(false); });
     return () => { isMounted = false; };
-  }, [farmerId, selectedCycleId]);
+  }, [farmerId, selectedCycleId, reload]);
 
   const handleRecordHarvest = async (formData) => {
     setIsSubmitting(true);
@@ -68,6 +86,18 @@ export function HarvestPage({ farmerId }) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCorrectHarvest = async (formData) => {
+    setIsSubmitting(true);
+    try {
+      const updated = await harvestService.correctHarvest(farmerId, selectedCycleId, formData);
+      setHarvest(updated); setCorrecting(false);
+      showToast('Harvest corrected. Previous values are saved in the history.');
+      try { setCorrections(await harvestService.getCorrections(farmerId, selectedCycleId)); setHistoryError(''); }
+      catch (error) { setHistoryError(error.message || 'Could not load correction history.'); }
+    } catch (error) { showToast(error.message || 'Could not save the correction.', 'error'); }
+    finally { setIsSubmitting(false); }
   };
 
   const cardBox = {
@@ -110,8 +140,9 @@ export function HarvestPage({ farmerId }) {
       )}
 
       {/* Control Bar: Cycle Selector */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <CycleSelector
+          disabled={isSubmitting}
           cycles={cycles}
           selectedCycleId={selectedCycleId}
           onSelect={setSelectedCycleId}
@@ -122,7 +153,7 @@ export function HarvestPage({ farmerId }) {
       </div>
 
       {/* 4 Summary KPI Cards */}
-      <div style={{
+      <div className="acrea-responsive-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '20px'
@@ -161,14 +192,29 @@ export function HarvestPage({ farmerId }) {
       {!selectedCycle ? null : isLoading ? (
         <div style={messageBox}><p>Loading harvest records...</p></div>
       ) : loadError ? (
-        <div style={{ ...messageBox, color: 'var(--color-accent-red)' }}><p>{loadError}</p></div>
+        <div role="alert" style={{ ...messageBox, color: 'var(--color-accent-red)' }}><p>{loadError}</p><button onClick={() => setReload(value => value + 1)}>Try again</button></div>
       ) : harvest ? (
         <div style={cardBox}>
-          <HarvestResult harvest={harvest} />
+          {correcting ? <>
+            <HarvestForm key={`${selectedCycleId}-${harvest.revision}`} initialData={harvest} plantingDate={selectedCycle?.plantingDate} onSubmit={handleCorrectHarvest} isSubmitting={isSubmitting} onCancel={() => setCorrecting(false)} />
+            <button type="button" disabled={isSubmitting} onClick={() => setReload(value => value + 1)}>Reload latest harvest</button>
+          </> : <>
+            <HarvestResult harvest={harvest} />
+            {harvest.cycleStatus === 'COMPLETED' && <button type="button" className="btn btn-harvest" onClick={() => setCorrecting(true)}>Correct harvest</button>}
+          </>}
+          <section className="harvest-correction-history" aria-label="Harvest correction history">
+            <h3>Correction history</h3>
+            {historyError ? <div role="alert"><p>{historyError}</p><button type="button" onClick={() => setReload(value => value + 1)}>Reload harvest and history</button></div> : corrections.length === 0 ? <p>No corrections recorded.</p> : <ol>{corrections.map(row => <li key={row.id}>
+              <strong>Correction {row.revision} · {new Date(row.correctedAt).toLocaleString()}</strong>
+              <p>{row.beforeValues.quantity} {row.beforeValues.unit.toLowerCase()} on {row.beforeValues.harvestDate} → {row.afterValues.quantity} {row.afterValues.unit.toLowerCase()} on {row.afterValues.harvestDate}</p>
+              <p>Reason: {row.reason}</p>
+              {row.beforeValues.notes !== row.afterValues.notes && <p>Notes: {row.beforeValues.notes || 'None'} → {row.afterValues.notes || 'None'}</p>}
+            </li>)}</ol>}
+          </section>
         </div>
       ) : selectedCycle.status === 'ACTIVE' ? (
         <div style={cardBox}>
-          <HarvestForm onSubmit={handleRecordHarvest} isSubmitting={isSubmitting} />
+          <HarvestForm key={selectedCycleId} plantingDate={selectedCycle?.plantingDate} onSubmit={handleRecordHarvest} isSubmitting={isSubmitting} />
         </div>
       ) : (
         <div style={messageBox}>

@@ -26,6 +26,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest")
 @Tag(name = "Harvest", description = "Record the harvested yield at the end of a crop cycle")
 public class HarvestController {
+    @PutMapping
+    public ResponseEntity<HarvestResponse> correctHarvest(@PathVariable Long farmerId, @PathVariable Long cycleId,
+            @Valid @RequestBody com.farmer.tracking.modules.crop.api.HarvestCorrectionRequest request) {
+        return ResponseEntity.ok(harvestService.correctHarvest(farmerId, cycleId, request));
+    }
+
+    @GetMapping("/corrections")
+    public java.util.List<com.farmer.tracking.modules.crop.entity.HarvestCorrection> getCorrections(@PathVariable Long farmerId, @PathVariable Long cycleId) {
+        return harvestService.getCorrections(farmerId, cycleId);
+    }
 
     private final HarvestService harvestService;
 

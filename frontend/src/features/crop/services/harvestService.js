@@ -4,6 +4,8 @@ import { apiClient } from '../../../shared/services/apiClient';
  * Service to manage harvest API requests.
  */
 export const harvestService = {
+  correctHarvest: (farmerId, cycleId, data) => apiClient.put(`/farmers/${farmerId}/cycles/${cycleId}/harvest`, data),
+  getCorrections: (farmerId, cycleId) => apiClient.get(`/farmers/${farmerId}/cycles/${cycleId}/harvest/corrections`),
   /**
    * Record a harvest for an active cycle.
    * @param {number} farmerId

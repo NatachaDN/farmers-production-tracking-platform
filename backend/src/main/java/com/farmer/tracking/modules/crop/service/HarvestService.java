@@ -1,6 +1,15 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.exception.ConflictException;
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.security.UserPrincipal;
+import com.farmer.tracking.modules.crop.api.HarvestCorrectionRequest;
+import com.farmer.tracking.modules.crop.entity.HarvestCorrection;
+import com.farmer.tracking.modules.crop.entity.HarvestValues;
+import com.farmer.tracking.modules.crop.repository.HarvestCorrectionRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.List;
 import com.farmer.tracking.common.util.ProductionRules;
 import com.farmer.tracking.modules.crop.api.HarvestRequest;
 import com.farmer.tracking.modules.crop.api.HarvestResponse;
@@ -17,17 +26,20 @@ import org.springframework.transaction.annotation.Transactional;
  * - Validates farmer ownership and active cycle status.
  * - Records harvested quantity, unit, and date.
  * - Calculates actual yield based on quantity and acreage.
- * - Transitions cycle status to COMPLETED and sets end date.
+ * - Completes the cycle while preserving its planned harvest date.
+ * - Corrects recorded harvests with immutable before/after history and stale-edit protection.
  */
 @Service
 public class HarvestService {
 
     private final HarvestRepository harvestRepository;
     private final CycleRepository cycleRepository;
+    private final HarvestCorrectionRepository correctionRepository;
 
-    public HarvestService(HarvestRepository harvestRepository, CycleRepository cycleRepository) {
+    public HarvestService(HarvestRepository harvestRepository, CycleRepository cycleRepository, HarvestCorrectionRepository correctionRepository) {
         this.harvestRepository = harvestRepository;
         this.cycleRepository = cycleRepository;
+        this.correctionRepository = correctionRepository;
     }
 
     /**
@@ -100,9 +112,46 @@ public class HarvestService {
         return toResponse(harvest, cycle, yieldDisplay);
     }
 
+    @Transactional
+    public HarvestResponse correctHarvest(Long farmerId, Long cycleId, HarvestCorrectionRequest request) {
+        Cycle cycle = cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle", cycleId));
+        Harvest harvest = harvestRepository.findByCycleId(cycleId)
+                .orElseThrow(() -> new ResourceNotFoundException("No harvest recorded for this cycle."));
+        if (cycle.getStatus() != CycleStatus.COMPLETED) throw new ConflictException("Only a completed cycle's harvest can be corrected.");
+        if (request.getExpectedRevision() == null || harvest.getRevision() != request.getExpectedRevision()) {
+            throw new ConflictException("This harvest has changed. Reload it and review the latest values before saving.");
+        }
+        if (request.getReason() == null || request.getReason().isBlank()) throw new BadRequestException("A correction reason is required.");
+        ProductionRules.positiveFinite(request.getQuantity(), "Harvest quantity");
+        ProductionRules.eventDate(cycle, request.getHarvestDate());
+        HarvestValues before = new HarvestValues(harvest);
+        harvest.setQuantity(request.getQuantity()); harvest.setUnit(request.getUnit());
+        harvest.setHarvestDate(request.getHarvestDate()); harvest.setNotes(request.getNotes());
+        harvest.setCalculatedYield(cycle.getAcreage() != null && cycle.getAcreage() > 0
+                ? Math.round(request.getQuantity() / cycle.getAcreage() * 100.0) / 100.0 : request.getQuantity());
+        harvest.setRevision(harvest.getRevision() + 1);
+        harvestRepository.save(harvest);
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long actorId = authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal ? principal.getId() : farmerId;
+        correctionRepository.save(new HarvestCorrection(harvest, before, request.getReason().trim(), actorId));
+        String display = cycle.getAcreage() != null && cycle.getAcreage() > 0
+                ? String.format("%.2f %s / ha", harvest.getCalculatedYield(), harvest.getUnit().name().toLowerCase())
+                : String.format("%.1f %s total output", harvest.getCalculatedYield(), harvest.getUnit().name().toLowerCase());
+        return toResponse(harvest, cycle, display);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HarvestCorrection> getCorrections(Long farmerId, Long cycleId) {
+        cycleRepository.findByIdAndFarmerId(cycleId, farmerId).orElseThrow(() -> new ResourceNotFoundException("Cycle", cycleId));
+        Harvest harvest = harvestRepository.findByCycleId(cycleId).orElseThrow(() -> new ResourceNotFoundException("No harvest recorded for this cycle."));
+        return correctionRepository.findByHarvest_IdOrderByRevisionDesc(harvest.getId());
+    }
+
     private HarvestResponse toResponse(Harvest harvest, Cycle cycle, String yieldDisplay) {
         HarvestResponse response = new HarvestResponse();
         response.setId(harvest.getId());
+        response.setRevision(harvest.getRevision());
         response.setCycleId(cycle.getId());
         response.setCycleName(cycle.getName());
         response.setCycleStatus(cycle.getStatus());

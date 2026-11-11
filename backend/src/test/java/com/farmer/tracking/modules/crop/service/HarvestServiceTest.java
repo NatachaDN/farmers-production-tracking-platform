@@ -34,6 +34,7 @@ class HarvestServiceTest {
 
     @Mock
     private CycleRepository cycleRepository;
+    @Mock private com.farmer.tracking.modules.crop.repository.HarvestCorrectionRepository correctionRepository;
 
     @InjectMocks
     private HarvestService harvestService;
