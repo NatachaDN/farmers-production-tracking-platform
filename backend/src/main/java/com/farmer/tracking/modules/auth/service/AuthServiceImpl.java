@@ -91,6 +91,13 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid email/phone or password.");
         }
 
+        if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.REJECTED) {
+            String explanation = (farmer.getRejectionReason() != null && !farmer.getRejectionReason().isBlank())
+                    ? "Your registration was rejected: " + farmer.getRejectionReason()
+                    : "Your farmer registration has been rejected by the platform manager. Please contact support.";
+            throw new UnauthorizedException(explanation);
+        }
+
         farmer.setLastLoginAt(LocalDateTime.now());
         farmerRepository.save(farmer);
 

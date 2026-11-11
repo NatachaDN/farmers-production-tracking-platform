@@ -20,12 +20,22 @@ export function AppLayout({
 
   const farmDisplayName = user?.role === 'ROLE_ADMIN'
     ? 'Administrator'
+    : user?.role === 'ROLE_MANAGER'
+    ? 'Cooperative Manager'
     : (user?.farmName || user?.location || 'My Farm');
+
+  const isUserAdmin = user?.role === 'ROLE_ADMIN';
+  const isUserManager = user?.role === 'ROLE_MANAGER' || isUserAdmin;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-canvas-bg)' }}>
       {/* Sidebar */}
-      <Sidebar activeRoute={activeRoute} onNavigate={onNavigate} isAdmin={user?.role === 'ROLE_ADMIN'} />
+      <Sidebar
+        activeRoute={activeRoute}
+        onNavigate={onNavigate}
+        isAdmin={isUserAdmin}
+        isManager={isUserManager}
+      />
 
       {/* Main Workspace */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>

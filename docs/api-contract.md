@@ -448,3 +448,86 @@ Base path: `/api/v1/animals/groups` (also supports `/api/animals/groups`)
 - **Error (403 Forbidden):** If the group belongs to another farmer.
 - **Error (404 Not Found):** If group ID does not exist.
 - **Error (409 Conflict):** If the group is protected by historical records or active production logs.
+
+---
+
+## 7. Manager Supervision & Cooperative Module (`/api/v1/manager/**`)
+
+All manager endpoints require authentication with role `ROLE_MANAGER` or `ROLE_ADMIN`.
+
+### 7.1 Manager Aggregated Dashboard (US-33)
+- **Endpoint:** `GET /api/v1/manager/dashboard`
+- **Auth required:** `ROLE_MANAGER` or `ROLE_ADMIN`
+- **Response (200 OK):**
+```json
+{
+  "totalFarmers": 12,
+  "pendingFarmers": 2,
+  "approvedFarmers": 9,
+  "rejectedFarmers": 1,
+  "activeCyclesCount": 8,
+  "completedCyclesCount": 14,
+  "totalHarvestKg": 24500.0,
+  "totalHarvestTons": 24.5,
+  "totalCultivatedAreaHa": 45.2,
+  "totalPlotsCount": 15,
+  "totalAnimalGroupsCount": 6,
+  "totalAnimalPopulation": 85,
+  "activeAlertsCount": 2,
+  "recentAlerts": [...],
+  "topProducers": [...],
+  "monthlyProduction": [...],
+  "pendingRegistrations": [...]
+}
+```
+
+### 7.2 View and Filter Supervised Farmers (US-31, US-32)
+- **Endpoint:** `GET /api/v1/manager/farmers`
+- **Query Parameters:**
+  - `search`: Filter by name, email, phone, or location.
+  - `region`: Filter by geographic region.
+  - `crop`: Filter by crop name grown.
+  - `status`: `PENDING`, `APPROVED`, `REJECTED`, or `ALL`.
+  - `sort`: `name`, `cycles`, `plots`, `harvest`, `joined`, `status`.
+- **Response (200 OK):** Array of `ManagerFarmerRow` objects with plots count, active cycles, and harvested yield.
+
+### 7.3 Farmer Drilldown Details (US-33)
+- **Endpoint:** `GET /api/v1/manager/farmers/{id}`
+- **Response (200 OK):** `ManagerFarmerDetail` object containing farmer profile, farms, plots, active cycles, harvest records, field incidents, and livestock groups.
+
+### 7.4 Approve / Reject Farmer Registration (US-34)
+- **Endpoint:** `PUT /api/v1/manager/farmers/{id}/status`
+- **Request Body:**
+```json
+{
+  "status": "APPROVED",
+  "rejectionReason": null
+}
+```
+Or for rejection:
+```json
+{
+  "status": "REJECTED",
+  "rejectionReason": "National identity verification unconfirmed."
+}
+```
+- **Response (200 OK):** Updated `ManagerFarmerRow` object. Rejected farmers are denied login with an explanatory message.
+
+### 7.5 Multi-Farmer Consolidated Production Report (US-35)
+- **Endpoint:** `POST /api/v1/manager/reports/consolidated`
+- **Request Body:**
+```json
+{
+  "startDate": "2026-01-01",
+  "endDate": "2026-06-30",
+  "farmerIds": [1, 2, 5],
+  "region": "Rift Valley",
+  "crop": "Maize"
+}
+```
+- **Response (200 OK):** `ConsolidatedReportResponse` with report ID, period bounds, total yield (tons and kg), active cycles, cultivated area, crop breakdown with volume shares, and individual farmer performance rows.
+
+### 7.6 Export Consolidated Report as CSV (US-35)
+- **Endpoint:** `POST /api/v1/manager/reports/consolidated/export`
+- **Content-Type:** `text/csv; charset=UTF-8`
+- **Response (200 OK):** Formatted CSV document attachment for cooperative export and record keeping.

@@ -20,6 +20,7 @@ public class AuthMapper {
         farmer.setFarmType(request.getFarmType());
         farmer.setPasswordHash(encodedPassword);
         farmer.setRole("ROLE_FARMER");
+        farmer.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.PENDING);
         farmer.setAgreedToTerms(request.isAgreedToTerms());
         return farmer;
     }
@@ -43,6 +44,8 @@ public class AuthMapper {
         response.setFarmName(farmer.getFarmName());
         response.setCropsGrown(farmer.getCropsGrown());
         response.setTotalArea(farmer.getTotalArea());
+        response.setStatus(farmer.getStatus());
+        response.setRejectionReason(farmer.getRejectionReason());
         return response;
     }
 }

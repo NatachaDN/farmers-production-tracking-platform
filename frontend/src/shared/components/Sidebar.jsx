@@ -25,8 +25,16 @@ const ADMIN_NAV = [
   { id: 'admin-system', label: 'System health', icon: IconServer },
 ];
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false }) {
+const MANAGER_NAV = [
+  { id: 'manager-dashboard', label: 'Overview', icon: IconDashboard },
+  { id: 'manager-farmers', label: 'Supervised Farmers', icon: IconUsers },
+  { id: 'manager-reports', label: 'Consolidated Reports', icon: IconReports },
+];
+
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false }) {
   const adminMode = isAdmin && activeRoute.startsWith('admin-');
+  const managerMode = (isManager || isAdmin) && activeRoute.startsWith('manager-');
+
   const farmerNav = [
     { id: 'dashboard', label: 'Dashboard', icon: IconDashboard },
     { id: 'farms', label: 'Farms & Plots', icon: IconFarms },
@@ -40,7 +48,10 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
     { id: 'reports', label: 'Reports', icon: IconReports },
     { id: 'settings', label: 'Settings', icon: IconSettings },
   ];
-  const navItems = adminMode ? ADMIN_NAV : farmerNav;
+
+  let navItems = farmerNav;
+  if (adminMode) navItems = ADMIN_NAV;
+  else if (managerMode) navItems = MANAGER_NAV;
 
   return (
     <aside className="acrea-sidebar" style={{
@@ -119,7 +130,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
 
       {/* Season Card & Footer */}
       <div>
-        {/* Current Season Widget */}
+        {/* Current Season / Mode Widget */}
         {adminMode ? (
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -133,6 +144,21 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             </div>
             <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.45 }}>
               Read-only view of every farmer on the platform.
+            </div>
+          </div>
+        ) : managerMode ? (
+          <div style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '14px',
+            padding: '14px 16px',
+            marginBottom: '20px'
+          }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '4px' }}>
+              Manager Supervision
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.45 }}>
+              Cooperative network overview, member approvals, and consolidated reports.
             </div>
           </div>
         ) : (
@@ -176,6 +202,22 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             <span>4 cycles in progress</span>
           </div>
         </div>
+        )}
+
+        {(isManager || isAdmin) && (
+          <button
+            onClick={() => onNavigate && onNavigate(managerMode ? 'dashboard' : 'manager-dashboard')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
+              padding: '9px 12px', marginBottom: '10px', borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.22)', color: '#FFFFFF',
+              fontSize: '0.8125rem', fontWeight: 600, transition: 'background-color var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            {managerMode ? 'Open farmer workspace' : 'Open manager console'}
+          </button>
         )}
 
         {isAdmin && (

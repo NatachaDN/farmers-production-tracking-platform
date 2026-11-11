@@ -147,6 +147,26 @@ class AuthServiceTest {
     }
 
     @Test
+    void login_ThrowsUnauthorized_WhenFarmerRejected() {
+        LoginRequest request = new LoginRequest("joyce@example.com", "SecurePass123");
+
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.REJECTED);
+        farmer.setRejectionReason("Documents could not be verified");
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
+
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.login(request));
+        assertTrue(ex.getMessage().contains("rejected"));
+        assertTrue(ex.getMessage().contains("Documents could not be verified"));
+        verify(tokenProvider, never()).generateToken(any(), anyString());
+    }
+
+    @Test
     void updateProfile_Success() {
         Farmer farmer = new Farmer();
         farmer.setId(1L);

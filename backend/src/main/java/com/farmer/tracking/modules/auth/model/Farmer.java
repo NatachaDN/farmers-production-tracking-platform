@@ -64,6 +64,13 @@ public class Farmer {
     @Column(name = "password_reset_expires_at")
     private LocalDateTime passwordResetExpiresAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private RegistrationStatus status = RegistrationStatus.APPROVED;
+
+    @Column(name = "rejection_reason", length = 255)
+    private String rejectionReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -76,6 +83,9 @@ public class Farmer {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = RegistrationStatus.APPROVED;
+        }
     }
 
     @PreUpdate
@@ -233,5 +243,21 @@ public class Farmer {
 
     public void setPasswordResetExpiresAt(LocalDateTime passwordResetExpiresAt) {
         this.passwordResetExpiresAt = passwordResetExpiresAt;
+    }
+
+    public RegistrationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RegistrationStatus status) {
+        this.status = status;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

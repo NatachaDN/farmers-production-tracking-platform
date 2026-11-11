@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class AdminAccessPolicy {
 
     public static final String ROLE_ADMIN = "ROLE_ADMIN";
+    public static final String ROLE_MANAGER = "ROLE_MANAGER";
     public static final String ROLE_FARMER = "ROLE_FARMER";
 
     private final Set<String> adminEmails;

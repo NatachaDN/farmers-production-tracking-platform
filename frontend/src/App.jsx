@@ -22,9 +22,17 @@ import { AdminSystemView } from './features/admin/AdminSystemView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
 import { LivestockView } from './features/livestock/LivestockView';
+import { ManagerDashboardView } from './features/manager/ManagerDashboardView';
+import { ManagerFarmersView } from './features/manager/ManagerFarmersView';
+import { ManagerReportsView } from './features/manager/ManagerReportsView';
 import './features/admin/admin.css';
+import './features/manager/manager.css';
 
-const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
+const homeRouteFor = (user) => {
+  if (authService.isAdmin(user)) return 'admin-overview';
+  if (authService.isManager(user)) return 'manager-dashboard';
+  return 'dashboard';
+};
 
 const todayLabel = () =>
   new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -93,6 +101,9 @@ export function App() {
     'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
     'admin-production': { title: 'Production', subtitle: 'Cycles, harvests and input spending' },
     'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
+    'manager-dashboard': { title: 'Supervision Dashboard', subtitle: `${todayLabel()} · Cooperative Network Production` },
+    'manager-farmers': { title: 'Supervised Farmers', subtitle: 'Member directory, crop allocations and registration approvals' },
+    'manager-reports': { title: 'Consolidated Production Reports', subtitle: 'Multi-farmer production aggregation and exports' },
     dashboard: {
       title: 'Dashboard',
       subtitle: `${todayLabel()} · ${currentUser?.farmName || currentUser?.location || 'My Farm'}`
@@ -195,6 +206,15 @@ export function App() {
           {isAdmin && currentRoute === 'admin-activity' && <AdminActivityView />}
           {isAdmin && currentRoute === 'admin-production' && <AdminProductionView />}
           {isAdmin && currentRoute === 'admin-system' && <AdminSystemView />}
+          {currentRoute === 'manager-dashboard' && (
+            <ManagerDashboardView onNavigate={(r) => setCurrentRoute(r)} />
+          )}
+          {currentRoute === 'manager-farmers' && (
+            <ManagerFarmersView />
+          )}
+          {currentRoute === 'manager-reports' && (
+            <ManagerReportsView />
+          )}
           {currentRoute === 'dashboard' && (
             <DashboardView
               onNavigate={(r) => setCurrentRoute(r)}

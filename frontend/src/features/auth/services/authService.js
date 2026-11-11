@@ -1,5 +1,5 @@
-import { apiClient } from '../../../shared/services/apiClient';
-import { googleAuth } from './googleAuth';
+import { apiClient } from '../../../shared/services/apiClient.js';
+import { googleAuth } from './googleAuth.js';
 
 const TOKEN_KEY = 'acrea_token';
 const USER_KEY = 'acrea_user';
@@ -21,6 +21,10 @@ export const authService = {
 
   isAdmin(user = this.getStoredUser()) {
     return user?.role === 'ROLE_ADMIN';
+  },
+
+  isManager(user = this.getStoredUser()) {
+    return user?.role === 'ROLE_MANAGER' || user?.role === 'ROLE_ADMIN';
   },
 
   async register(formData) {

@@ -1,4 +1,4 @@
-import { apiClient } from '../../../shared/services/apiClient';
+import { apiClient } from '../../../shared/services/apiClient.js';
 
 /**
  * Google sign-in (OAuth 2.0 authorization-code flow with PKCE).
