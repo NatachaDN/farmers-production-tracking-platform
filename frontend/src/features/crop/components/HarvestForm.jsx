@@ -18,14 +18,15 @@ const UNIT_OPTIONS = [
  * Form for recording a harvest at the end of a crop cycle.
  * Validates: quantity > 0, unit required, harvest date required & not future.
  */
-export function HarvestForm({ onSubmit, isSubmitting }) {
+export function HarvestForm({ onSubmit, isSubmitting, initialData = null, onCancel, plantingDate }) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    quantity: '',
-    unit: 'KG',
-    harvestDate: todayStr,
-    notes: '',
+    quantity: initialData?.quantity ?? '',
+    unit: initialData?.unit || 'KG',
+    harvestDate: initialData?.harvestDate || todayStr,
+    notes: initialData?.notes || '',
+    reason: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -36,7 +37,7 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
 
     if (formData.quantity === '' || formData.quantity === null) {
       errs.quantity = 'Harvested quantity is required.';
-    } else if (isNaN(qty) || qty <= 0) {
+    } else if (!Number.isFinite(qty) || qty <= 0) {
       errs.quantity = 'Harvested quantity must be greater than zero.';
     }
 
@@ -48,11 +49,14 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
       errs.harvestDate = 'Harvest date is required.';
     } else if (formData.harvestDate > todayStr) {
       errs.harvestDate = 'Harvest date cannot be in the future.';
+    } else if (plantingDate && formData.harvestDate < plantingDate) {
+      errs.harvestDate = 'Harvest date cannot be before planting.';
     }
 
     if (formData.notes && formData.notes.length > 1000) {
       errs.notes = 'Notes must not exceed 1000 characters.';
     }
+    if (initialData && !formData.reason.trim()) errs.reason = 'Explain why this harvest needs correcting.';
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -81,15 +85,17 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
       unit: formData.unit,
       harvestDate: formData.harvestDate,
       notes: formData.notes || null,
+      ...(initialData ? { reason: formData.reason.trim(), expectedRevision: initialData.revision ?? 0 } : {}),
     });
   };
 
   return (
     <form className="harvest-form" onSubmit={handleSubmit} id="harvest-form-container">
+      <fieldset disabled={isSubmitting} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <div className="form-header">
-        <h3>Record Harvest Yield</h3>
+        <h3>{initialData ? 'Correct Harvest' : 'Record Harvest Yield'}</h3>
         <p className="form-subtitle">
-          Enter the total quantity harvested, unit of measure, and date. This will complete the cycle.
+          {initialData ? 'Review the quantity, unit and date. The previous values and your reason will be kept in the history.' : 'Enter the total quantity harvested, unit of measure, and date. This will complete the cycle.'}
         </p>
       </div>
 
@@ -150,6 +156,7 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
           name="harvestDate"
           className={`form-input ${errors.harvestDate ? 'input-error' : ''}`}
           max={todayStr}
+          min={plantingDate || undefined}
           value={formData.harvestDate}
           onChange={handleChange}
         />
@@ -176,27 +183,34 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
         {errors.notes && <span className="field-error">{errors.notes}</span>}
       </div>
 
+      {initialData && <div className="form-group">
+        <label htmlFor="harvest-correction-reason" className="form-label">Reason for correction *</label>
+        <textarea id="harvest-correction-reason" name="reason" maxLength={1000} required rows={3} value={formData.reason} onChange={handleChange} className="form-textarea" />
+        {errors.reason && <span className="field-error">{errors.reason}</span>}
+      </div>}
       {/* Warning banner */}
       <div className="harvest-warning">
         <span className="warning-icon">
           <IconWarning size={16} color="var(--color-warning, #D97706)" />
         </span>
-        <span>Recording a harvest will mark this cycle as <strong>Completed</strong> and cannot be undone.</span>
+        <span>{initialData ? 'The cycle stays completed. This correction updates harvest totals and preserves the original planned harvest date.' : 'Recording a harvest completes this cycle. Any later correction requires a reason and is saved in the history.'}</span>
       </div>
 
       {/* Submit */}
       <div className="form-actions">
+        {onCancel && <button type="button" className="btn" onClick={onCancel} disabled={isSubmitting}>Cancel correction</button>}
         <button type="submit" className="btn btn-harvest" disabled={isSubmitting}>
           {isSubmitting ? (
-            <span className="btn-loading">Recording harvest...</span>
+            <span className="btn-loading">Saving harvest...</span>
           ) : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <IconWheat size={18} color="currentColor" />
-              <span>Record Harvest &amp; Complete Cycle</span>
+              <span>{initialData ? 'Save correction' : 'Record Harvest & Complete Cycle'}</span>
             </span>
           )}
         </button>
       </div>
+      </fieldset>
     </form>
   );
 }

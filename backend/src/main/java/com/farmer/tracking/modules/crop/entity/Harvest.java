@@ -17,6 +17,9 @@ public class Harvest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(name = "revision") private Long revision = 0L;
+    public long getRevision() { return revision == null ? 0L : revision; }
+    public void setRevision(long value) { revision = value; }
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cycle_id", nullable = false, unique = true)

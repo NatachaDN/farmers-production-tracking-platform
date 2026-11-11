@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 public class HarvestResponse {
 
     private Long id;
+    private long revision;
+    public long getRevision() { return revision; }
+    public void setRevision(long value) { revision = value; }
     private Long cycleId;
     private String cycleName;
     private CycleStatus cycleStatus;

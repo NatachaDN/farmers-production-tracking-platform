@@ -261,6 +261,71 @@ class IntegritySecurityIntegrationTest {
         assertThat(request(HttpMethod.GET, f.root() + "/summary", null, null).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    @Test void completedCycleActivitiesCanBeCorrectedWithoutReopeningTheCycle() {
+        Fixture f = fixture();
+        long activity = created(f.cyclePath() + "/activities", Map.of("activityType", "WATERING", "activityDate", LocalDate.now().toString(), "notes", "Original activity"), f.token()).path("id").asLong();
+        created(f.cyclePath() + "/harvest", Map.of("quantity", 800, "unit", "KG", "harvestDate", LocalDate.now().toString()), f.token());
+        var updated = request(HttpMethod.PUT, f.cyclePath() + "/activities/" + activity,
+                Map.of("activityType", "WEEDING", "activityDate", LocalDate.now().toString(), "notes", "Corrected completed-cycle activity"), f.token());
+        assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(updated.getBody().path("notes").asText()).isEqualTo("Corrected completed-cycle activity");
+        assertThat(request(HttpMethod.GET, f.cyclePath(), null, f.token()).getBody().path("status").asText()).isEqualTo("COMPLETED");
+        assertThat(request(HttpMethod.GET, f.root() + "/summary", null, f.token()).getBody().path("recentActivities").get(0).path("type").asText()).isEqualTo("WEEDING");
+    }
+
+    private Map<String, Object> correction(double quantity, long revision, String reason) {
+        return Map.of("quantity", quantity, "unit", "KG", "harvestDate", LocalDate.now().toString(),
+                "notes", "Updated harvest notes", "expectedRevision", revision, "reason", reason);
+    }
+
+    @Test void harvestCorrectionsPreserveHistoryValidateOwnershipAndUpdateSummaries() {
+        Fixture f = fixture();
+        var original = created(f.cyclePath() + "/harvest", Map.of("quantity", 800, "unit", "KG", "harvestDate", LocalDate.now().toString(), "notes", "Original notes"), f.token());
+        assertThat(request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(900, 0, " "), f.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(0, 0, "Invalid quantity"), f.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        var badDate = new HashMap<>(correction(900, 0, "Invalid date")); badDate.put("harvestDate", LocalDate.now().minusDays(40).toString());
+        assertThat(request(HttpMethod.PUT, f.cyclePath() + "/harvest", badDate, f.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Fixture other = fixture();
+        assertThat(request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(900, 0, "Not the owner"), other.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.GET, f.cyclePath() + "/harvest/corrections", null, other.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        String reason = "Verified weighbridge slip: " + "a".repeat(400);
+        var update = request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(900, 0, reason), f.token());
+        assertThat(update.getStatusCode()).as(update.toString()).isEqualTo(HttpStatus.OK);
+        assertThat(update.getBody().path("id")).isEqualTo(original.path("id"));
+        assertThat(update.getBody().path("revision").asLong()).isEqualTo(1);
+        assertThat(update.getBody().path("calculatedYield").asDouble()).isEqualTo(900);
+        assertThat(request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(1000, 0, "Stale edit"), f.token()).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        var history = request(HttpMethod.GET, f.cyclePath() + "/harvest/corrections", null, f.token()).getBody();
+        assertThat(history.size()).isEqualTo(1);
+        assertThat(history.get(0).path("beforeValues").path("quantity").asDouble()).isEqualTo(800);
+        assertThat(history.get(0).path("beforeValues").path("notes").asText()).isEqualTo("Original notes");
+        assertThat(history.get(0).path("afterValues").path("quantity").asDouble()).isEqualTo(900);
+        assertThat(history.get(0).path("reason").asText()).isEqualTo(reason);
+        assertThat(history.get(0).path("actorId").asLong()).isEqualTo(f.farmer());
+        var cycle = request(HttpMethod.GET, f.cyclePath(), null, f.token()).getBody();
+        assertThat(cycle.path("status").asText()).isEqualTo("COMPLETED");
+        assertThat(cycle.path("plannedHarvestDate").asText()).isEqualTo(LocalDate.now().plusDays(30).toString());
+        assertThat(request(HttpMethod.GET, f.root() + "/summary", null, f.token()).getBody().path("harvestedKg").asDouble()).isEqualTo(900);
+        assertThat(request(HttpMethod.GET, f.root() + "/summary?farmId=" + f.farm(), null, f.token()).getBody().path("harvestedKg").asDouble()).isEqualTo(900);
+        assertThat(request(HttpMethod.GET, f.cyclePath() + "/harvest", null, f.token()).getBody().path("quantity").asDouble()).isEqualTo(900);
+    }
+
+    @Test void competingHarvestCorrectionsCannotOverwriteEachOther() throws Exception {
+        Fixture f = fixture();
+        created(f.cyclePath() + "/harvest", Map.of("quantity", 800, "unit", "KG", "harvestDate", LocalDate.now().toString()), f.token());
+        assertThat(concurrent(
+                () -> request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(900, 0, "First weighbridge reading"), f.token()).getStatusCode().value(),
+                () -> request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(1000, 0, "Second weighbridge reading"), f.token()).getStatusCode().value()))
+                .containsExactlyInAnyOrder(200, 409);
+        var history = request(HttpMethod.GET, f.cyclePath() + "/harvest/corrections", null, f.token()).getBody();
+        assertThat(history.size()).isEqualTo(1);
+        assertThat(request(HttpMethod.PUT, f.cyclePath() + "/harvest", correction(800, 1, "Restore original reading after checking source"), f.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        var restored = request(HttpMethod.GET, f.cyclePath() + "/harvest/corrections", null, f.token()).getBody();
+        assertThat(restored.size()).isEqualTo(2);
+        assertThat(restored.get(1).path("id")).isEqualTo(history.get(0).path("id"));
+        assertThat(restored.get(0).path("afterValues").path("quantity").asDouble()).isEqualTo(800);
+    }
+
     @Test void summaryWithholdsLegacyCostsUntilTheyAreReviewed() {
         Fixture f = fixture();
         long inputId = created(f.root() + "/inputs", purchase("Legacy input", 10, "kg", 10000), f.token()).path("id").asLong();

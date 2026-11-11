@@ -309,3 +309,7 @@
 .harvest-form-wrapper {
   /* inherits fade-in from index.css */
 }
+.harvest-correction-history { margin-top: 24px; border-top: 1px solid #ECE7DC; padding-top: 20px; overflow-wrap: anywhere; }
+.harvest-correction-history li { margin: 12px 0; padding: 12px 0; border-bottom: 1px solid #ECE7DC; }
+.harvest-correction-history p { margin: 8px 0; }
+@media (max-width: 600px) { .harvest-form .unit-grid { grid-template-columns: 1fr; } .harvest-form .form-actions { flex-wrap: wrap; gap: 12px; } }
