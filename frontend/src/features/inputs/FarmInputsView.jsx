@@ -74,7 +74,7 @@ function InputCard({ input, onDelete, onConfirmCost }) {
       }}
     >
       {/* Top row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         {/* Icon + Name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
@@ -147,7 +147,7 @@ function InputCard({ input, onDelete, onConfirmCost }) {
       <div style={{ height: '1px', backgroundColor: '#F4EFE6' }} />
 
       {/* Metrics row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: '#788680', marginBottom: '3px' }}>Stock</div>
           <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#19201C' }}>
@@ -371,7 +371,7 @@ export function FarmInputsView({ farmerId, onNavigate }) {
         borderRadius: '20px', padding: '24px 28px',
         boxShadow: '0 2px 8px rgba(22, 66, 48, 0.06)'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
               width: '44px', height: '44px', borderRadius: '12px',
@@ -429,7 +429,7 @@ export function FarmInputsView({ farmerId, onNavigate }) {
         </div>
 
         {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           <StatChip label="Total inputs" value={totalItems} />
           <StatChip label="Seeds" value={typeCount('SEEDS')} accent="#2A6740" />
           <StatChip label="Fertilizers" value={typeCount('FERTILIZER')} accent="#92400E" />
@@ -442,7 +442,7 @@ export function FarmInputsView({ farmerId, onNavigate }) {
       </div>
 
       {/* Filters + Search */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         {/* Type pills */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {['ALL', ...Object.keys(TYPE_META)].map((t) => {
@@ -528,7 +528,7 @@ export function FarmInputsView({ farmerId, onNavigate }) {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+        <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
           {filtered.map((input) => (
             <InputCard
               key={input.id}

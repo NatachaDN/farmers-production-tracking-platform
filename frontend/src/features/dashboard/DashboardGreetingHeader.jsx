@@ -8,7 +8,7 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
     : (user?.emailOrPhone ? user.emailOrPhone.split('@')[0] : 'Farmer');
 
   return (
-    <div style={{
+    <div className="acrea-responsive-toolbar" style={{
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center'

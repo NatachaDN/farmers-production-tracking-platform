@@ -236,7 +236,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
       )}
 
       {/* Control Bar: Tabs & Action Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {/* Navigation Filter Tabs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {['All', 'Active', 'Completed'].map((tab) => {
@@ -356,7 +356,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
       </div>
 
       {/* Summary Metrics Row (3 Columns) */}
-      <div style={{
+      <div className="acrea-responsive-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '20px'
@@ -455,7 +455,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
           </button>
         </div>
       ) : (
-        <div style={{
+        <div className="acrea-responsive-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '20px'

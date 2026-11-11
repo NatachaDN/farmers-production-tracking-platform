@@ -148,7 +148,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
       </div>
 
       {/* Main Grid: Stepper Sidebar (Left) + Form Canvas (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '28px' }}>
+      <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '28px' }}>
         {/* Left Side Stepper */}
         <div style={{
           backgroundColor: '#FFFFFF',
@@ -252,7 +252,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
               </h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               {/* Farm Name */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -425,7 +425,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
 
               {/* Description */}
               <div style={{ gridColumn: 'span 2' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
                     Description
                   </label>
@@ -481,7 +481,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
               </h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
+            <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
               {/* Country */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -559,7 +559,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
                 Upload farm map (optional)
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: '20px' }}>
+              <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: '20px' }}>
                 {/* Drag and Drop Zone */}
                 <div style={{
                   border: '2px dashed var(--color-card-border)',
@@ -654,7 +654,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
               </h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
+            <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
               {/* Soil Type */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -736,7 +736,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
 
             {/* Additional Notes */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
                   Additional notes (optional)
                 </label>

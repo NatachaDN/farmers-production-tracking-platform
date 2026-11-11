@@ -13,7 +13,9 @@ export function TopBar({
   onNotificationClick,
   onLogout,
   onUserUpdate,
-  onEditProfile
+  onEditProfile,
+  onOpenNavigation,
+  navigationOpen = false
 }) {
   // Default subtitle: today's real date, followed by the farmer's farm name when known.
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -43,7 +45,7 @@ export function TopBar({
   };
 
   return (
-    <header style={{
+    <header className="acrea-topbar" style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -51,7 +53,8 @@ export function TopBar({
       backgroundColor: 'transparent'
     }}>
       {/* Title & Date Metadata */}
-      <div>
+      <button type="button" className="navigation-toggle" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="mobile-navigation" onClick={onOpenNavigation}>☰</button>
+      <div className="topbar-heading">
         <h1 style={{
           fontSize: '1.75rem',
           fontWeight: 700,
@@ -73,7 +76,7 @@ export function TopBar({
       </div>
 
       {/* Right Controls: Search, Notification, Profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="topbar-controls" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {/* Hidden file input for avatar upload */}
         <input
           ref={fileInputRef}
@@ -84,7 +87,7 @@ export function TopBar({
         />
 
         {/* Global Search */}
-        <div style={{
+        <div className="topbar-search" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
@@ -158,6 +161,8 @@ export function TopBar({
         <div style={{ position: 'relative' }}>
           <div
             id="profile-dropdown-trigger"
+            role="button" tabIndex={0} aria-label="Account menu" aria-expanded={dropdownOpen}
+            onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setDropdownOpen(!dropdownOpen); } if (event.key === 'Escape') setDropdownOpen(false); }}
             onClick={() => setDropdownOpen(!dropdownOpen)}
             style={{
               display: 'flex',
@@ -197,7 +202,7 @@ export function TopBar({
               )}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <div className="topbar-user-name" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                 {userName}
               </span>

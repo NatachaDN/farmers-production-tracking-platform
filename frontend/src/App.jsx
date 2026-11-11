@@ -101,6 +101,7 @@ export function App() {
   };
 
   const routeHeaders = {
+    'farms-create': { title: 'Create farm', subtitle: 'Register your land and farm details' },
     'farm-details': { title: 'Farm details', subtitle: 'Saved farm information and production records' },
     'admin-overview': { title: 'Platform overview', subtitle: `${todayLabel()} · Every farmer, one view` },
     'admin-farmers': { title: 'Farmers', subtitle: 'Accounts, farms and production by farmer' },

@@ -195,7 +195,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
       }}>
 
         {/* ─── Modal Header ─── */}
-        <div style={{
+        <div className="acrea-responsive-toolbar" style={{
           padding: '22px 28px',
           backgroundColor: '#164230', color: '#FFFFFF',
           borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
@@ -284,7 +284,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
             </h4>
 
             {/* Row 1: Input Selector + Quantity */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               {/* Input Selector */}
               <div>
                 <label style={labelStyle}>Select Input from Inventory</label>
@@ -361,7 +361,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
             )}
 
             {/* Row 2: Usage Date + Notes */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <label style={labelStyle}>Application Date</label>
                 <input
@@ -423,7 +423,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
           {/* ━━━━━━━━ COST SUMMARY STRIP ━━━━━━━━ */}
           {costSummary?.costVerified === false && <p>Confirm historical input costs below to calculate this cycle’s total expenditure.</p>}
           {costSummary && costSummary.costVerified !== false && costSummary.totalInputCost > 0 && (
-            <div style={{
+            <div className="acrea-responsive-grid" style={{
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: '14px'
             }}>
@@ -491,7 +491,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
                 overflow: 'hidden'
               }}>
                 {/* Table Header */}
-                <div style={{
+                <div className="acrea-responsive-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: '1.8fr 0.9fr 0.9fr 1fr 0.9fr 44px',
                   gap: '0',

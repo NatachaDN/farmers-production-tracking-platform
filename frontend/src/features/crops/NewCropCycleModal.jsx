@@ -218,7 +218,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
         border: '1px solid var(--color-card-border)'
       }}>
         {/* Header */}
-        <div style={{
+        <div className="acrea-responsive-toolbar" style={{
           padding: '20px 24px',
           borderBottom: '1px solid var(--color-border-subtle)',
           display: 'flex',
@@ -364,7 +364,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
 
           {/* Crop Selector Dropdown */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label htmlFor="crop-selection-dropdown" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>
                 Select Crop *
               </label>
@@ -458,7 +458,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
           </div>
 
           {/* Planting Date & Planned Harvest Date */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
                 Planting Date *
@@ -504,7 +504,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
               Expected Target Production (Stored for Harvest Comparison)
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+            <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
               <input
                 type="number"
                 step="0.1"
@@ -545,7 +545,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
           </div>
 
           {/* Acreage & Optional Custom Cycle Name */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
                 Area (ha)
