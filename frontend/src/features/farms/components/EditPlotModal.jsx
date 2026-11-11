@@ -105,7 +105,7 @@ export function EditPlotModal({ farmerId, isOpen, onClose, plot, farms = [], onP
         }}
       >
         {/* Modal Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary, #19201C)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IconPencil size={20} color="var(--color-brand-primary, #164230)" />
@@ -179,7 +179,7 @@ export function EditPlotModal({ farmerId, isOpen, onClose, plot, farms = [], onP
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
                 Cultivated Area (ha) <span style={{ color: '#DC2626' }}>*</span>
@@ -253,7 +253,7 @@ export function EditPlotModal({ farmerId, isOpen, onClose, plot, farms = [], onP
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: farms.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: farms.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
                 Growth Stage

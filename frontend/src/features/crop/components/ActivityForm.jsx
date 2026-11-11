@@ -14,7 +14,7 @@ const ACTIVITY_TYPES = [
   { value: 'WEEDING', label: 'Weeding', icon: IconWheat, color: '#D6A23C' },
 ];
 
-export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCancel }) {
+export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCancel, plantingDate }) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
@@ -53,6 +53,8 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
       errs.activityDate = 'Please select an intervention date.';
     } else if (formData.activityDate > todayStr) {
       errs.activityDate = 'Activity date cannot be in the future.';
+    } else if (plantingDate && formData.activityDate < plantingDate) {
+      errs.activityDate = 'Activity date cannot be before planting.';
     }
     if (formData.notes && formData.notes.length > 1000) {
       errs.notes = 'Notes must not exceed 1000 characters.';
@@ -138,6 +140,7 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="activityDate"
           className={`form-input ${errors.activityDate ? 'input-error' : ''}`}
           max={todayStr}
+          min={plantingDate || undefined}
           value={formData.activityDate}
           onChange={handleChange}
         />

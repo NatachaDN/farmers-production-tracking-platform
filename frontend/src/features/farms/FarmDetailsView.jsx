@@ -122,7 +122,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Back Link & Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <button
             onClick={() => onNavigate && onNavigate('farms')}
@@ -179,7 +179,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
       </div>
 
       {/* Meta Info Banner Card */}
-      <div style={{
+      <div className="acrea-responsive-grid" style={{
         backgroundColor: '#FFFFFF',
         border: '1px solid var(--color-card-border)',
         borderRadius: 'var(--radius-xl)',
@@ -206,7 +206,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
         </div>
 
         {/* Right Meta Info List */}
-        <div style={{
+        <div className="acrea-responsive-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '20px'
@@ -259,7 +259,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div style={{
+      <div className="acrea-responsive-toolbar" style={{
         display: 'flex',
         gap: '8px',
         borderBottom: '1px solid var(--color-card-border)',
@@ -343,7 +343,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
                     Farm Type

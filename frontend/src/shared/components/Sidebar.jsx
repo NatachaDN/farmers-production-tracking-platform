@@ -73,6 +73,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
 
             return (
               <button
+                type="button" aria-current={isActive ? 'page' : undefined}
                 key={item.id}
                 onClick={() => onNavigate && onNavigate(item.id)}
                 style={{

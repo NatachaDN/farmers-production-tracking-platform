@@ -204,7 +204,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
   return (
     <div className="fade-in" style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header Info */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
             Farm & Profile Settings
@@ -299,7 +299,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
       )}
 
       {/* Hero Profile Overview Card */}
-      <div style={{
+      <div className="acrea-responsive-toolbar" style={{
         backgroundColor: '#FFFFFF',
         borderRadius: 'var(--radius-xl, 16px)',
         border: '1px solid var(--color-card-border, #ECE7DC)',
@@ -415,7 +415,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
             <span>Farm Holding Information</span>
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
             {/* Farm Name */}
             <div>
               <label htmlFor="profile-farm-name" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -481,7 +481,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
                 Farming Type
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 {[
                   { id: 'CROP', label: 'Crop Production', desc: 'Grain, horticulture & field crops', icon: IconCrop },
                   { id: 'LIVESTOCK', label: 'Livestock / Animals', desc: 'Cattle, poultry, small stock', icon: IconFarms },
@@ -508,7 +508,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                         gap: '6px'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="acrea-responsive-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Icon size={18} color={isSelected ? 'var(--color-brand-primary, #164230)' : 'var(--color-text-secondary)'} />
                           <span style={{ fontSize: '0.875rem', fontWeight: 600, color: isSelected ? 'var(--color-brand-primary, #164230)' : 'var(--color-text-primary)' }}>
@@ -547,7 +547,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
             <span>Crops Grown & Total Land Area</span>
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
             {/* Total Area */}
             <div>
               <label htmlFor="profile-total-area" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -674,7 +674,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
             <span>Farmer Identity & Profile Photo</span>
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
             {/* Full Name */}
             <div>
               <label htmlFor="profile-full-name" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
