@@ -125,7 +125,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
                 <input
                   id="reg-fullname"
                   type="text"
-                  placeholder="Joyce Muthoni"
+                  placeholder="e.g. Jean-Pierre Kamga"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   autoComplete="name"
@@ -165,7 +165,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
                 <input
                   id="reg-location"
                   type="text"
-                  placeholder="County, district or nearest town"
+                  placeholder="e.g. Bandjoun, Bafoussam, Dschang, Yaoundé"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   style={{ border: 'none', outline: 'none', fontSize: '0.875rem', width: '100%', color: 'var(--color-text-primary)', backgroundColor: 'transparent' }}

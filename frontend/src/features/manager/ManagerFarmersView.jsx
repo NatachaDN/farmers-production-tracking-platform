@@ -8,6 +8,7 @@ import {
   IconClose,
   IconRefresh
 } from '../../shared/components/Icons.jsx';
+import { Skeleton } from '../../shared/components/Skeleton.jsx';
 import './manager.css';
 
 export function ManagerFarmersView() {
@@ -190,7 +191,7 @@ export function ManagerFarmersView() {
             <input
               type="text"
               className="mgr-input"
-              placeholder="Search by name, email, phone, farm..."
+              placeholder="Rechercher nom (Kamga, Mbida), localité (Bandjoun, Bassa)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -263,11 +264,24 @@ export function ManagerFarmersView() {
             </thead>
             <tbody>
               {loading && farmers.length === 0 ? (
-                <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
-                    Loading farmers...
-                  </td>
-                </tr>
+                [1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td>
+                      <Skeleton width="130px" height="16px" style={{ marginBottom: '6px' }} />
+                      <Skeleton width="90px" height="12px" />
+                    </td>
+                    <td>
+                      <Skeleton width="110px" height="14px" style={{ marginBottom: '4px' }} />
+                      <Skeleton width="80px" height="12px" />
+                    </td>
+                    <td><Skeleton width="100px" height="14px" /></td>
+                    <td className="num"><Skeleton width="30px" height="16px" style={{ marginLeft: 'auto' }} /></td>
+                    <td className="num"><Skeleton width="30px" height="16px" style={{ marginLeft: 'auto' }} /></td>
+                    <td className="num"><Skeleton width="60px" height="16px" style={{ marginLeft: 'auto' }} /></td>
+                    <td><Skeleton width="70px" height="22px" borderRadius="9999px" /></td>
+                    <td><Skeleton width="80px" height="28px" borderRadius="6px" /></td>
+                  </tr>
+                ))
               ) : farmers.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', padding: '48px', color: 'var(--color-text-muted)' }}>
@@ -401,7 +415,7 @@ export function ManagerFarmersView() {
               <textarea
                 className="mgr-input"
                 style={{ width: '100%', minHeight: '90px', boxSizing: 'border-box' }}
-                placeholder="Reason for rejection (e.g., Unverified farm boundaries or invalid documentation)"
+                placeholder="Motif du rejet (e.g., Limites de l'exploitation de Bandjoun non certifiées ou pièces incomplètes)"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
               />

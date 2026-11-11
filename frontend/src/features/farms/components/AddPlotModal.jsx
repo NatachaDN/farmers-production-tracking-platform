@@ -153,7 +153,7 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
             </label>
             <input
               type="text"
-              placeholder="e.g., Plot E — Wheat or North Field"
+              placeholder="e.g., Parcelle A — Tomates de Foumbot ou Champ de Plantains"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{
@@ -201,7 +201,7 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
               </label>
               <input
                 type="text"
-                placeholder="e.g., North Sector"
+                placeholder="e.g., Versant Bandjoun, Secteur Bafoussam"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 style={{

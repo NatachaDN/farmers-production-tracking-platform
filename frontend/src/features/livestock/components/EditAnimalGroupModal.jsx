@@ -259,6 +259,7 @@ export function EditAnimalGroupModal({ isOpen, onClose, group, onUpdateGroup }) 
                 type="text"
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
+                placeholder="e.g. Cobb 500, Goliath, Goudali, Porc blanc de l'Ouest"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -328,6 +329,7 @@ export function EditAnimalGroupModal({ isOpen, onClose, group, onUpdateGroup }) 
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Poulailler Bandjoun N°1, Enclos Bassa"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -348,7 +350,7 @@ export function EditAnimalGroupModal({ isOpen, onClose, group, onUpdateGroup }) 
                 type="text"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                placeholder="e.g. Milk, Meat, Eggs, Breeding"
+                placeholder="e.g. Poulets de chair, Œufs de table, Vente locale à Bafoussam"
                 style={{
                   width: '100%',
                   padding: '10px 14px',

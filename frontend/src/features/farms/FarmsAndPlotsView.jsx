@@ -218,7 +218,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
               {farms.length} farm{farms.length === 1 ? '' : 's'} · {totalArea} ha in registered plots
             </p>
           </div>
-          <button type="button" style={primaryButtonStyle} onClick={() => setIsNewFarmModalOpen(true)}>
+          <button type="button" style={primaryButtonStyle} onClick={() => onNavigate ? onNavigate('create-farm') : setIsNewFarmModalOpen(true)}>
             <IconPlus size={16} color="#FFFFFF" />
             New Farm
           </button>
@@ -241,7 +241,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '12px' }}>
               You have no farm yet. Create your first farm to start organizing plots.
             </p>
-            <button type="button" style={primaryButtonStyle} onClick={() => setIsNewFarmModalOpen(true)}>
+            <button type="button" style={primaryButtonStyle} onClick={() => onNavigate ? onNavigate('create-farm') : setIsNewFarmModalOpen(true)}>
               <IconPlus size={16} color="#FFFFFF" />
               Create your first farm
             </button>

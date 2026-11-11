@@ -133,7 +133,7 @@ export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId = 1 }) {
             </label>
             <input
               type="text"
-              placeholder="e.g. Green Acres Farm, Highland Valley"
+              placeholder="e.g. Ferme Agro-Pastorale de Bandjoun, Plantation Bassa de Foumbot"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -154,7 +154,7 @@ export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId = 1 }) {
             </label>
             <input
               type="text"
-              placeholder="e.g. Nakuru County, Kenya · Sub-county / District"
+              placeholder="e.g. Bafoussam, Ouest Cameroun · Koung-Khi / Bandjoun"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               style={{
@@ -174,7 +174,7 @@ export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId = 1 }) {
             </label>
             <input
               type="text"
-              placeholder="e.g. Main crop farm, Commercial greenhouse"
+              placeholder="e.g. Plantation vivrière de bananiers-plantains et maïs"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               style={{

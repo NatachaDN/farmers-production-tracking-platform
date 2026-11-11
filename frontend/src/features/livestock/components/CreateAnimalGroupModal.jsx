@@ -222,7 +222,7 @@ export function CreateAnimalGroupModal({ isOpen, onClose, onCreateGroup }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Dairy Herd A, Layer Flock #1, Boer Goats"
+              placeholder="e.g. Poulets Goliath de Bandjoun, Pondeuses Bafoussam, Porcs Bassa, Chèvres Beti"
               required
               style={{
                 width: '100%',
@@ -272,7 +272,7 @@ export function CreateAnimalGroupModal({ isOpen, onClose, onCreateGroup }) {
                 type="text"
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
-                placeholder="e.g. Holstein, Kuroiler, Dorper"
+                placeholder="e.g. Cobb 500, Goliath, Goudali, Porc blanc de l'Ouest, Djallonké"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -347,7 +347,7 @@ export function CreateAnimalGroupModal({ isOpen, onClose, onCreateGroup }) {
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Barn 2, Coop A, East Pasture"
+                placeholder="e.g. Poulailler Bandjoun N°1, Enclos Bassa, Bergerie de l'Ouest"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -446,7 +446,7 @@ export function CreateAnimalGroupModal({ isOpen, onClose, onCreateGroup }) {
               rows="2"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Health status, sourcing info, batch markings..."
+              placeholder="e.g. Vaccinés contre la peste aviaire/Gumboro, provende locale de Bafoussam, lot acheté à Dschang..."
               style={{
                 width: '100%',
                 padding: '10px 14px',

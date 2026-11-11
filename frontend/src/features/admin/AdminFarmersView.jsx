@@ -42,7 +42,7 @@ export function AdminFarmersView() {
     <div className="adm-stack fade-in">
       <div className="adm-toolbar">
         <div className="adm-toolbar-group">
-          <input className="adm-input" type="search" placeholder="Search name, email or location" aria-label="Search farmers"
+          <input className="adm-input" type="search" placeholder="Rechercher nom (Kamga, Mbida), localité (Bafoussam, Bassa, Beti)..." aria-label="Search farmers"
             value={query} onChange={(e) => setQuery(e.target.value)} />
           <select className="adm-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort farmers">
             {Object.entries(SORTS).map(([id, s]) => <option key={id} value={id}>{s.label}</option>)}

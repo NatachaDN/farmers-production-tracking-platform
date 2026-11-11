@@ -19,7 +19,7 @@ const PRESET_AVATARS = [
   { id: 'av6', label: 'Agricultural Lead', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&q=80' }
 ];
 
-const SUGGESTED_CROPS = ['Maize', 'Tomatoes', 'Beans', 'Cassava', 'Potatoes', 'Onions', 'Coffee', 'Sorghum'];
+const SUGGESTED_CROPS = ['Banane Plantain', 'Maïs Jaune', 'Tomate de Foumbot', 'Manioc', 'Haricot', 'Macabo', 'Café Arabica', 'Poivre de Penja'];
 
 export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
   const [formData, setFormData] = useState({
@@ -427,7 +427,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                 type="text"
                 value={formData.farmName}
                 onChange={handleChange}
-                placeholder="e.g. Green Acres Farm"
+                placeholder="e.g. Ferme Agro-Pastorale de Bandjoun, Plantation Bassa de Foumbot"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -458,7 +458,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                   type="text"
                   value={formData.location}
                   onChange={handleChange}
-                  placeholder="e.g. Nakuru County, Kenya"
+                  placeholder="e.g. Bandjoun, Ouest Cameroun"
                   style={{
                     width: '100%',
                     padding: '10px 14px 10px 36px',
@@ -607,7 +607,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                 type="text"
                 value={formData.cropsGrown}
                 onChange={handleChange}
-                placeholder="e.g. Maize, Tomatoes, Beans, Cassava"
+                placeholder="e.g. Banane Plantain, Tomates de Foumbot, Maïs Jaune, Manioc"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -686,7 +686,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                 type="text"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="e.g. Joyce Muthoni"
+                placeholder="e.g. Emmanuel Tsafack, Jean-Pierre Kamga"
                 style={{
                   width: '100%',
                   padding: '10px 14px',

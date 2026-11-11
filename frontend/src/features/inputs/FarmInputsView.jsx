@@ -14,6 +14,7 @@ import {
   IconWarning,
   IconInputs
 } from '../../shared/components/Icons';
+import { Skeleton } from '../../shared/components/Skeleton';
 
 /* ─── Type metadata ─────────────────────────────────────────────── */
 const TYPE_META = {
@@ -144,14 +145,18 @@ function InputCard({ input, onDelete }) {
 }
 
 /* ─── Stat mini-card ─────────────────────────────────────────────── */
-function StatChip({ label, value, accent }) {
+function StatChip({ label, value, accent, loading }) {
   return (
     <div style={{
       backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC',
       borderRadius: '14px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '4px'
     }}>
       <div style={{ fontSize: '0.75rem', color: '#788680' }}>{label}</div>
-      <div style={{ fontSize: '1.375rem', fontWeight: 700, color: accent || '#19201C' }}>{value}</div>
+      {loading ? (
+        <Skeleton width="60%" height="28px" borderRadius="6px" />
+      ) : (
+        <div style={{ fontSize: '1.375rem', fontWeight: 700, color: accent || '#19201C' }}>{value}</div>
+      )}
     </div>
   );
 }
@@ -159,6 +164,7 @@ function StatChip({ label, value, accent }) {
 /* ─── Main view ─────────────────────────────────────────────────── */
 export function FarmInputsView({ farmerId, onNavigate }) {
   const [inputs, setInputs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -177,12 +183,15 @@ export function FarmInputsView({ farmerId, onNavigate }) {
   useEffect(() => {
     async function load() {
       if (!farmerId) return;
+      setLoading(true);
       try {
         const data = await inputService.getInputs(farmerId);
         setInputs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load inputs:', err);
         setInputs([]);
+      } finally {
+        setLoading(false);
       }
     }
     load();
@@ -419,13 +428,14 @@ export function FarmInputsView({ farmerId, onNavigate }) {
 
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatChip label="Total inputs" value={totalItems} />
-          <StatChip label="Seeds" value={typeCount('SEEDS')} accent="#2A6740" />
-          <StatChip label="Fertilizers" value={typeCount('FERTILIZER')} accent="#92400E" />
+          <StatChip label="Total inputs" value={totalItems} loading={loading} />
+          <StatChip label="Seeds" value={typeCount('SEEDS')} accent="#2A6740" loading={loading} />
+          <StatChip label="Fertilizers" value={typeCount('FERTILIZER')} accent="#92400E" loading={loading} />
           <StatChip
             label="Total cost"
             value={`${totalCost.toLocaleString('fr-CM')} XAF`}
             accent="#3E7B52"
+            loading={loading}
           />
         </div>
       </div>
@@ -490,7 +500,45 @@ export function FarmInputsView({ farmerId, onNavigate }) {
       </div>
 
       {/* Input cards grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #ECE7DC',
+                borderRadius: '16px',
+                padding: '20px 22px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Skeleton width="42px" height="42px" borderRadius="12px" />
+                  <div>
+                    <Skeleton width="120px" height="18px" style={{ marginBottom: '6px' }} />
+                    <Skeleton width="90px" height="12px" />
+                  </div>
+                </div>
+                <Skeleton width="75px" height="24px" borderRadius="9999px" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '10px', borderTop: '1px solid #F4EFE6' }}>
+                <div>
+                  <Skeleton width="60px" height="12px" style={{ marginBottom: '4px' }} />
+                  <Skeleton width="80px" height="18px" />
+                </div>
+                <div>
+                  <Skeleton width="60px" height="12px" style={{ marginBottom: '4px' }} />
+                  <Skeleton width="90px" height="18px" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div style={{
           backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC',
           borderRadius: '16px', padding: '60px 40px', textAlign: 'center'

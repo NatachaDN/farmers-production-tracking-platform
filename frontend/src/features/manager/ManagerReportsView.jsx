@@ -7,6 +7,7 @@ import {
   IconUsers,
   IconRefresh
 } from '../../shared/components/Icons.jsx';
+import { Skeleton } from '../../shared/components/Skeleton.jsx';
 import './manager.css';
 
 export function ManagerReportsView() {
@@ -125,7 +126,7 @@ export function ManagerReportsView() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary, #19201C)', margin: 0 }}>
-            Consolidated Multi-Farmer Production Reports (US-35)
+            Consolidated Multi-Farmer Production Reports
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted, #788680)', margin: '4px 0 0' }}>
             Generate and export aggregated production statements across selected farmers and cooperative regions.
@@ -145,7 +146,7 @@ export function ManagerReportsView() {
                 onClick={handleExportCsv}
                 disabled={exporting}
               >
-                {exporting ? 'Exporting...' : 'Export CSV (US-35)'}
+                {exporting ? 'Exporting...' : 'Export CSV'}
               </button>
             </>
           )}
@@ -235,7 +236,22 @@ export function ManagerReportsView() {
             </div>
 
             {loadingFarmers ? (
-              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>Loading farmers list...</div>
+              <div style={{
+                maxHeight: '120px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '8px',
+                padding: '8px',
+                background: 'var(--color-surface-subtle, #F4EFE6)',
+                borderRadius: '8px',
+              }}>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 6px' }}>
+                    <Skeleton width="16px" height="16px" borderRadius="4px" />
+                    <Skeleton width="110px" height="14px" />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div style={{
                 maxHeight: '120px',

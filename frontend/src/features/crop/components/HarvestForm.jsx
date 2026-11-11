@@ -169,7 +169,7 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
           name="notes"
           rows={3}
           className={`form-textarea ${errors.notes ? 'input-error' : ''}`}
-          placeholder="e.g. Good grain quality, minimal pest damage, stored in silo B..."
+          placeholder="e.g. Excellente récolte, 45 sacs de 50kg ensachés et stockés au magasin de Bandjoun..."
           value={formData.notes}
           onChange={handleChange}
         />

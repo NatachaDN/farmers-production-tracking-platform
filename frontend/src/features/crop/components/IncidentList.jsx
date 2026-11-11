@@ -13,6 +13,7 @@ import {
   IconPencil,
   IconTrash,
 } from '../../../shared/components/Icons';
+import { Skeleton } from '../../../shared/components/Skeleton';
 
 const TYPE_CONFIG = {
   DISEASE: {
@@ -90,8 +91,23 @@ export function IncidentList({ incidents = [], isLoading, onEdit, onDelete }) {
 
   if (isLoading) {
     return (
-      <div className="loading-state">
-        <span>Loading incidents…</span>
+      <div className="incident-timeline">
+        {[1, 2, 3].map((i) => (
+          <div className="incident-card" key={i} style={{ opacity: 0.85 }}>
+            <div className="incident-dot" style={{ backgroundColor: '#F4EFE6' }}>
+              <Skeleton width="18px" height="18px" borderRadius="50%" />
+            </div>
+            <div className="incident-body" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                <Skeleton width="90px" height="22px" borderRadius="9999px" />
+                <Skeleton width="100px" height="22px" borderRadius="6px" />
+                <Skeleton width="130px" height="22px" borderRadius="9999px" />
+              </div>
+              <Skeleton width="70%" height="16px" style={{ marginBottom: '8px' }} />
+              <Skeleton width="45%" height="14px" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

@@ -13,6 +13,7 @@ import {
   IconClose,
   IconRefresh
 } from '../../shared/components/Icons.jsx';
+import { Skeleton } from '../../shared/components/Skeleton.jsx';
 import './manager.css';
 
 export function ManagerDashboardView({ onNavigate }) {
@@ -73,8 +74,41 @@ export function ManagerDashboardView({ onNavigate }) {
 
   if (loading && !summary) {
     return (
-      <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-        Loading cooperative and manager production indicators...
+      <div className="mgr-stack">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <Skeleton width="280px" height="32px" style={{ marginBottom: '8px' }} />
+            <Skeleton width="420px" height="16px" />
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Skeleton width="100px" height="38px" borderRadius="8px" />
+            <Skeleton width="160px" height="38px" borderRadius="8px" />
+          </div>
+        </div>
+
+        {/* Skeleton KPI Grid */}
+        <div className="mgr-grid cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="mgr-card" style={{ padding: '20px 22px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <Skeleton width="110px" height="14px" />
+                <Skeleton width="30px" height="30px" borderRadius="8px" />
+              </div>
+              <Skeleton width="90px" height="36px" style={{ marginBottom: '10px' }} />
+              <Skeleton width="140px" height="14px" />
+            </div>
+          ))}
+        </div>
+
+        {/* Skeleton Detail Panels */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+          {[1, 2].map((i) => (
+            <div key={i} className="mgr-card" style={{ padding: '24px' }}>
+              <Skeleton width="160px" height="22px" style={{ marginBottom: '16px' }} />
+              <Skeleton width="100%" height="180px" borderRadius="10px" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -224,7 +258,7 @@ export function ManagerDashboardView({ onNavigate }) {
         <div className="mgr-card">
           <div className="mgr-card-head">
             <div>
-              <div className="mgr-card-title">Pending Farmer Registrations (US-34)</div>
+              <div className="mgr-card-title">Pending Farmer Registrations</div>
               <div className="mgr-card-sub">
                 Review and approve new member sign-ups before granting platform access.
               </div>

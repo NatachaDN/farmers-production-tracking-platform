@@ -222,7 +222,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
               required
               value={formData.farmName}
               onChange={handleChange}
-              placeholder="e.g. Green Acres Farm"
+              placeholder="e.g. Ferme Agro-Pastorale de Bandjoun"
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -245,7 +245,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
               type="text"
               value={formData.cropsGrown}
               onChange={handleChange}
-              placeholder="e.g. Maize, Tomatoes, Beans"
+              placeholder="e.g. Banane Plantain, Tomates de Foumbot, Maïs Jaune"
               style={{
                 width: '100%',
                 padding: '10px 14px',

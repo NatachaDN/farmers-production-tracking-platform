@@ -260,7 +260,7 @@ export function AddInputModal({ isOpen, onClose, onAddInput }) {
               id="input-name"
               value={form.name}
               onChange={set('name')}
-              placeholder="e.g. Hybrid Maize Seed 614D"
+              placeholder="e.g. Semences Maïs CMS 8704 / Fiente de poules de Bandjoun"
             />
           </FieldGroup>
 

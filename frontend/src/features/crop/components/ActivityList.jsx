@@ -12,6 +12,7 @@ import {
   IconTrash2,
   IconClose
 } from '../../../shared/components/Icons';
+import { Skeleton } from '../../../shared/components/Skeleton';
 
 const TYPE_CONFIG = {
   WATERING: {
@@ -105,9 +106,29 @@ export function ActivityList({
 
       {/* Loading state */}
       {isLoading ? (
-        <div className="list-empty-state">
-          <div className="loading-spinner"></div>
-          <p>Loading cycle history...</p>
+        <div className="table-responsive">
+          <table className="activities-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Notes / Observations</th>
+                <th>Recorded At</th>
+                <th className="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4].map((i) => (
+                <tr key={i} className="activity-row">
+                  <td className="cell-date"><Skeleton width="80px" height="20px" borderRadius="6px" /></td>
+                  <td className="cell-type"><Skeleton width="110px" height="24px" borderRadius="9999px" /></td>
+                  <td className="cell-notes"><Skeleton width="85%" height="16px" /></td>
+                  <td className="cell-timestamp"><Skeleton width="90px" height="14px" /></td>
+                  <td className="cell-actions"><Skeleton width="60px" height="28px" borderRadius="6px" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : filteredActivities.length === 0 ? (
         /* Empty State */

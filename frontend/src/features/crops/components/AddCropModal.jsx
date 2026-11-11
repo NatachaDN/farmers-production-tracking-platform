@@ -202,7 +202,7 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId = 1 }) {
               type="text"
               required
               autoFocus
-              placeholder="e.g. Maize, Tomatoes, Coffee, Sorghum"
+              placeholder="e.g. Banane Plantain, Tomates de Foumbot, Maïs Jaune, Manioc"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{
@@ -238,7 +238,7 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId = 1 }) {
             </div>
             <input
               type="text"
-              placeholder="e.g. Hybrid 614, Anna F1, Rosecoco, Shangi"
+              placeholder="e.g. Maïs CMS 8704, Tomate Cobra, Plantain Batard, Manioc 8034"
               value={variety}
               onChange={(e) => setVariety(e.target.value)}
               style={{

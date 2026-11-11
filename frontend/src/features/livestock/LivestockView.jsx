@@ -15,6 +15,7 @@ import {
   IconWarning,
   IconRefresh
 } from '../../shared/components/Icons';
+import { Skeleton } from '../../shared/components/Skeleton';
 
 export function LivestockView({ user }) {
   const [groups, setGroups] = useState([]);
@@ -285,7 +286,7 @@ export function LivestockView({ user }) {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search groups by name, breed, location..."
+            placeholder="Rechercher cheptel (Bandjoun, Bafoussam, Bassa, Goliath)..."
             style={{
               border: 'none',
               background: 'none',
@@ -412,9 +413,35 @@ export function LivestockView({ user }) {
 
       {/* Loading Skeleton */}
       {loading && groups.length === 0 && (
-        <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-          <div style={{ display: 'inline-block', width: '32px', height: '32px', border: '3px solid #ECE7DC', borderTopColor: '#3E7B52', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-          <p style={{ marginTop: '12px', fontSize: '0.875rem' }}>Loading animal groups...</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid var(--color-card-border)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Skeleton width="140px" height="20px" />
+                <Skeleton width="70px" height="24px" borderRadius="9999px" />
+              </div>
+              <Skeleton width="60%" height="14px" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '4px' }}>
+                <Skeleton width="100%" height="48px" borderRadius="8px" />
+                <Skeleton width="100%" height="48px" borderRadius="8px" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                <Skeleton width="90px" height="14px" />
+                <Skeleton width="80px" height="32px" borderRadius="8px" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

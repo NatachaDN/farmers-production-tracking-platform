@@ -349,7 +349,7 @@ export function CycleInputUsageForm({
             type="text"
             maxLength="500"
             className="form-input"
-            placeholder="e.g. Applied at root zone during morning irrigation"
+            placeholder="e.g. Épandage au pied des plants de maïs à Bandjoun le matin"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={!isCycleActive || isSubmitting}

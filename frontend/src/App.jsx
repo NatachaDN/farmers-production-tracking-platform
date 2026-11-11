@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
+import { CreateFarmPage } from './features/farms/CreateFarmPage';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
@@ -128,6 +129,10 @@ export function App() {
       title: 'Farms & Plots',
       subtitle: 'Organize land, plots and active production cycles'
     },
+    'create-farm': {
+      title: 'New Farm Registration',
+      subtitle: 'Configure your farm structure, acreage, and location step-by-step'
+    },
     crops: {
       title: 'Crop Production Cycles',
       subtitle: 'Plan and follow every crop from planting to harvest'
@@ -241,6 +246,15 @@ export function App() {
             <FarmsAndPlotsView
               farmerId={currentUser?.id}
               onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
+          {currentRoute === 'create-farm' && (
+            <CreateFarmPage
+              onNavigate={(r) => setCurrentRoute(r)}
+              initialFarmer={currentUser}
+              onFarmCreated={(newFarm) => {
+                setCurrentRoute('farms');
+              }}
             />
           )}
           {currentRoute === 'crops' && (

@@ -107,7 +107,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeRoute === item.id;
+            const isActive = activeRoute === item.id || (item.id === 'farms' && activeRoute === 'create-farm');
 
             return (
               <button

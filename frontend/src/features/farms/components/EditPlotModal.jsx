@@ -162,7 +162,7 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Plot A — Maize"
+              placeholder="e.g. Parcelle 1 — Plantains de Bandjoun"
               required
               style={{
                 width: '100%',
@@ -244,7 +244,7 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. North Field, Section 1"
+              placeholder="e.g. Versant Bandjoun, Secteur Bafoussam"
               required
               style={{
                 width: '100%',

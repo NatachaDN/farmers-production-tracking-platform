@@ -159,7 +159,7 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="notes"
           rows={3}
           className={`form-textarea ${errors.notes ? 'input-error' : ''}`}
-          placeholder="e.g. Applied 20L bio-fertilizer per row, observed uniform moisture..."
+          placeholder="e.g. Épandage de fiente compostée sur les billons de maïs à Bandjoun, humidité satisfaisante..."
           value={formData.notes}
           onChange={handleChange}
         />

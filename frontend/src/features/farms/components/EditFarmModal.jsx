@@ -138,7 +138,7 @@ export function EditFarmModal({ isOpen, onClose, farm, onFarmUpdated, farmerId =
             </label>
             <input
               type="text"
-              placeholder="Farm Name"
+              placeholder="e.g. Ferme Agro-Pastorale de Bandjoun"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -159,7 +159,7 @@ export function EditFarmModal({ isOpen, onClose, farm, onFarmUpdated, farmerId =
             </label>
             <input
               type="text"
-              placeholder="e.g. Nakuru County, Kenya · Sub-county"
+              placeholder="e.g. Bafoussam, Ouest Cameroun · Koung-Khi"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               style={{
@@ -179,7 +179,7 @@ export function EditFarmModal({ isOpen, onClose, farm, onFarmUpdated, farmerId =
             </label>
             <input
               type="text"
-              placeholder="e.g. Main farm, Organic crop zone"
+              placeholder="e.g. Zone maraîchère de Foumbot, Bananeraie Bassa"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               style={{

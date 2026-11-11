@@ -13,6 +13,7 @@ import {
   IconWheat,
   IconPlus
 } from '../../shared/components/Icons';
+import { Skeleton } from '../../shared/components/Skeleton';
 
 export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 1 }) {
   const [plots, setPlots] = useState([]);
@@ -265,7 +266,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
               Select Plot *
             </label>
             {loadingPlots ? (
-              <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Loading plots...</div>
+              <Skeleton width="100%" height="42px" borderRadius="var(--radius-md)" />
             ) : plots.length === 0 ? (
               <div style={{
                 padding: '12px',
@@ -379,9 +380,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
             </div>
 
             {loadingCrops ? (
-              <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '10px 0' }}>
-                Loading your registered crops...
-              </div>
+              <Skeleton width="100%" height="42px" borderRadius="var(--radius-md)" />
             ) : (
               <select
                 id="crop-selection-dropdown"
@@ -421,7 +420,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId = 
               <div style={{ marginTop: '10px' }}>
                 <input
                   type="text"
-                  placeholder="Enter custom crop name (e.g. Sorghum, Carrots)"
+                  placeholder="Nom de la culture (e.g. Macabo, Piment de Bafia, Igname)"
                   value={customCropName}
                   onChange={(e) => setCustomCropName(e.target.value)}
                   required={selectedCrop === '__CUSTOM__'}

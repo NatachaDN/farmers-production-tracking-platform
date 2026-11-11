@@ -139,7 +139,7 @@ export function ManagerFarmerDetailModal({ detail, onClose, onUpdateStatus }) {
                   className="mgr-input"
                   style={{ width: '100%', minHeight: '100px', boxSizing: 'border-box' }}
                   required
-                  placeholder="e.g. Identity documents could not be verified; farm location out of cooperative boundary."
+                  placeholder="e.g. Documents d'identité non conformes; exploitation hors de la zone coopérative de l'Ouest/Bandjoun."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                 />

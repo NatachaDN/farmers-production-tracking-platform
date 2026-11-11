@@ -179,7 +179,7 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="description"
           rows={4}
           className={`form-textarea ${errors.description ? 'input-error' : ''}`}
-          placeholder="e.g. Early blight spotted on lower leaves of 30% of plants in row 3–7. Yellowing margins observed..."
+          placeholder="e.g. Attaque de chenilles légionnaires sur les jeunes plants de maïs à Foumbot, jaunissement des feuilles..."
           value={formData.description}
           onChange={handleChange}
         />
@@ -222,7 +222,7 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="actionTaken"
           rows={3}
           className={`form-textarea ${errors.actionTaken ? 'input-error' : ''}`}
-          placeholder="e.g. Applied copper-based fungicide across all affected rows at 8am..."
+          placeholder="e.g. Traitement au bio-pesticide homologué et pulvérisation de purin de neem à 7h du matin..."
           value={formData.actionTaken || ''}
           onChange={handleChange}
         />
