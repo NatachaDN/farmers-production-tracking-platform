@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IconPlus, IconCheck, IconClose, IconWarning } from '../../../shared/components/Icons';
 
-export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
+export function AddPlotModal({ isOpen, onClose, onAddPlot, farmId }) {
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [location, setLocation] = useState('');
@@ -43,7 +43,8 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot }) {
         area: numericArea,
         location: trimmedLocation,
         cropType,
-        stage
+        stage,
+        ...(farmId ? { farmId } : {})
       });
       // Reset form
       setName('');

@@ -3,6 +3,7 @@ import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CreateFarmPage } from './features/farms/CreateFarmPage';
+import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
@@ -48,6 +49,7 @@ export function App() {
   const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [selectedFarmId, setSelectedFarmId] = useState(null);
 
   useEffect(() => {
     if (currentRoute !== 'google-callback') return;
@@ -128,6 +130,10 @@ export function App() {
     farms: {
       title: 'Farms & Plots',
       subtitle: 'Organize land, plots and active production cycles'
+    },
+    'farm-details': {
+      title: 'Farm Overview & Fields',
+      subtitle: 'Field parcels, terrain profile, and operational notes'
     },
     'create-farm': {
       title: 'New Farm Registration',
@@ -245,7 +251,26 @@ export function App() {
           {currentRoute === 'farms' && (
             <FarmsAndPlotsView
               farmerId={currentUser?.id}
-              onNavigate={(r) => setCurrentRoute(r)}
+              onNavigate={(r, extraId) => {
+                if (extraId) setSelectedFarmId(extraId);
+                setCurrentRoute(r);
+              }}
+              onSelectFarm={(farmId) => {
+                setSelectedFarmId(farmId);
+                setCurrentRoute('farm-details');
+              }}
+            />
+          )}
+          {currentRoute === 'farm-details' && (
+            <FarmDetailsView
+              farmId={selectedFarmId}
+              farmerId={currentUser?.id}
+              user={currentUser}
+              onNavigate={(r, extraId) => {
+                if (extraId) setSelectedFarmId(extraId);
+                setCurrentRoute(r);
+              }}
+              onBack={() => setCurrentRoute('farms')}
             />
           )}
           {currentRoute === 'create-farm' && (

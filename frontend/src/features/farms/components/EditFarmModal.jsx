@@ -33,8 +33,16 @@ export function EditFarmModal({ isOpen, onClose, farm, onFarmUpdated, farmerId =
     try {
       const payload = {
         name: name.trim(),
-        location: location.trim() || undefined,
+        type: farm.type || 'CROP',
+        size: farm.size || 1.0,
+        sizeUnit: farm.sizeUnit || 'HECTARES',
+        status: farm.status || 'ACTIVE',
+        country: farm.country || 'Cameroon',
+        region: farm.region || (location ? location.split(',')?.[0]?.trim() : 'Ouest'),
+        district: farm.district || (location ? location.split(',')?.[1]?.trim() : 'Bandjoun'),
+        mapImageUrl: farm.mapImageUrl || undefined,
         description: description.trim() || undefined,
+        additionalNotes: farm.additionalNotes || undefined,
         isDefault
       };
       const updated = await farmService.updateFarm(farmerId, farm.id, payload);

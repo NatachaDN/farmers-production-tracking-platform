@@ -11,7 +11,8 @@ import {
   IconDroplets,
   IconLeaf,
   IconArrowLeft,
-  IconAlertCircle
+  IconAlertCircle,
+  IconCamera
 } from '../../shared/components/Icons';
 import './CreateFarmPage.css';
 
@@ -80,6 +81,7 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
     accessToWater: '',
     soilType: '',
     slope: '',
+    mapImageUrl: '',
 
     // Step 4: Notes (Optional)
     description: '',
@@ -87,6 +89,32 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localUrl = URL.createObjectURL(file);
+    updateField('mapImageUrl', localUrl);
+    setUploadingPhoto(true);
+
+    try {
+      const res = await farmService.uploadFarmPhoto(file);
+      if (res?.url) {
+        updateField('mapImageUrl', res.url);
+      }
+    } catch (uploadErr) {
+      console.warn('Backend image upload failed, falling back to data URL:', uploadErr);
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateField('mapImageUrl', reader.result);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   // ─── Field Updaters ──────────────────────────────────────────
   const updateField = (field, value) => {
@@ -192,6 +220,7 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
         soilType: formData.soilType || null,
         slope: formData.slope || null,
         accessToWater: formData.accessToWater || null,
+        mapImageUrl: formData.mapImageUrl?.trim() || null,
         additionalNotes: formData.additionalNotes?.trim() || null
       };
 
@@ -665,6 +694,122 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
                 ))}
               </div>
             </div>
+
+            {/* Farm Photo Upload (Optional) */}
+            <div className="form-field-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconCamera size={18} color="var(--color-brand-primary)" />
+                Farm Photo or Picture (Optional)
+              </label>
+              <p className="form-helper">
+                Take a picture of your farm entrance or fields, or pick a photo from your phone/computer. This picture will appear on your farm card so you can recognize it right away.
+              </p>
+
+              {formData.mapImageUrl ? (
+                <div style={{
+                  position: 'relative',
+                  borderRadius: 'var(--radius-lg, 12px)',
+                  overflow: 'hidden',
+                  border: '2px solid var(--color-brand-primary, #164230)',
+                  maxHeight: '260px'
+                }}>
+                  <img
+                    src={formData.mapImageUrl}
+                    alt="Farm Preview"
+                    style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '12px',
+                    right: '12px',
+                    display: 'flex',
+                    gap: '8px'
+                  }}>
+                    <label style={{
+                      backgroundColor: 'rgba(22, 66, 48, 0.95)',
+                      color: '#FFFFFF',
+                      padding: '8px 16px',
+                      borderRadius: '9999px',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <IconCamera size={14} /> Change Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        disabled={uploadingPhoto}
+                        onChange={handlePhotoUpload}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => updateField('mapImageUrl', '')}
+                      style={{
+                        backgroundColor: 'rgba(220, 38, 38, 0.95)',
+                        color: '#FFFFFF',
+                        padding: '8px 16px',
+                        borderRadius: '9999px',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <IconClose size={14} /> Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '36px 20px',
+                  border: '2px dashed #CBD5E1',
+                  borderRadius: 'var(--radius-xl, 16px)',
+                  backgroundColor: '#FAF9F6',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'border-color 0.2s'
+                }}>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-brand-tint, #EAF4ED)',
+                    color: 'var(--color-brand-primary, #164230)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <IconCamera size={28} />
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    {uploadingPhoto ? 'Uploading photo...' : 'Click to Take Photo or Choose Picture'}
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    Supports camera photos (JPEG, PNG, WebP) from your phone or computer
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    disabled={uploadingPhoto}
+                    onChange={handlePhotoUpload}
+                  />
+                </label>
+              )}
+            </div>
           </div>
         )}
 
@@ -725,6 +870,22 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
               <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: 'var(--color-text-primary, #19201C)', margin: 0 }}>
                 Farm Registration Summary
               </h3>
+
+              {formData.mapImageUrl && (
+                <div style={{
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  margin: '14px 0',
+                  height: '150px',
+                  border: '1px solid #ECE7DC'
+                }}>
+                  <img
+                    src={formData.mapImageUrl}
+                    alt="Farm Preview"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              )}
 
               <div className="review-summary-row">
                 <span className="review-label">Farm Name</span>

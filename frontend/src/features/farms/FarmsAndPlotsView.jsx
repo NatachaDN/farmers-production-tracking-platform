@@ -11,11 +11,15 @@ import {
   IconPlus,
   IconSearch,
   IconSprout,
+  IconCrop,
+  IconLivestock,
   IconTomato,
   IconBean,
   IconLeaf,
   IconCheck,
-  IconMapPin
+  IconMapPin,
+  IconCamera,
+  IconChevronRight
 } from '../../shared/components/Icons';
 
 function getIconForCrop(crop) {
@@ -152,8 +156,46 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   const totalArea = plots.reduce((acc, curr) => acc + (curr.areaVal || 0), 0).toFixed(1);
 
   const openFarm = (farm) => {
-    if (onSelectFarm) onSelectFarm(farm.id);
-    else if (onNavigate) onNavigate('farm-details');
+    if (onSelectFarm) {
+      onSelectFarm(farm.id);
+    } else if (onNavigate) {
+      onNavigate('farm-details', farm.id);
+    }
+  };
+
+  const handleCardPhotoUpload = async (e, targetFarm) => {
+    e.stopPropagation();
+    const file = e.target.files?.[0];
+    if (!file || !targetFarm) return;
+
+    const localUrl = URL.createObjectURL(file);
+    setFarms((prev) => prev.map((f) => f.id === targetFarm.id ? { ...f, mapImageUrl: localUrl } : f));
+    showNotification('Updating farm picture...');
+
+    try {
+      let finalUrl = localUrl;
+      try {
+        const res = await farmService.uploadFarmPhoto(file);
+        if (res?.url) finalUrl = res.url;
+      } catch (uploadErr) {
+        console.warn('Backend image upload failed, falling back to data URL:', uploadErr);
+        finalUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      await farmService.updateFarm(targetFarm.id, {
+        ...targetFarm,
+        mapImageUrl: finalUrl
+      });
+      setFarms((prev) => prev.map((f) => f.id === targetFarm.id ? { ...f, mapImageUrl: finalUrl } : f));
+      showNotification(`Photo saved for "${targetFarm.name}"!`);
+    } catch (err) {
+      console.error('Failed to update farm photo:', err);
+      showNotification('Photo updated for this session.');
+    }
   };
 
   return (
@@ -248,51 +290,186 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
           </div>
         ) : null}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-          {farms.map((farm) => (
-            <div
-              key={farm.id}
-              onClick={() => openFarm(farm)}
-              style={{
-                border: '1px solid var(--color-card-border)',
-                borderRadius: 'var(--radius-xl)',
-                padding: '18px',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--color-brand-tint)',
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          {farms.map((farm) => {
+            const isLivestock = farm.type === 'LIVESTOCK';
+            const isMixed = farm.type === 'MIXED';
+            const typeLabel = isLivestock ? 'Livestock' : isMixed ? 'Mixed' : 'Crops';
+            const TypeIcon = isLivestock ? IconLivestock : isMixed ? IconFarms : IconCrop;
+            const farmPlotsCount = plots.filter((p) => p.farmId == null || String(p.farmId) === String(farm.id)).length;
+
+            return (
+              <div
+                key={farm.id}
+                onClick={() => openFarm(farm)}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1.5px solid var(--color-card-border, #ECE7DC)',
+                  borderRadius: 'var(--radius-xl, 20px)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.05))',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(22, 66, 48, 0.12)';
+                  e.currentTarget.style.borderColor = 'var(--color-brand-primary, #164230)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.05))';
+                  e.currentTarget.style.borderColor = 'var(--color-card-border, #ECE7DC)';
+                }}
+              >
+                {/* Farm Image Banner */}
+                {farm.mapImageUrl ? (
+                  <div style={{ position: 'relative', height: '170px', width: '100%', backgroundColor: '#EAF4ED', overflow: 'hidden' }}>
+                    <img
+                      src={farm.mapImageUrl}
+                      alt={farm.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      backgroundColor: 'rgba(22, 66, 48, 0.88)',
+                      color: '#FFFFFF',
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase'
+                    }}>
+                      {farm.status || 'ACTIVE'}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    position: 'relative',
+                    height: '135px',
+                    width: '100%',
+                    backgroundColor: '#FAF9F6',
+                    borderBottom: '1px solid #ECE7DC',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <IconFarms size={20} color="var(--color-brand-primary)" />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{farm.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                    {farm.type} · {farm.status}
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      backgroundColor: '#EAF4ED',
+                      color: '#164230',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <IconFarms size={22} color="#164230" />
+                    </div>
+                    <label
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        borderRadius: '9999px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #CBD5E1',
+                        color: '#164230',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+                      }}
+                    >
+                      <IconCamera size={13} /> Add Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleCardPhotoUpload(e, farm)}
+                      />
+                    </label>
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      backgroundColor: '#EAF4ED',
+                      color: '#164230',
+                      padding: '3px 9px',
+                      borderRadius: '9999px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      {farm.status || 'ACTIVE'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Farm Card Content */}
+                <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{
+                      fontSize: '1.15rem',
+                      fontWeight: 700,
+                      color: 'var(--color-text-primary, #164230)',
+                      lineHeight: 1.3
+                    }}>
+                      {farm.name}
+                    </div>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      backgroundColor: isLivestock ? '#FEF3C7' : isMixed ? '#E0F2FE' : '#EAF4ED',
+                      color: isLivestock ? '#B45309' : isMixed ? '#0369A1' : '#164230',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      <TypeIcon size={12} /> {typeLabel}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--color-text-muted, #5C6F64)' }}>
+                    <IconMapPin size={15} color="#164230" />
+                    <span>{[farm.district, farm.region, farm.country].filter(Boolean).join(', ') || 'Cameroon'}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #F1ECE1' }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#164230' }}>
+                      {farm.size} {farm.sizeUnit === 'ACRES' ? 'acres' : 'ha'}
+                      <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--color-text-muted)', marginLeft: '6px' }}>
+                        · {farmPlotsCount} plot{farmPlotsCount === 1 ? '' : 's'}
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      color: '#164230',
+                      fontWeight: 700,
+                      fontSize: '0.8125rem'
+                    }}>
+                      View Farm <IconChevronRight size={14} />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                <IconMapPin size={14} color="currentColor" />
-                {[farm.district, farm.region, farm.country].filter(Boolean).join(', ')}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-primary)' }}>
-                {farm.size} {farm.sizeUnit === 'ACRES' ? 'acres' : 'ha'}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
