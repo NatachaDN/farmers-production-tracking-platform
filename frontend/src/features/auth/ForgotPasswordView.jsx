@@ -194,7 +194,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                     <input
                       id="forgot-identifier-input"
                       type="text"
-                      placeholder="name@example.com or phone"
+                      placeholder="kamga@example.com ou +237 6..."
                       value={emailOrPhone}
                       onChange={(e) => setEmailOrPhone(e.target.value)}
                       required

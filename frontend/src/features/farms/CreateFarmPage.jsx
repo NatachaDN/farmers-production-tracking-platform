@@ -119,7 +119,7 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
 
     if (step === 1) {
       if (!formData.name || !formData.name.trim()) {
-        newErrors.name = 'Please give your farm a name (e.g. Green Acres Farm).';
+        newErrors.name = 'Please give your farm a name (e.g. Ferme Agro-Pastorale de Bandjoun).';
       }
       if (!formData.size || isNaN(formData.size) || Number(formData.size) <= 0) {
         newErrors.size = 'Please enter a valid farm land size greater than zero.';
@@ -134,7 +134,7 @@ export function CreateFarmPage({ onNavigate, onFarmCreated, initialFarmer }) {
         newErrors.country = 'Please select or enter the country of your farm.';
       }
       if (!formData.region || !formData.region.trim()) {
-        newErrors.region = 'Please enter the region or province (e.g. West Region, Rift Valley).';
+        newErrors.region = 'Please enter the region or province (e.g. Ouest, Littoral, Centre).';
       }
       if (!formData.district || !formData.district.trim()) {
         newErrors.district = 'Please enter your district, county, or nearest town.';
