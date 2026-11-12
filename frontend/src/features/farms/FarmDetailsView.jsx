@@ -761,16 +761,18 @@ export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onBack }) 
                 icon: getIconForCrop(plot.cropType || plot.name)
               };
               return (
-                <div
+                <PlotCard
                   key={plot.id}
-                  onClick={() => {
+                  icon={mapped.icon}
+                  title={mapped.title}
+                  area={mapped.area}
+                  stage={mapped.stage}
+                  progress={mapped.progress}
+                  onViewDetails={() => {
                     setSelectedPlot(plot);
                     setIsPlotDetailsOpen(true);
                   }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <PlotCard plot={mapped} />
-                </div>
+                />
               );
             })}
           </div>
