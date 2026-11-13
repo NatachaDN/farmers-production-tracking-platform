@@ -41,6 +41,10 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
         password
       });
 
+      if (!response.token) {
+        onNavigate?.('login', response.message);
+        return;
+      }
       if (onRegisterSuccess) {
         onRegisterSuccess(response.farmer);
       } else if (onNavigate) {

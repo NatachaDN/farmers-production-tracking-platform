@@ -10,6 +10,7 @@ export const adminService = {
   overview: () => apiClient.get('/admin/overview'),
   farmers: (q) => apiClient.get(`/admin/farmers${qs({ q })}`),
   farmer: (id) => apiClient.get(`/admin/farmers/${id}`),
+  updateAccess: (id, change) => apiClient.put(`/admin/farmers/${id}/access`, change),
   activities: ({ type, limit = 300 } = {}) => apiClient.get(`/admin/activities${qs({ type, limit })}`),
   cycles: (status) => apiClient.get(`/admin/cycles${qs({ status })}`),
   harvests: () => apiClient.get('/admin/harvests'),

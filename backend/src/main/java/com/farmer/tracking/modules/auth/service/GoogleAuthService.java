@@ -25,6 +25,8 @@ import java.util.UUID;
  */
 @Service
 public class GoogleAuthService {
+    @org.springframework.beans.factory.annotation.Value("${app.registration.review-required:true}")
+    private boolean reviewRequired;
 
     private static final Logger log = LoggerFactory.getLogger(GoogleAuthService.class);
 
@@ -70,6 +72,7 @@ public class GoogleAuthService {
         Farmer farmer = existing.orElseGet(() -> newFarmer(identity));
 
         if (!created) {
+            AuthServiceImpl.requireActiveAccess(farmer);
             if (farmer.getGoogleId() == null) {
                 // First time this existing account signs in with Google. The password was set by
                 // whoever registered the email, before Google proved ownership of it, so it is
@@ -90,6 +93,11 @@ public class GoogleAuthService {
             log.info("Farmer account {} promoted to administrator (allow-listed Google email)", farmer.getId());
         }
 
+        if (created && reviewRequired && !AdminAccessPolicy.ROLE_ADMIN.equals(farmer.getRole())) {
+            farmer.setAccessStatus(Farmer.AccessStatus.PENDING);
+            return new GoogleLoginResult(new AuthResponse(null, authMapper.toProfileResponse(farmerRepository.save(farmer)),
+                    "Registration submitted. You can sign in after your account is approved."), true);
+        }
         farmer.setLastLoginAt(LocalDateTime.now());
         Farmer saved = farmerRepository.save(farmer);
 

@@ -56,6 +56,7 @@ public class AdminBootstrap implements CommandLineRunner {
             Farmer farmer = existing.get();
             if (!AdminAccessPolicy.ROLE_ADMIN.equals(farmer.getRole())) {
                 farmer.setRole(AdminAccessPolicy.ROLE_ADMIN);
+                farmer.setAccessStatus(Farmer.AccessStatus.ACTIVE);
                 farmerRepository.save(farmer);
                 log.info("Existing account {} promoted to administrator.", email);
             }

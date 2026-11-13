@@ -45,8 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
             if (userDetails instanceof UserPrincipal principal
-                    && principal.getTokenVersion() != tokenProvider.getTokenVersion(jwt)) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Your password changed. Please sign in again.");
+                    && (!principal.isEnabled() || principal.getTokenVersion() != tokenProvider.getTokenVersion(jwt))) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Your session is no longer valid. Please sign in again.");
                 return;
             }
 

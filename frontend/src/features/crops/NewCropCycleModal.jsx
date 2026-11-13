@@ -54,7 +54,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
     setLoadingCrops(true);
     setCropsError(null);
     try {
-      const data = await cropService.getCrops(farmerId);
+      const data = await cropService.getCropChoices(farmerId);
       const list = Array.isArray(data) ? data : [];
       setCrops(list);
       if (!selectedCrop) {

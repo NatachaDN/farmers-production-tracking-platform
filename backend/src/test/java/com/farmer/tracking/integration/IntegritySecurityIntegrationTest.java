@@ -59,6 +59,7 @@ class IntegritySecurityIntegrationTest {
     @Autowired CycleInputUsageRepository usages;
     @Autowired FarmerRepository farmers;
     @Autowired PasswordEncoder encoder;
+    @Autowired com.farmer.tracking.modules.auth.service.AuthServiceImpl auth;
 
     record Fixture(String email, String token, long farmer, long farm, long plot, long cycle) {
         String root() { return "/api/v1/farmers/" + farmer; }
@@ -107,6 +108,68 @@ class IntegritySecurityIntegrationTest {
     private Map<String, Object> purchase(String name, double quantity, String unit, double price) {
         return Map.of("name", name, "type", "FERTILIZER", "quantity", quantity, "unit", unit,
                 "purchaseDate", LocalDate.now().toString(), "purchasePrice", price);
+    }
+
+    @Test
+    void managerCanReviewAssignedRegistrationsAndDisabledAccountsLoseAccess() {
+        var manager = fixture();
+        var administrator = fixture();
+        var outsider = fixture();
+        var managerAccount = farmers.findById(manager.farmer()).orElseThrow();
+        managerAccount.setRole("ROLE_MANAGER");
+        farmers.save(managerAccount);
+        var adminAccount = farmers.findById(administrator.farmer()).orElseThrow();
+        adminAccount.setRole("ROLE_ADMIN");
+        farmers.save(adminAccount);
+        String email = "pending-" + UUID.randomUUID() + "@example.test";
+        var credentials = Map.of("emailOrPhone", email, "password", "Regression2026!");
+        JsonNode signup;
+        Object service = org.springframework.test.util.AopTestUtils.getUltimateTargetObject(auth);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "reviewRequired", true);
+        try {
+            signup = created("/api/v1/auth/register", Map.of("fullName", "Pending Farmer", "emailOrPhone", email,
+                    "password", "Regression2026!", "farmType", "CROP", "agreedToTerms", true), null);
+        } finally {
+            org.springframework.test.util.ReflectionTestUtils.setField(service, "reviewRequired", false);
+        }
+        assertThat(signup.path("token").isNull()).isTrue();
+        Long id = signup.path("farmer").path("id").asLong();
+        var resource = "/api/v1/admin/farmers/" + id;
+        assertThat(request(HttpMethod.POST, "/api/v1/auth/login", credentials, null).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.GET, resource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "PENDING", "role", "ROLE_FARMER",
+                "managerId", manager.farmer()), administrator.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.GET, resource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.GET, "/api/v1/admin/farmers/" + outsider.farmer(), null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(request(HttpMethod.GET, "/api/v1/admin/audit", null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "ACTIVE", "role", "ROLE_MANAGER"), manager.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "REJECTED"), manager.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        var denied = request(HttpMethod.POST, "/api/v1/auth/login", credentials, null);
+        assertThat(denied.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(denied.getBody().path("message").asText()).contains("declined");
+        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "ACTIVE"), administrator.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        var login = request(HttpMethod.POST, "/api/v1/auth/login", credentials, null);
+        assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "DISABLED"), administrator.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.GET, "/api/v1/auth/me", null, login.getBody().path("token").asText()).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(request(HttpMethod.POST, "/api/v1/auth/login", credentials, null).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void cropCatalogUpdatesFarmerChoicesAndRestrictsWrites() {
+        var farmer = fixture();
+        var admin = fixture();
+        var account = farmers.findById(admin.farmer()).orElseThrow();
+        account.setRole("ROLE_ADMIN");
+        farmers.save(account);
+        var path = "/api/v1/admin/reference-crops";
+        var entry = Map.of("name", "Fonio", "enabled", true);
+        assertThat(request(HttpMethod.POST, path, entry, farmer.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        long id = created(path, entry, admin.token()).path("id").asLong();
+        assertThat(request(HttpMethod.POST, path, Map.of("name", "fonio", "enabled", true), admin.token()).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(request(HttpMethod.GET, "/api/v1/reference-crops", null, farmer.token()).getBody().get(0).path("name").asText()).isEqualTo("Fonio");
+        assertThat(request(HttpMethod.PUT, path + "/" + id, Map.of("name", "White fonio", "enabled", false), admin.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.GET, "/api/v1/reference-crops", null, farmer.token()).getBody().isEmpty()).isTrue();
     }
 
     @Test

@@ -356,3 +356,8 @@ All plot endpoints require an authenticated user with a valid Bearer token. Owne
 }
 ```
 - **Forced Deletion:** When called with `?force=true`, any linked cycles are unlinked from the plot and the plot is deleted.
+# Account review and reference crops
+
+- `POST /api/v1/auth/register` and `POST /api/v1/auth/google` can return a profile and confirmation message with a null token while a new registration awaits review.
+- `PUT /api/v1/admin/farmers/{id}/access` accepts `status` (`ACTIVE`, `PENDING`, `REJECTED`, or `DISABLED`). Administrators can also send `role` (`ROLE_FARMER` or `ROLE_MANAGER`) and `managerId` (an active manager's ID or null). Managers can only approve or reject pending registrations assigned to them.
+- `GET /api/v1/reference-crops` lists enabled shared crops for authenticated users. Administrators use `GET` or `POST /api/v1/admin/reference-crops` and `PUT /api/v1/admin/reference-crops/{id}`. Writes accept `name` and `enabled`. Disabling a crop removes it from shared choices while preserving historical records.

@@ -315,10 +315,18 @@ The frontend will run at `http://localhost:5173`.
 In production the host must serve `index.html` for `/auth/google/callback` (single-page-app fallback).
 
 ### Admin console
-The console lives in the sidebar for accounts with `ROLE_ADMIN` (Overview, Farmers, Activity, Production, System health). It is read-only.
+The management console is available to administrators and managers. Administrators can review registrations, change access, assign farmers to managers, and maintain the shared crop catalog. Managers see their assigned farmers and can approve or decline their pending registrations.
 Create an administrator in one of three ways:
 * `ADMIN_EMAILS=you@gmail.com` - that Google account becomes admin the next time it signs in with Google.
 * `ADMIN_BOOTSTRAP_EMAIL` + `ADMIN_BOOTSTRAP_PASSWORD` - an email/password admin is created (or an existing account promoted) at startup.
 * SQL: `UPDATE farmers SET role = 'ROLE_ADMIN' WHERE email_or_phone = 'you@example.com';`
 
 Self-registration never grants admin rights.
+
+### Registration and release checks
+
+New registrations require approval by default. Existing accounts without a stored access status remain active. Create an administrator before onboarding farmers, then use **Farmers → Manage access** to approve a registration or assign it to an active manager. A newly approved farmer can sign in immediately. Disabling an account invalidates its existing sessions.
+
+Use the same-origin `/api/v1` default when a reverse proxy serves the frontend and forwards API requests to Spring Boot. Set `VITE_API_BASE_URL` at build time if the API is hosted separately, and configure the allowed frontend origin on the backend. Set a production JWT secret, configure SMTP for email password resets, and use persistent storage for avatar uploads.
+
+Run `mvn test` in `backend` and `npm ci && npm run build` in `frontend`. The GitHub workflow also tests the integration suite against a disposable MySQL database. Before upgrading a live database, verify backup restoration and the schema upgrade on a staging copy. This update adds nullable `farmers.access_status` and `farmers.manager_id` columns and a `reference_crops` table.

@@ -6,23 +6,27 @@ import { initialsOf, label } from '../adminFormat';
 export function useAdminData(fetcher, deps = [], { pollMs = 0 } = {}) {
   const [state, setState] = useState({ data: null, error: null, loading: true });
   const fetcherRef = useRef(fetcher);
+  const requestId = useRef(0);
   fetcherRef.current = fetcher;
 
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     setState((s) => ({ ...s, loading: true }));
     try {
       const data = await fetcherRef.current();
-      setState({ data, error: null, loading: false });
+      if (id === requestId.current) setState({ data, error: null, loading: false });
     } catch (error) {
-      setState((s) => ({ ...s, error, loading: false }));
+      if (id === requestId.current) setState((s) => ({ ...s, error, loading: false }));
     }
   }, []);
 
   useEffect(() => {
     load();
-    if (!pollMs) return undefined;
-    const id = setInterval(load, pollMs);
-    return () => clearInterval(id);
+    const timer = pollMs ? setInterval(load, pollMs) : null;
+    return () => {
+      requestId.current += 1;
+      if (timer) clearInterval(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, pollMs, ...deps]);
 

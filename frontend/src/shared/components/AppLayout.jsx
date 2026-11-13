@@ -48,11 +48,11 @@ export function AppLayout({
     <div className="acrea-shell">
       <a className="skip-link" href="#workspace-content">Skip to main content</a>
       {/* Sidebar */}
-      <div className="desktop-navigation"><Sidebar activeRoute={activeRoute} onNavigate={navigate} isAdmin={user?.role === 'ROLE_ADMIN'} /></div>
+      <div className="desktop-navigation"><Sidebar activeRoute={activeRoute} onNavigate={navigate} role={user?.role} /></div>
       <dialog id="mobile-navigation" ref={navigation} className="mobile-navigation" aria-label="Main navigation"
         onClose={() => setNavigationOpen(false)} onClick={event => { if (event.target === event.currentTarget) setNavigationOpen(false); }}>
         <div className="navigation-close"><button type="button" aria-label="Close navigation" onClick={() => setNavigationOpen(false)} autoFocus><IconClose size={20} /></button></div>
-        {navigationOpen && <Sidebar activeRoute={activeRoute} onNavigate={navigate} isAdmin={user?.role === 'ROLE_ADMIN'} />}
+        {navigationOpen && <Sidebar activeRoute={activeRoute} onNavigate={navigate} role={user?.role} />}
       </dialog>
 
       {/* Main Workspace */}

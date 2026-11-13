@@ -49,6 +49,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
+    @org.springframework.beans.factory.annotation.Value("${app.registration.review-required:true}")
+    private boolean reviewRequired;
 
     public AuthServiceImpl(
             FarmerRepository farmerRepository,
@@ -76,6 +78,11 @@ public class AuthServiceImpl implements AuthService {
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Farmer farmer = authMapper.toEntity(request, encodedPassword);
+        if (reviewRequired) {
+            farmer.setAccessStatus(Farmer.AccessStatus.PENDING);
+            return new AuthResponse(null, authMapper.toProfileResponse(farmerRepository.save(farmer)),
+                    "Registration submitted. You can sign in after your account is approved.");
+        }
         farmer.setLastLoginAt(LocalDateTime.now());
         Farmer savedFarmer = farmerRepository.save(farmer);
 
@@ -114,6 +121,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
         }
 
+        requireActiveAccess(farmer);
         farmer.setFailedLoginAttempts(0);
         farmer.setLockedUntil(null);
         farmer.setLastLoginAt(now);
@@ -123,6 +131,15 @@ public class AuthServiceImpl implements AuthService {
         FarmerProfileResponse profileResponse = authMapper.toProfileResponse(farmer);
 
         return new AuthResponse(token, profileResponse, "Login successful.");
+    }
+
+    static void requireActiveAccess(Farmer farmer) {
+        switch (farmer.getAccessStatus()) {
+            case ACTIVE -> { }
+            case PENDING -> throw new com.farmer.tracking.common.exception.ForbiddenException("Your registration is awaiting approval.");
+            case REJECTED -> throw new com.farmer.tracking.common.exception.ForbiddenException("Your registration was declined. Contact the farm administrator.");
+            case DISABLED -> throw new com.farmer.tracking.common.exception.ForbiddenException("This account is disabled. Contact the farm administrator.");
+        }
     }
 
     @Override
@@ -194,8 +211,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier).orElse(null);
-        if (farmer == null) {
-            log.info("Password reset requested for unknown identifier");
+        if (farmer == null || !normalizedIdentifier.contains("@") || farmer.getAccessStatus() != Farmer.AccessStatus.ACTIVE) {
             return genericResponse;
         }
 
@@ -210,7 +226,9 @@ public class AuthServiceImpl implements AuthService {
         try {
             emailService.sendPasswordResetCode(normalizedIdentifier, resetCode);
         } catch (Exception ex) {
-            log.error("Could not email password reset code to farmer [{}]: {}", farmer.getId(), ex.getMessage());
+            farmer.setPasswordResetToken(null);
+            farmer.setPasswordResetExpiresAt(null);
+            log.error("Password reset delivery failed: {}", ex.getClass().getSimpleName());
         }
 
         return genericResponse;

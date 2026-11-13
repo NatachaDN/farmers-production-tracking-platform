@@ -10,7 +10,7 @@ const STATUS_COLORS = { ACTIVE: CHART_COLORS.green, COMPLETED: CHART_COLORS.fore
 const shortDay = (d) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 const shortMonth = (m) => new Date(`${m}-01T00:00:00`).toLocaleDateString('en-GB', { month: 'short' });
 
-export function AdminOverviewView({ onNavigate }) {
+export function AdminOverviewView({ onNavigate, isAdmin }) {
   const state = useAdminData(() => adminService.overview(), []);
 
   return (
@@ -22,12 +22,12 @@ export function AdminOverviewView({ onNavigate }) {
         <RefreshButton onClick={state.reload} loading={state.loading} />
       </div>
 
-      <DataGate state={state}>{(d) => <Overview d={d} onNavigate={onNavigate} />}</DataGate>
+      <DataGate state={state}>{(d) => <Overview d={d} onNavigate={onNavigate} isAdmin={isAdmin} />}</DataGate>
     </div>
   );
 }
 
-function Overview({ d, onNavigate }) {
+function Overview({ d, onNavigate, isAdmin }) {
   const { totals: t, highlights: h } = d;
   const delta = h.activities7d - h.activitiesPrev7d;
   const activityBars = d.activitiesPerDay.map((x) => ({ key: x.date, label: shortDay(x.date), value: x.count, title: `${fmtDate(x.date)}: ${x.count} activities` }));
@@ -149,7 +149,7 @@ function Overview({ d, onNavigate }) {
         </div>
       </div>
 
-      <Card title="Recent account events" flush action={<button className="adm-btn" onClick={() => onNavigate('admin-activity')}>View all</button>}>
+      {isAdmin && <Card title="Recent account events" flush action={<button className="adm-btn" onClick={() => onNavigate('admin-activity')}>View all</button>}>
         {d.recentAuditEvents.length === 0 ? <EmptyState>No sign-ins recorded yet.</EmptyState> : (
           <ul className="adm-list">
             {d.recentAuditEvents.map((e) => (
@@ -163,7 +163,7 @@ function Overview({ d, onNavigate }) {
             ))}
           </ul>
         )}
-      </Card>
+      </Card>}
     </>
   );
 }

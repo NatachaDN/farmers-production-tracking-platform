@@ -41,7 +41,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
       setStep(2);
       setNotice(response?.message || 'If an account exists, a reset code has been sent to your email.');
     } catch (err) {
-      setError(err.message || 'Could not send reset code. Please verify your email or phone.');
+      setError(err.message || 'Could not send the reset code. Check your email address and try again.');
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 marginBottom: '28px',
                 lineHeight: 1.5
               }}>
-                Enter the email or phone number associated with your Acrea account and we will send you a verification code.
+                Enter the email address associated with your Acrea account. For accounts registered with a phone number, contact your administrator.
               </p>
 
               {/* Error Alert */}
@@ -170,7 +170,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                     color: 'var(--color-text-secondary)',
                     marginBottom: '8px'
                   }}>
-                    Email or phone number
+                    Email address
                   </label>
                   <div style={{
                     display: 'flex',
@@ -185,8 +185,9 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                     <IconUser size={18} color="var(--color-text-muted)" />
                     <input
                       id="forgot-identifier-input"
-                      type="text"
-                      placeholder="name@example.com or phone"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@example.com"
                       value={emailOrPhone}
                       onChange={(e) => setEmailOrPhone(e.target.value)}
                       required

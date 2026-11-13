@@ -33,11 +33,14 @@ const ADMIN_NAV = [['Administration', [
   ['admin-farmers', 'Farmers', IconUsers],
   ['admin-activity', 'Activity', IconPulse],
   ['admin-production', 'Production', IconProduction],
+  ['admin-crops', 'Reference crops', IconCrop],
   ['admin-system', 'System health', IconServer],
 ]]];
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false }) {
-  const adminMode = isAdmin && activeRoute.startsWith('admin-');
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, role }) {
+  const isAdmin = role === 'ROLE_ADMIN';
+  const canUseConsole = isAdmin || role === 'ROLE_MANAGER';
+  const adminMode = canUseConsole && activeRoute.startsWith('admin-');
   const currentItem = ['farms-create', 'farm-details'].includes(activeRoute) ? 'farms' : activeRoute;
 
   const renderItem = ([route, label, Icon]) => (
@@ -59,14 +62,14 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
           {(adminMode ? ADMIN_NAV : FARMER_NAV).map(([label, items]) => (
             <div className="sidebar-group" key={label}>
               <p>{label}</p>
-              <ul aria-label={label}>{items.map(renderItem)}</ul>
+              <ul aria-label={label}>{items.filter(([route]) => isAdmin || !['admin-system', 'admin-crops'].includes(route)).map(renderItem)}</ul>
             </div>
           ))}
         </div>
         <ul className="sidebar-utilities">
           {!adminMode && renderItem(['settings', 'Settings', IconSettings])}
-          {isAdmin && renderItem([adminMode ? 'dashboard' : 'admin-overview',
-            adminMode ? 'Farmer workspace' : 'Admin console', IconArrowRight])}
+          {canUseConsole && renderItem([adminMode ? 'dashboard' : 'admin-overview',
+            adminMode ? 'Farmer workspace' : 'Management console', IconArrowRight])}
         </ul>
       </nav>
     </aside>

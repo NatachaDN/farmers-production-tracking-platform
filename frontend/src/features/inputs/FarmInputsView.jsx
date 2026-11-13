@@ -25,7 +25,6 @@ const TYPE_META = {
   OTHER:      { icon: IconPackage,     label: 'Other',      bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
 };
 
-/* ─── Seed data for offline-first demo ─────────────────────────── */
 /** Maps a FarmInputResponse from the API to the shape the cards display. */
 function toInputView(apiInput) {
   return {

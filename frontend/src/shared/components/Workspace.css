@@ -43,6 +43,8 @@
 .workspace-button:disabled { opacity: .6; cursor: default; }
 .workspace-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr)); gap: 14px; align-items: end; border: 0; min-width: 0; }
 .workspace-form-grid label, .workspace-filter { display: grid; gap: 5px; font-weight: 600; min-width: 0; }
+.workspace-form-grid .workspace-check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.workspace-form-grid .workspace-check input { width: auto; min-height: auto; }
 .workspace-form-grid :is(input, select, textarea), .workspace-filter :is(input, select) {
   width: 100%; min-width: 0; min-height: 44px; padding: 8px 11px;
   background: var(--color-card-bg); border: 1px solid var(--color-border-input); border-radius: var(--radius-md);

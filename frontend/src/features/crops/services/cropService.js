@@ -4,6 +4,15 @@ import { apiClient } from '../../../shared/services/apiClient';
  * Service to manage the farmer's personal list of crops and varieties.
  */
 export const cropService = {
+  async getCropChoices(farmerId) {
+    const [personal, reference] = await Promise.all([this.getCrops(farmerId), apiClient.get('/reference-crops')]);
+    const byLabel = new Map();
+    for (const crop of [...personal, ...reference.map(crop => ({ ...crop, id: `reference-${crop.id}` }))]) {
+      const label = (crop.displayName || crop.name).toLowerCase();
+      if (!byLabel.has(label)) byLabel.set(label, crop);
+    }
+    return [...byLabel.values()];
+  },
   /**
    * List all crops for a farmer.
    * @param {number} farmerId

@@ -8,6 +8,19 @@ import java.time.LocalDateTime;
         @Index(name = "idx_farmer_email_phone", columnList = "email_or_phone", unique = true)
 })
 public class Farmer {
+    public enum AccessStatus { ACTIVE, PENDING, REJECTED, DISABLED }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "access_status", length = 16)
+    private AccessStatus accessStatus;
+
+    @Column(name = "manager_id")
+    private Long managerId;
+
+    public AccessStatus getAccessStatus() { return accessStatus == null ? AccessStatus.ACTIVE : accessStatus; }
+    public void setAccessStatus(AccessStatus status) { accessStatus = status; }
+    public Long getManagerId() { return managerId; }
+    public void setManagerId(Long managerId) { this.managerId = managerId; }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

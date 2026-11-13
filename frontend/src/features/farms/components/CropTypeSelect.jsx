@@ -21,7 +21,7 @@ export function CropTypeSelect({ farmerId, value, onChange, style }) {
     let isMounted = true;
     setIsLoading(true);
     setError(null);
-    cropService.getCrops(farmerId)
+    cropService.getCropChoices(farmerId)
       .then((data) => { if (isMounted) setCrops(Array.isArray(data) ? data : []); })
       .catch((err) => { if (isMounted) setError(err?.message || 'Could not load your crops.'); })
       .finally(() => { if (isMounted) setIsLoading(false); });

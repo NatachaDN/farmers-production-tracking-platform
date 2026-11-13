@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FarmSummaryOverview } from './FarmSummaryOverview';
 import { farmService } from './services/farmService';
+import { plotService } from './services/plotService';
 import {
   IconFarms,
   IconSprout,
@@ -21,6 +22,9 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
   const [editFormData, setEditFormData] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState(null);
+  const [plots, setPlots] = useState(null);
+  const [plotsError, setPlotsError] = useState('');
+  const [plotAttempt, setPlotAttempt] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,6 +57,17 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
     return () => { isMounted = false; };
   }, [farmId]);
 
+  useEffect(() => {
+    if (activeTab !== 'Plots' || !farmId || !user?.id) return;
+    let current = true;
+    setPlots(null);
+    setPlotsError('');
+    plotService.getPlots(user.id)
+      .then(rows => { if (current) setPlots(rows.filter(row => String(row.farmId) === String(farmId))); })
+      .catch(failure => { if (current) setPlotsError(failure.message); });
+    return () => { current = false; };
+  }, [activeTab, farmId, user?.id, plotAttempt]);
+
   const handleEditSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -76,12 +91,8 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
         additionalNotes: editFormData.additionalNotes
       };
 
-      if (farm?.id) {
-        const updated = await farmService.updateFarm(farm.id, payload);
-        setFarm(updated);
-      } else {
-        setFarm((prev) => ({ ...prev, ...payload }));
-      }
+      const updated = await farmService.updateFarm(farm.id, payload);
+      setFarm(updated);
       setIsEditModalOpen(false);
     } catch (err) {
       console.error('Failed to update farm:', err);
@@ -117,7 +128,8 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
   const currentFarm = farm;
 
 
-  const tabs = ['Overview', 'Crops', 'Livestock', 'Resources', 'Activities', 'Settings'];
+  const tabs = ['Overview', 'Plots', 'Crops', 'Livestock', 'Equipment', 'Activities', 'Settings'];
+  const workspaceRoutes = { Crops: 'crops', Livestock: 'livestock', Equipment: 'equipment', Activities: 'calendar', Settings: 'settings' };
 
   return (
     <div className="workspace-screen fade-in farm-detail-workspace">
@@ -268,6 +280,8 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
         {tabs.map((tab) => (
           <button
             key={tab}
+            type="button"
+            aria-pressed={activeTab === tab}
             onClick={() => setActiveTab(tab)}
             style={{
               padding: '10px 20px',
@@ -289,10 +303,20 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
       {activeTab === 'Overview' && <FarmSummaryOverview farmerId={user?.id} farm={currentFarm} onNavigate={onNavigate} />}
       {activeTab !== 'Overview' && <section className="summary-card">
         <h3>{activeTab}</h3>
-        {['Crops', 'Activities', 'Settings'].includes(activeTab) ? <>
-          <p>Open the {activeTab.toLowerCase()} workspace to view and manage your saved records.</p>
-          <button type="button" onClick={() => onNavigate?.({ Crops: 'crops', Activities: 'activities', Settings: 'settings' }[activeTab])}>Open {activeTab.toLowerCase()} →</button>
-        </> : <p>This section is not available yet.</p>}
+        {activeTab === 'Plots' ? (
+          <>
+            {plotsError ? <p className="workspace-error" role="alert">{plotsError}{' '}
+              <button className="workspace-button" type="button" onClick={() => setPlotAttempt(value => value + 1)}>Try again</button>
+            </p> : !plots ? <p role="status">Loading plots…</p> : plots.length ? <ul className="summary-list">
+              {plots.map(plot => <li key={plot.id}><strong>{plot.name}</strong><span>{plot.area} ha{plot.cropType ? ` · ${plot.cropType}` : ''}</span></li>)}
+            </ul> : <p className="workspace-empty">This farm has no plots yet.</p>}
+            <button className="workspace-button" type="button" onClick={() => onNavigate?.('farms')}>Manage plots</button>
+          </>
+        ) : (
+          <button className="workspace-button" type="button" onClick={() => onNavigate?.(workspaceRoutes[activeTab])}>
+            Open {activeTab.toLowerCase()}
+          </button>
+        )}
       </section>}
 
       {/* EDIT FARM MODAL */}

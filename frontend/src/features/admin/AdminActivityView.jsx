@@ -5,13 +5,13 @@ import { fmtDate, fmtDateTime, label, timeAgo } from './adminFormat';
 
 const TYPES = ['WATERING', 'TREATMENT', 'FERTILIZING', 'WEEDING'];
 
-export function AdminActivityView() {
+export function AdminActivityView({ isAdmin }) {
   const [tab, setTab] = useState('field');
   const [type, setType] = useState('');
   const [query, setQuery] = useState('');
 
   const field = useAdminData(() => adminService.activities({ type, limit: 300 }), [type]);
-  const events = useAdminData(() => adminService.audit(200), []);
+  const events = useAdminData(() => isAdmin ? adminService.audit(200) : Promise.resolve([]), [isAdmin]);
   const active = tab === 'field' ? field : events;
 
   const fieldRows = useMemo(() => {
@@ -25,7 +25,7 @@ export function AdminActivityView() {
       <div className="adm-toolbar">
         <Tabs label="Activity feeds" value={tab} onChange={setTab} tabs={[
           { id: 'field', label: 'Field activities' },
-          { id: 'events', label: 'Account events' },
+          ...(isAdmin ? [{ id: 'events', label: 'Account events' }] : []),
         ]} />
         <RefreshButton onClick={active.reload} loading={active.loading} />
       </div>

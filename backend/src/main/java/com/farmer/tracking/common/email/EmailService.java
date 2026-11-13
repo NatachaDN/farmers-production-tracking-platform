@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>SMTP credentials are injected via environment variables:
  * {@code MAIL_USERNAME}, {@code MAIL_PASSWORD}, {@code MAIL_HOST}, {@code MAIL_PORT}.
- * When {@code MAIL_USERNAME} is blank the service logs the message body instead of
- * attempting a real delivery, so the application starts correctly in dev without
- * any mail configuration.
+ * Password reset delivery requires SMTP credentials.
  */
 @Service
 public class EmailService {
@@ -50,9 +48,7 @@ public class EmailService {
         String body = buildResetEmailHtml(toEmail, resetCode);
 
         if (smtpUsername == null || smtpUsername.isBlank()) {
-            // No SMTP configured — dev / test mode: just log the code.
-            log.warn("[EmailService] SMTP not configured. Password reset code for [{}]: {}", toEmail, resetCode);
-            return;
+            throw new IllegalStateException("Password reset email delivery is not configured.");
         }
 
         try {

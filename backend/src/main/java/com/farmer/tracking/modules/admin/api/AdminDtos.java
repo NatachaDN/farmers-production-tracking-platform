@@ -47,7 +47,8 @@ public final class AdminDtos {
                             String role, String authProvider, String avatarUrl,
                             Instant createdAt, Instant lastLoginAt,
                             long farms, long plots, long cycles, long activeCycles, long activities,
-                            double harvestedKg, double inputSpend, List<String> regions, List<String> crops) {}
+                            double harvestedKg, double inputSpend, List<String> regions, List<String> crops,
+                            String accessStatus, Long managerId) {}
 
     public record FarmRow(Long id, String name, String location, Double size, boolean isDefault, long plots) {}
 

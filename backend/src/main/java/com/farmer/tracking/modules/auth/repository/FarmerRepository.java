@@ -9,9 +9,11 @@ import org.springframework.data.jpa.repository.Lock;
 import jakarta.persistence.LockModeType;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface FarmerRepository extends JpaRepository<Farmer, Long> {
+    List<Farmer> findByManagerIdAndRole(Long managerId, String role);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select f from Farmer f where f.googleId = :googleId")
     Optional<Farmer> findLockedByGoogleId(@org.springframework.data.repository.query.Param("googleId") String googleId);

@@ -165,7 +165,7 @@ public class AdminService {
 
         List<ActivityRow> recent = d.activities.stream()
                 .sorted(ACTIVITY_NEWEST_FIRST).limit(8).map(a -> toActivityRow(a, d)).toList();
-        List<AuditRow> audit = auditRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 8))
+        List<AuditRow> audit = consoleManagerId() != null ? List.of() : auditRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 8))
                 .stream().map(AdminService::toAuditRow).toList();
 
         return new Overview(Instant.now(), totals, highlights, farmersByType, cyclesByStatus, activitiesByType,
@@ -216,7 +216,7 @@ public class AdminService {
         List<InputRow> inputs = d.inputs.stream().filter(i -> id.equals(i.getFarmerId()))
                 .sorted(Comparator.comparing(FarmInput::getPurchaseDate, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(i -> toInputRow(i, d)).toList();
-        List<AuditRow> audit = auditRepository.findByActorIdOrderByCreatedAtDesc(id, PageRequest.of(0, 30))
+        List<AuditRow> audit = consoleManagerId() != null ? List.of() : auditRepository.findByActorIdOrderByCreatedAtDesc(id, PageRequest.of(0, 30))
                 .stream().map(AdminService::toAuditRow).toList();
 
         return new FarmerDetail(toFarmerRow(farmer, d), farms, plots, cycles, activities, harvests, inputs, audit);
@@ -282,7 +282,8 @@ public class AdminService {
                 d.inputSpendByFarmer.getOrDefault(f.getId(), 0.0),
                 d.regionsByFarmer.getOrDefault(f.getId(), List.of()),
                 cycles.stream().map(Cycle::getCropName).filter(Objects::nonNull).map(String::strip)
-                        .filter(crop -> !crop.isEmpty()).distinct().sorted().toList());
+                        .filter(crop -> !crop.isEmpty()).distinct().sorted().toList(),
+                f.getAccessStatus().name(), f.getManagerId());
     }
 
     private CycleRow toCycleRow(Cycle c, Data d) {
@@ -429,10 +430,30 @@ public class AdminService {
 
     /** Everything the console needs, loaded once per request. */
     private Data load() {
+        Long managerId = consoleManagerId();
+        if (managerId != null) {
+            var assigned = farmerRepository.findByManagerIdAndRole(managerId, "ROLE_FARMER");
+            var ids = assigned.stream().map(Farmer::getId).collect(Collectors.toSet());
+            return new Data(assigned, farmRepository.findAll().stream().filter(f -> ids.contains(f.getFarmerId())).toList(),
+                    plotRepository.findAll().stream().filter(p -> ids.contains(p.getFarmerId())).toList(),
+                    cycleRepository.findAll().stream().filter(c -> ids.contains(c.getFarmerId())).toList(),
+                    activityRepository.findAll().stream().filter(a -> ids.contains(a.getCycle().getFarmerId())).toList(),
+                    harvestRepository.findAll().stream().filter(h -> ids.contains(h.getCycle().getFarmerId())).toList(),
+                    inputRepository.findAll().stream().filter(i -> ids.contains(i.getFarmerId())).toList());
+        }
         return new Data(
                 farmerRepository.findAll(), farmRepository.findAll(), plotRepository.findAll(),
                 cycleRepository.findAll(), activityRepository.findAll(), harvestRepository.findAll(),
                 inputRepository.findAll());
+    }
+
+    private Long consoleManagerId() {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof com.farmer.tracking.common.security.UserPrincipal principal
+                && principal.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals("ROLE_MANAGER"))) {
+            return principal.getId();
+        }
+        return null;
     }
 
     private static final class Data {

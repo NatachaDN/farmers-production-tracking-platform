@@ -15,6 +15,7 @@ public class UserPrincipal implements UserDetails {
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
     private long tokenVersion;
+    private boolean enabled = true;
 
     public long getTokenVersion() { return tokenVersion; }
 
@@ -34,6 +35,7 @@ public class UserPrincipal implements UserDetails {
                 authorities
         );
         principal.tokenVersion = farmer.getTokenVersion();
+        principal.enabled = farmer.getAccessStatus() == Farmer.AccessStatus.ACTIVE;
         return principal;
     }
 
@@ -73,6 +75,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

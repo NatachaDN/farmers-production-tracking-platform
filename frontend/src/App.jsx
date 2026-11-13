@@ -31,8 +31,10 @@ import { ReportsView } from './features/reports/ReportsView';
 import { EquipmentView } from './features/farms/EquipmentView';
 import { FarmCalendar } from './features/farms/FarmCalendar';
 import { FarmFinances } from './features/farms/FarmFinances';
+import { AdminReferenceCrops } from './features/admin/AdminReferenceCrops';
 
-const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
+const hasConsoleAccess = user => ['ROLE_ADMIN', 'ROLE_MANAGER'].includes(user?.role);
+const homeRouteFor = user => hasConsoleAccess(user) ? 'admin-overview' : 'dashboard';
 
 const todayLabel = () =>
   new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -64,6 +66,11 @@ export function App() {
     if (currentRoute !== 'google-callback') return;
     authService.completeGoogleSignIn()
       .then((response) => {
+        if (!response.token) {
+          setLoginSuccessMessage(response.message);
+          setCurrentRoute('login');
+          return;
+        }
         setCurrentUser(response.farmer);
         setCurrentRoute(homeRouteFor(response.farmer));
       })
@@ -115,6 +122,7 @@ export function App() {
     'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
     'admin-production': { title: 'Production', subtitle: 'Cycles, harvests and input spending' },
     'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
+    'admin-crops': { title: 'Reference crops', subtitle: 'Manage shared crop choices for farmers' },
     dashboard: {
       title: 'Dashboard',
       subtitle: `${todayLabel()}${currentUser?.farmName ? ` · ${currentUser.farmName}` : ''}`
@@ -166,6 +174,7 @@ export function App() {
 
   const currentHeader = routeHeaders[currentRoute] || routeHeaders.dashboard;
   const isAdmin = authService.isAdmin(currentUser);
+  const canUseConsole = hasConsoleAccess(currentUser);
   const isAdminRoute = currentRoute.startsWith('admin-');
 
   if (currentRoute === 'google-callback') {
@@ -185,7 +194,10 @@ export function App() {
         />
       ) : currentRoute === 'register' ? (
         <RegisterView
-          onNavigate={(r) => setCurrentRoute(r)}
+          onNavigate={(r, message) => {
+            if (message) setLoginSuccessMessage(message);
+            setCurrentRoute(r);
+          }}
           onRegisterSuccess={handleRegisterSuccess}
         />
       ) : currentRoute === 'forgot-password' ? (
@@ -204,7 +216,7 @@ export function App() {
           onEditProfile={() => setIsEditProfileModalOpen(true)}
           onUserUpdate={(updated) => setCurrentUser(updated)}
         >
-          {isAdminRoute && !isAdmin && (
+          {isAdminRoute && !canUseConsole && (
             <div style={{
               backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-card-border)',
               padding: '40px', textAlign: 'center'
@@ -215,11 +227,12 @@ export function App() {
               </p>
             </div>
           )}
-          {isAdmin && currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={(r) => setCurrentRoute(r)} />}
-          {isAdmin && currentRoute === 'admin-farmers' && <AdminFarmersView />}
-          {isAdmin && currentRoute === 'admin-activity' && <AdminActivityView />}
-          {isAdmin && currentRoute === 'admin-production' && <AdminProductionView />}
+          {canUseConsole && currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={(r) => setCurrentRoute(r)} isAdmin={isAdmin} />}
+          {canUseConsole && currentRoute === 'admin-farmers' && <AdminFarmersView user={currentUser} />}
+          {canUseConsole && currentRoute === 'admin-activity' && <AdminActivityView isAdmin={isAdmin} />}
+          {canUseConsole && currentRoute === 'admin-production' && <AdminProductionView />}
           {isAdmin && currentRoute === 'admin-system' && <AdminSystemView />}
+          {isAdmin && currentRoute === 'admin-crops' && <AdminReferenceCrops />}
           {currentRoute === 'dashboard' && (
             <DashboardView
               onNavigate={(r) => setCurrentRoute(r)}
