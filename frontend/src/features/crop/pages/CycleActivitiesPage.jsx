@@ -3,16 +3,14 @@ import { cycleActivityService } from '../services/cycleActivityService';
 import { cropCycleService } from '../../crops/services/cropCycleService';
 import { ActivityForm } from '../components/ActivityForm';
 import { ActivityList } from '../components/ActivityList';
+import { CycleActivityKpiCards } from '../components/CycleActivityKpiCards';
+import { CycleActivityMap } from '../components/CycleActivityMap';
 import {
   IconActivities,
   IconPlus,
   IconCrop,
-  IconSprout,
-  IconWater,
-  IconCheck,
   IconClose
 } from '../../../shared/components/Icons';
-import { MetricCard } from '../../../shared/components/MetricCard';
 
 export function CycleActivitiesPage({ farmerId }) {
   const [cycles, setCycles] = useState([]);
@@ -149,23 +147,13 @@ export function CycleActivitiesPage({ farmerId }) {
       {/* Toast Alert */}
       {toastMessage && (
         <div style={{
-          padding: '12px 20px',
-          borderRadius: 'var(--radius-lg)',
+          padding: '12px 20px', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, fontSize: '0.875rem',
           backgroundColor: toastMessage.type === 'error' ? 'var(--color-accent-red-bg)' : 'var(--color-brand-tint)',
           color: toastMessage.type === 'error' ? 'var(--color-accent-red)' : 'var(--color-brand-primary)',
-          border: `1px solid ${toastMessage.type === 'error' ? 'var(--color-accent-red-border)' : 'var(--color-brand-border)'}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontWeight: 600,
-          fontSize: '0.875rem'
+          border: `1px solid ${toastMessage.type === 'error' ? 'var(--color-accent-red-border)' : 'var(--color-brand-border)'}`
         }}>
           <span>{toastMessage.text}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
+          <button type="button" onClick={() => setToastMessage(null)} style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }}>
             <IconClose size={16} color="currentColor" />
           </button>
         </div>
@@ -187,16 +175,12 @@ export function CycleActivitiesPage({ farmerId }) {
                   key={c.id}
                   onClick={() => setSelectedCycleId(c.id)}
                   style={{
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-pill)',
-                    fontSize: '0.8125rem',
-                    fontWeight: isSelected ? 700 : 500,
+                    padding: '8px 16px', borderRadius: 'var(--radius-pill)', fontSize: '0.8125rem',
+                    fontWeight: isSelected ? 700 : 500, cursor: 'pointer', transition: 'all var(--transition-fast)',
                     backgroundColor: isSelected ? 'var(--color-brand-primary)' : '#FFFFFF',
                     color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
                     border: isSelected ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-card-border)',
-                    boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)',
-                    cursor: 'pointer',
-                    transition: 'all var(--transition-fast)'
+                    boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)'
                   }}
                 >
                   {displayName}
@@ -256,44 +240,23 @@ export function CycleActivitiesPage({ farmerId }) {
       )}
 
       {/* KPI Metric Summary Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '20px'
-      }}>
-        <MetricCard
-          label="Total Interventions"
-          value={String(totalCount)}
-          subtext={`Cycle: ${selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}`}
-          icon={<IconActivities size={20} color="#2D7A52" />}
-          iconBg="#EAF4ED"
-          loading={isLoading}
+      <CycleActivityKpiCards
+        totalCount={totalCount}
+        wateringCount={wateringCount}
+        fertilizingCount={fertilizingCount}
+        treatmentCount={treatmentCount}
+        lastIntervention={lastIntervention}
+        cycleName={selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}
+        isLoading={isLoading}
+      />
+
+      {/* Interactive Field Interventions Map */}
+      {selectedCycle && activities.length > 0 && (
+        <CycleActivityMap
+          activities={activities}
+          cycleName={selectedCycle?.name || selectedCycle?.plotName || ''}
         />
-        <MetricCard
-          label="Watering / Irrigation"
-          value={String(wateringCount)}
-          subtext="Moisture maintenance"
-          icon={<IconWater size={20} color="#0284C7" />}
-          iconBg="#E0F2FE"
-          loading={isLoading}
-        />
-        <MetricCard
-          label="Crop Nutrition"
-          value={String(fertilizingCount)}
-          subtext="Fertilization & compost"
-          icon={<IconSprout size={20} color="#D97706" />}
-          iconBg="#FEF3C7"
-          loading={isLoading}
-        />
-        <MetricCard
-          label="Pest / Treatments"
-          value={String(treatmentCount)}
-          subtext={`Last: ${lastIntervention}`}
-          icon={<IconCheck size={20} color="#2563EB" />}
-          iconBg="#EFF6FF"
-          loading={isLoading}
-        />
-      </div>
+      )}
 
       {/* Activity Timeline List */}
       <div style={{

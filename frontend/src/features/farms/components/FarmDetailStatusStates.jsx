@@ -58,3 +58,4 @@ export function FarmDetailError({ message, onBack }) {
     </div>
   );
 }
+

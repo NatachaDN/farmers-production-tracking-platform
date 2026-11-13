@@ -18,6 +18,7 @@ import {
 } from '../../../shared/components/Icons';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import { RecordCycleInputModal } from './RecordCycleInputModal';
+import { PlotMetricsAndMap } from './PlotMetricsAndMap';
 
 function getCropIcon(cropName) {
   const name = (cropName || '').toLowerCase();
@@ -149,169 +150,15 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
         {/* Modal Content Body */}
         <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
           
-          {/* Key Metrics Grid (4 Stat Cards) */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '14px'
-          }}>
-            <div style={{
-              backgroundColor: '#F9F6F0',
-              border: '1px solid #ECE7DC',
-              borderRadius: 'var(--radius-md, 10px)',
-              padding: '12px 14px'
-            }}>
-              <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Cultivated Area
-              </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                {areaVal} ha
-              </div>
-            </div>
-
-            <div style={{
-              backgroundColor: '#F9F6F0',
-              border: '1px solid #ECE7DC',
-              borderRadius: 'var(--radius-md, 10px)',
-              padding: '12px 14px'
-            }}>
-              <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Target Yield
-              </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-brand-primary)' }}>
-                {targetYield}
-              </div>
-            </div>
-
-            <div style={{
-              backgroundColor: '#F9F6F0',
-              border: '1px solid #ECE7DC',
-              borderRadius: 'var(--radius-md, 10px)',
-              padding: '12px 14px'
-            }}>
-              <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Planting Date
-              </div>
-              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                {formatDate(plantingDate)}
-              </div>
-            </div>
-
-            <div style={{
-              backgroundColor: '#F9F6F0',
-              border: '1px solid #ECE7DC',
-              borderRadius: 'var(--radius-md, 10px)',
-              padding: '12px 14px'
-            }}>
-              <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Est. Harvest
-              </div>
-              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                {formatDate(harvestDate)}
-              </div>
-            </div>
-          </div>
-
-          {/* Growth Stage Progress Section */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid var(--color-card-border)',
-            borderRadius: 'var(--radius-lg, 12px)',
-            padding: '18px 20px',
-            boxShadow: 'var(--shadow-subtle)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <IconZap size={16} color="var(--color-brand-primary)" />
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                  Current Growth Stage: <strong style={{ color: 'var(--color-brand-primary)' }}>{stage}</strong>
-                </span>
-              </div>
-              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-brand-primary)' }}>
-                {progress}% Complete
-              </span>
-            </div>
-
-            <div style={{
-              height: '8px',
-              width: '100%',
-              backgroundColor: '#ECE7DC',
-              borderRadius: '9999px',
-              overflow: 'hidden',
-              marginTop: '8px'
-            }}>
-              <div style={{
-                height: '100%',
-                width: `${progress}%`,
-                backgroundColor: 'var(--color-brand-primary)',
-                borderRadius: '9999px',
-                transition: 'width 500ms ease-out'
-              }} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '10px' }}>
-              <span>1. Planting</span>
-              <span>2. Vegetative</span>
-              <span>3. Flowering</span>
-              <span>4. Maturing</span>
-              <span>5. Harvest</span>
-            </div>
-          </div>
-
-          {/* Agronomic Condition & Soil Health */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '14px'
-          }}>
-            <div style={{
-              padding: '14px',
-              borderRadius: 'var(--radius-md, 10px)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <IconDroplets size={22} color="#0284C7" />
-              <div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Soil Moisture</div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0369A1' }}>68% · Optimal</div>
-              </div>
-            </div>
-
-            <div style={{
-              padding: '14px',
-              borderRadius: 'var(--radius-md, 10px)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <IconSprout size={22} color="#16A34A" />
-              <div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Crop Health</div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#15803D' }}>Good · Low Risk</div>
-              </div>
-            </div>
-
-            <div style={{
-              padding: '14px',
-              borderRadius: 'var(--radius-md, 10px)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <IconCheckCircle size={22} color="#3E7B52" />
-              <div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Cycle Status</div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#164230' }}>{plot.subStatus || 'On Track'}</div>
-              </div>
-            </div>
-          </div>
+          <PlotMetricsAndMap
+            plot={plot}
+            areaVal={areaVal}
+            targetYield={targetYield}
+            plantingDate={plantingDate}
+            harvestDate={harvestDate}
+            stage={stage}
+            progress={progress}
+          />
 
           {/* Recent Field Activities Timeline */}
           <div>

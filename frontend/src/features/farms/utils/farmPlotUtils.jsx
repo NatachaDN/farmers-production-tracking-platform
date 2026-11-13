@@ -39,3 +39,4 @@ export function mapPlotData(p) {
     icon: getCropIcon(p.cropType || p.name)
   };
 }
+

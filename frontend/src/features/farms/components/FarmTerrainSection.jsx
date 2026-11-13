@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconDroplets, IconLeaf } from '../../../shared/components/Icons';
+import { AcreaMap } from '../../../shared/components/AcreaMap';
 
 const SLOPE_LABELS = {
   FLAT:     'Flat Level Land',
@@ -33,20 +34,36 @@ const valueStyle = {
 };
 
 /**
- * FarmTerrainSection — terrain, water, soil, slope, notes.
- * Only rendered when at least one field is populated.
+ * FarmTerrainSection — terrain, water, soil, slope, notes and interactive map.
  */
 export function FarmTerrainSection({ farm }) {
+  const farmLocationText = [farm.district, farm.region, farm.country].filter(Boolean).join(', ');
   const hasContent = farm.accessToWater || farm.soilType || farm.slope
-    || farm.additionalNotes || farm.description;
+    || farm.additionalNotes || farm.description || farmLocationText;
 
   if (!hasContent) return null;
 
   return (
     <div style={sectionStyle}>
       <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: '#164230', margin: '0 0 16px' }}>
-        Terrain, Water &amp; Directions
+        Terrain, Water &amp; Interactive Farm Location
       </h3>
+
+      {/* Interactive Leaflet Map for Farm */}
+      <div style={{ marginBottom: '20px' }}>
+        <AcreaMap
+          locationText={farmLocationText}
+          label={`Farm Location (${farmLocationText || 'Cameroon'})`}
+          hint="Interactive map of this farm parcel. Toggle satellite view to see crop fields and boundaries."
+          height="250px"
+          interactive={false}
+          pinLabel={farm.name}
+          pinColor="#164230"
+          showPresets={false}
+          enableGps={false}
+        />
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '16px' }}>
         {farm.accessToWater && (
           <div>

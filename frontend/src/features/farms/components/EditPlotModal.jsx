@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconCheck, IconClose, IconWarning, IconPencil } from '../../../shared/components/Icons';
+import { AcreaMap } from '../../../shared/components/AcreaMap';
 
 const labelStyle = { display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' };
 const inputStyle = {
@@ -78,6 +79,18 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
       setValidationError(err.message || 'Failed to update plot. Please verify your inputs.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleMapLocationSelect = ({ latitude, longitude, localityHint }) => {
+    const coordsStr = `${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E`;
+    if (localityHint) {
+      setLocation(`${localityHint} (${coordsStr})`);
+    } else {
+      setLocation((prev) => {
+        const base = prev ? prev.split(' (')[0] : 'Parcel';
+        return `${base} (${coordsStr})`;
+      });
     }
   };
 
@@ -227,6 +240,18 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
             />
           </div>
 
+          <div>
+            <AcreaMap
+              locationText={location}
+              onLocationSelect={handleMapLocationSelect}
+              label="Pinpoint Plot Location on Map"
+              hint="Tap on the map or tap GPS to update this plot's parcel position."
+              height="180px"
+              pinLabel={name || 'Plot'}
+              pinColor="#2D7A52"
+            />
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: farms.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
             <div>
               <label style={labelStyle}>Growth Stage</label>
@@ -261,13 +286,9 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               onClick={onClose}
               disabled={isSubmitting}
               style={{
-                padding: '10px 18px',
-                borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                color: 'var(--color-text-secondary, #43534B)',
-                fontWeight: 600,
-                fontSize: '0.875rem',
+                padding: '10px 18px', borderRadius: 'var(--radius-md, 8px)',
+                backgroundColor: 'transparent', border: '1px solid var(--color-border-subtle, #DCD6CD)',
+                color: 'var(--color-text-secondary, #43534B)', fontWeight: 600, fontSize: '0.875rem',
                 cursor: isSubmitting ? 'not-allowed' : 'pointer'
               }}
             >
@@ -277,17 +298,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               type="submit"
               disabled={isSubmitting}
               style={{
-                padding: '10px 20px',
-                borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'var(--color-brand-primary, #164230)',
-                color: '#FFFFFF',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
+                padding: '10px 20px', borderRadius: 'var(--radius-md, 8px)',
+                backgroundColor: 'var(--color-brand-primary, #164230)', color: '#FFFFFF', border: 'none',
+                fontWeight: 600, fontSize: '0.875rem', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
                 boxShadow: 'var(--shadow-btn-primary, 0 4px 12px rgba(22, 66, 48, 0.25))'
               }}
             >

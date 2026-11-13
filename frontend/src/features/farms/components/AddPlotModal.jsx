@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { IconPlus, IconClose, IconWarning } from '../../../shared/components/Icons';
+import { AcreaMap } from '../../../shared/components/AcreaMap';
 
 const labelStyle = { fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' };
 const inputStyle = {
@@ -69,6 +70,18 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot, farmId }) {
       setValidationError(err.message || 'Failed to register plot. Please check inputs.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleMapLocationSelect = ({ latitude, longitude, localityHint }) => {
+    const coordsStr = `${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E`;
+    if (localityHint) {
+      setLocation(`${localityHint} (${coordsStr})`);
+    } else {
+      setLocation((prev) => {
+        const base = prev ? prev.split(' (')[0] : 'Parcel';
+        return `${base} (${coordsStr})`;
+      });
     }
   };
 
@@ -197,6 +210,19 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot, farmId }) {
                 style={inputStyle}
               />
             </div>
+          </div>
+
+          {/* Interactive Plot Locator Map */}
+          <div>
+            <AcreaMap
+              locationText={location}
+              onLocationSelect={handleMapLocationSelect}
+              label="Pinpoint Plot Location on Map"
+              hint="Tap on the map or tap GPS to mark this plot's precise parcel."
+              height="180px"
+              pinLabel={name || 'Plot'}
+              pinColor="#2D7A52"
+            />
           </div>
 
           {/* Crop Type & Stage */}
