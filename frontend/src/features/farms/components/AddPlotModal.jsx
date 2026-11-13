@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { IconPlus, IconCheck, IconClose, IconWarning } from '../../../shared/components/Icons';
+import { IconPlus, IconClose, IconWarning } from '../../../shared/components/Icons';
+
+const labelStyle = { fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' };
+const inputStyle = {
+  padding: '10px 14px',
+  borderRadius: 'var(--radius-md, 10px)',
+  border: '1px solid var(--color-border-input, #DFD8CA)',
+  fontSize: '0.875rem',
+  color: 'var(--color-text-primary, #19201C)',
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box'
+};
 
 export function AddPlotModal({ isOpen, onClose, onAddPlot, farmId }) {
   const [name, setName] = useState('');
@@ -149,96 +161,49 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot, farmId }) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Plot Name */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
-              Plot Name <span style={{ color: '#DC2626' }}>*</span>
-            </label>
+            <label style={labelStyle}>Plot Name <span style={{ color: '#DC2626' }}>*</span></label>
             <input
               type="text"
               placeholder="e.g., Parcelle A — Tomates de Foumbot ou Champ de Plantains"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md, 10px)',
-                border: '1px solid var(--color-border-input, #DFD8CA)',
-                fontSize: '0.875rem',
-                color: 'var(--color-text-primary, #19201C)',
-                outline: 'none',
-                width: '100%'
-              }}
+              style={inputStyle}
             />
           </div>
 
           {/* Area & Location side-by-side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {/* Area */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
-                Area (ha) <span style={{ color: '#DC2626' }}>*</span>
-              </label>
+              <label style={labelStyle}>Area (ha) <span style={{ color: '#DC2626' }}>*</span></label>
               <input
                 type="text"
                 placeholder="e.g., 2.5"
                 value={area}
                 onChange={(e) => setArea(e.target.value)}
                 style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 10px)',
-                  border: validationError && validationError.includes('Area')
-                    ? '1.5px solid #DC2626'
-                    : '1px solid var(--color-border-input, #DFD8CA)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  outline: 'none',
-                  width: '100%'
+                  ...inputStyle,
+                  border: validationError && validationError.includes('Area') ? '1.5px solid #DC2626' : inputStyle.border
                 }}
               />
             </div>
 
-            {/* Location */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
-                Location <span style={{ color: '#DC2626' }}>*</span>
-              </label>
+              <label style={labelStyle}>Location <span style={{ color: '#DC2626' }}>*</span></label>
               <input
                 type="text"
                 placeholder="e.g., Versant Bandjoun, Secteur Bafoussam"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 10px)',
-                  border: '1px solid var(--color-border-input, #DFD8CA)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  outline: 'none',
-                  width: '100%'
-                }}
+                style={inputStyle}
               />
             </div>
           </div>
 
           {/* Crop Type & Stage */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {/* Crop Type */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
-                Crop Type
-              </label>
-              <select
-                value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 10px)',
-                  border: '1px solid var(--color-border-input, #DFD8CA)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: '#FFFFFF',
-                  outline: 'none',
-                  width: '100%'
-                }}
-              >
+              <label style={labelStyle}>Crop Type</label>
+              <select value={cropType} onChange={(e) => setCropType(e.target.value)} style={{ ...inputStyle, backgroundColor: '#FFFFFF' }}>
                 <option value="Maize">Maize</option>
                 <option value="Tomatoes">Tomatoes</option>
                 <option value="Beans">Beans</option>
@@ -248,25 +213,9 @@ export function AddPlotModal({ isOpen, onClose, onAddPlot, farmId }) {
               </select>
             </div>
 
-            {/* Stage */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
-                Current Stage
-              </label>
-              <select
-                value={stage}
-                onChange={(e) => setStage(e.target.value)}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 10px)',
-                  border: '1px solid var(--color-border-input, #DFD8CA)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: '#FFFFFF',
-                  outline: 'none',
-                  width: '100%'
-                }}
-              >
+              <label style={labelStyle}>Current Stage</label>
+              <select value={stage} onChange={(e) => setStage(e.target.value)} style={{ ...inputStyle, backgroundColor: '#FFFFFF' }}>
                 <option value="Planting">Planting</option>
                 <option value="Vegetative growth">Vegetative growth</option>
                 <option value="Flowering">Flowering</option>

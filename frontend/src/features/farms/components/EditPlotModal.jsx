@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { IconCheck, IconClose, IconWarning, IconPencil } from '../../../shared/components/Icons';
 
+const labelStyle = { display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' };
+const inputStyle = {
+  width: '100%',
+  padding: '10px 14px',
+  borderRadius: 'var(--radius-md, 8px)',
+  border: '1px solid var(--color-border-subtle, #DCD6CD)',
+  fontSize: '0.875rem',
+  color: 'var(--color-text-primary, #19201C)',
+  backgroundColor: 'var(--color-canvas, #F9F6F0)',
+  outline: 'none',
+  boxSizing: 'border-box'
+};
+
 export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated }) {
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
@@ -155,7 +168,7 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
+            <label style={labelStyle}>
               Plot Name <span style={{ color: '#DC2626' }}>*</span>
             </label>
             <input
@@ -164,23 +177,13 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Parcelle 1 — Plantains de Bandjoun"
               required
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md, 8px)',
-                border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                fontSize: '0.875rem',
-                color: 'var(--color-text-primary, #19201C)',
-                backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
+              <label style={labelStyle}>
                 Cultivated Area (ha) <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <input
@@ -191,39 +194,13 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
                 onChange={(e) => setArea(e.target.value)}
                 placeholder="e.g. 2.5"
                 required
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
+                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
-                Primary Crop Type
-              </label>
-              <select
-                value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
+              <label style={labelStyle}>Primary Crop Type</label>
+              <select value={cropType} onChange={(e) => setCropType(e.target.value)} style={inputStyle}>
                 <option value="Maize">Maize (Corn)</option>
                 <option value="Tomatoes">Tomatoes</option>
                 <option value="Beans">Beans</option>
@@ -237,7 +214,7 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
+            <label style={labelStyle}>
               Location / Sector <span style={{ color: '#DC2626' }}>*</span>
             </label>
             <input
@@ -246,40 +223,14 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Versant Bandjoun, Secteur Bafoussam"
               required
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md, 8px)',
-                border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                fontSize: '0.875rem',
-                color: 'var(--color-text-primary, #19201C)',
-                backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: farms.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
-                Growth Stage
-              </label>
-              <select
-                value={stage}
-                onChange={(e) => setStage(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
+              <label style={labelStyle}>Growth Stage</label>
+              <select value={stage} onChange={(e) => setStage(e.target.value)} style={inputStyle}>
                 <option value="Planting">Planting</option>
                 <option value="Vegetative growth">Vegetative growth</option>
                 <option value="Flowering">Flowering</option>
@@ -291,24 +242,8 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
 
             {farms.length > 0 && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
-                  Assigned Farm
-                </label>
-                <select
-                  value={farmId}
-                  onChange={(e) => setFarmId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md, 8px)',
-                    border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text-primary, #19201C)',
-                    backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
+                <label style={labelStyle}>Assigned Farm</label>
+                <select value={farmId} onChange={(e) => setFarmId(e.target.value)} style={inputStyle}>
                   {farms.map((farm) => (
                     <option key={farm.id} value={farm.id}>
                       {farm.name} {farm.isDefault ? '(Default)' : ''}
