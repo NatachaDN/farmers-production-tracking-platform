@@ -96,7 +96,7 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
         }}
       >
         {/* Modal Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary, #19201C)', marginBottom: '4px' }}>
               Register a New Plot
@@ -170,7 +170,7 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
           </div>
 
           {/* Area & Location side-by-side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {/* Area */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>
@@ -219,7 +219,7 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
           </div>
 
           {/* Crop Type & Stage */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {/* Crop Type */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>

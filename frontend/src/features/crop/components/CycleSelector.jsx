@@ -5,7 +5,7 @@ import { cycleLabel } from '../hooks/useFarmerCycles';
  * Pill selector listing the farmer's real production cycles, with loading,
  * error and empty states.
  */
-export function CycleSelector({ cycles, selectedCycleId, onSelect, isLoading, error, onRetry, emptyMessage }) {
+export function CycleSelector({ cycles, selectedCycleId, onSelect, isLoading, error, onRetry, emptyMessage, disabled = false }) {
   const mutedText = { fontSize: '0.875rem', color: 'var(--color-text-muted)' };
 
   if (isLoading) {
@@ -19,6 +19,7 @@ export function CycleSelector({ cycles, selectedCycleId, onSelect, isLoading, er
         {onRetry && (
           <button
             type="button"
+            disabled={disabled}
             onClick={onRetry}
             style={{ background: 'none', border: 'none', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
           >
@@ -44,6 +45,7 @@ export function CycleSelector({ cycles, selectedCycleId, onSelect, isLoading, er
           <button
             key={c.id}
             type="button"
+            disabled={disabled}
             onClick={() => onSelect(c.id)}
             title={c.status === 'ACTIVE' ? 'Active cycle' : `Status: ${c.status}`}
             style={{

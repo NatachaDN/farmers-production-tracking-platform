@@ -5,6 +5,7 @@ import { apiClient } from '../../../shared/services/apiClient';
  * Endpoints: /api/v1/farmers/{farmerId}/cycles/{cycleId}/inputs
  */
 export const cycleInputService = {
+  confirmUsageCost: (farmerId, cycleId, usageId, unitCost) => apiClient.put(`/farmers/${farmerId}/cycles/${cycleId}/inputs/${usageId}/unit-cost`, { unitCost }),
   /**
    * Record a new input consumption on an active cycle.
    * Deducts the used quantity from available inventory stock.

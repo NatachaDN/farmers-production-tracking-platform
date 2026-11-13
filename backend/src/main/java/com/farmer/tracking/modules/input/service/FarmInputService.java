@@ -17,4 +17,6 @@ public interface FarmInputService {
     FarmInputResponse getInputById(Long farmerId, Long inputId);
 
     void deleteInput(Long farmerId, Long inputId);
+
+    FarmInputResponse confirmUnitCost(Long farmerId, Long inputId, Double unitCost);
 }

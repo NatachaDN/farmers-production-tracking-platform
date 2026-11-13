@@ -1,0 +1,45 @@
+name: Priority one regression checks
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: disposable-root-password
+          MYSQL_DATABASE: acrea_test_ci
+          MYSQL_USER: acrea_test
+          MYSQL_PASSWORD: disposable-test-password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pdisposable-root-password"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Complete backend suite on H2
+        working-directory: backend
+        run: mvn -B test
+      - name: Integrity and summary checks on disposable MySQL
+        working-directory: backend
+        env:
+          ACREA_TEST_MYSQL_URL: jdbc:mysql://127.0.0.1:3307/acrea_test_ci?allowPublicKeyRetrieval=true&useSSL=false
+          ACREA_TEST_MYSQL_USER: acrea_test
+          ACREA_TEST_MYSQL_PASSWORD: disposable-test-password
+        run: mvn -B -Dtest=IntegritySecurityIntegrationTest test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Frontend build
+        working-directory: frontend
+        run: npm ci && npm run build

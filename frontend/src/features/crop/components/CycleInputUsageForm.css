@@ -354,3 +354,8 @@
   cursor: not-allowed;
   transform: none;
 }
+@media (max-width: 600px) {
+  .selected-input-card, .stock-pills, .cycle-input-form .form-actions, .cycle-input-form .form-label { flex-wrap: wrap; }
+  .selected-input-info { min-width: 0; }
+  .selected-input-name { overflow-wrap: anywhere; }
+}

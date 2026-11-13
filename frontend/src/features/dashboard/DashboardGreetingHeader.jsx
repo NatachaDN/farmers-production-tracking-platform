@@ -8,7 +8,7 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
     : (user?.emailOrPhone ? user.emailOrPhone.split('@')[0] : 'Farmer');
 
   return (
-    <div style={{
+    <div className="acrea-responsive-toolbar" style={{
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center'
@@ -20,14 +20,14 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
           color: 'var(--color-text-primary)',
           letterSpacing: '-0.02em'
         }}>
-          Good morning, {displayName}
+          Hello, {displayName}
         </h2>
         <p style={{
           fontSize: '0.875rem',
           color: 'var(--color-text-muted)',
           marginTop: '2px'
         }}>
-          Here's an overview of your farm today.
+          Here's an overview of your saved farm records.
         </p>
       </div>
 

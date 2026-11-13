@@ -131,7 +131,8 @@ export function CropProductionView({ farmerId, onNavigate }) {
       const qty = c.expectedQuantity || 0;
       const unit = (c.expectedQuantityUnit || 'kg').toLowerCase();
       if (unit === 't' || unit === 'tons') return sum + qty;
-      return sum + (qty / 1000.0);
+      if (unit === 'kg') return sum + (qty / 1000.0);
+      return sum;
     }, 0);
 
   return (
@@ -235,7 +236,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
       )}
 
       {/* Control Bar: Tabs & Action Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {/* Navigation Filter Tabs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {['All', 'Active', 'Completed'].map((tab) => {
@@ -355,7 +356,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
       </div>
 
       {/* Summary Metrics Row (3 Columns) */}
-      <div style={{
+      <div className="acrea-responsive-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '20px'
@@ -398,7 +399,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
           boxShadow: 'var(--shadow-card)'
         }}>
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-            Expected production
+            Expected production (kg/t only)
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
             {totalExpectedTons > 0 ? `${totalExpectedTons.toFixed(1)} t` : '—'}
@@ -454,7 +455,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
           </button>
         </div>
       ) : (
-        <div style={{
+        <div className="acrea-responsive-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '20px'

@@ -13,6 +13,7 @@ import java.util.Optional;
  */
 @Repository
 public interface CycleActivityRepository extends JpaRepository<CycleActivity, Long> {
+    List<CycleActivity> findByCycle_FarmerId(Long farmerId);
 
     /** All activities for a cycle, most recent first. */
     List<CycleActivity> findByCycleIdOrderByActivityDateDesc(Long cycleId);

@@ -73,6 +73,12 @@ public class Farmer {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
+    @Column(name = "token_version")
+    private Long tokenVersion = 0L;
+
+    public long getTokenVersion() { return tokenVersion == null ? 0L : tokenVersion; }
+    public void setTokenVersion(Long version) { this.tokenVersion = version; }
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

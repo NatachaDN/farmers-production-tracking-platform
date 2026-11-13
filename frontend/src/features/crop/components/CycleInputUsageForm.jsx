@@ -45,6 +45,7 @@ export function CycleInputUsageForm({
   );
 
   const availableStock = selectedInput ? Number(selectedInput.quantity || 0) : 0;
+  const valuationRequired = !!selectedInput && selectedInput.unitCost == null;
   const unitPrice = selectedInput ? Number(selectedInput.unitCost || 0) : 0;
   const unit = selectedInput ? selectedInput.unit || 'units' : '';
 
@@ -63,6 +64,7 @@ export function CycleInputUsageForm({
       errs.cycle = 'Input consumption can only be recorded on an ACTIVE cycle.';
     }
 
+    if (valuationRequired) errs.inputId = 'Confirm this item’s unit cost in Farm Inputs before using it.';
     if (!selectedInputId) {
       errs.inputId = 'Please select an input from inventory.';
     }
@@ -213,7 +215,7 @@ export function CycleInputUsageForm({
           >
             {availableInputs.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.name} ({item.type}) — Stock: {Number(item.quantity || 0).toFixed(2)} {item.unit} · XAF {Number(item.unitCost || 0).toFixed(2)}/{item.unit}
+                {item.name} ({item.type}) — Stock: {Number(item.quantity || 0).toFixed(2)} {item.unit} · {item.unitCost == null ? 'Cost needs review' : `XAF ${Number(item.unitCost).toFixed(2)}/${item.unit}`}
               </option>
             ))}
           </select>
@@ -248,7 +250,7 @@ export function CycleInputUsageForm({
               Available: {availableStock.toFixed(2)} {unit}
             </span>
             <span className="pill-price">
-              Price: XAF {unitPrice.toFixed(2)} / {unit}
+              {valuationRequired ? 'Confirm unit cost in Farm Inputs' : `Price: XAF ${unitPrice.toFixed(2)} / ${unit}`}
             </span>
           </div>
         </div>
@@ -290,10 +292,10 @@ export function CycleInputUsageForm({
           <div>
             <div className="calc-stat-label">Calculated Real Cost</div>
             <div className="calc-stat-value">
-              XAF {calculatedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {valuationRequired ? 'Needs review' : `XAF ${calculatedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </div>
             <div className="calc-stat-subtext">
-              {parsedQty} {unit} × XAF {unitPrice.toFixed(2)} / {unit}
+              {valuationRequired ? 'Confirm the unit cost in Farm Inputs first.' : `${parsedQty} ${unit} × XAF ${unitPrice.toFixed(2)} / ${unit}`}
             </div>
           </div>
 
@@ -370,7 +372,7 @@ export function CycleInputUsageForm({
           type="submit"
           className="btn-primary-record"
           id="btn-submit-cycle-input"
-          disabled={!isCycleActive || isSubmitting || availableInputs.length === 0 || isInsufficientStock || isZeroOrNegative}
+          disabled={!isCycleActive || isSubmitting || availableInputs.length === 0 || isInsufficientStock || isZeroOrNegative || valuationRequired}
         >
           {isSubmitting ? (
             <>Processing Deduction...</>

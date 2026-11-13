@@ -7,6 +7,7 @@ import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.exception.UnauthorizedException;
 import com.farmer.tracking.common.security.JwtTokenProvider;
+import com.farmer.tracking.common.security.AccountRules;
 import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
 import com.farmer.tracking.modules.auth.model.Farmer;
@@ -65,6 +66,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        AccountRules.identifier(request.getEmailOrPhone());
+        AccountRules.password(request.getPassword());
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
 
         if (farmerRepository.existsByEmailOrPhone(normalizedIdentifier)) {
@@ -76,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
         farmer.setLastLoginAt(LocalDateTime.now());
         Farmer savedFarmer = farmerRepository.save(farmer);
 
-        String token = tokenProvider.generateToken(savedFarmer.getId(), savedFarmer.getEmailOrPhone());
+        String token = tokenProvider.generateToken(savedFarmer.getId(), savedFarmer.getEmailOrPhone(), savedFarmer.getTokenVersion());
         FarmerProfileResponse profileResponse = authMapper.toProfileResponse(savedFarmer);
 
         return new AuthResponse(token, profileResponse, "Farmer account registered successfully.");
@@ -88,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
 
-        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
+        Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier)
                 .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
 
         LocalDateTime now = LocalDateTime.now();
@@ -116,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
         farmer.setLastLoginAt(now);
         farmerRepository.save(farmer);
 
-        String token = tokenProvider.generateToken(farmer.getId(), farmer.getEmailOrPhone());
+        String token = tokenProvider.generateToken(farmer.getId(), farmer.getEmailOrPhone(), farmer.getTokenVersion());
         FarmerProfileResponse profileResponse = authMapper.toProfileResponse(farmer);
 
         return new AuthResponse(token, profileResponse, "Login successful.");
@@ -138,7 +141,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Authentication required.");
         }
 
-        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+        Farmer farmer = farmerRepository.findLockedByEmailOrPhone(emailOrPhone.trim().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
 
         if (request != null) {
@@ -152,8 +155,8 @@ public class AuthServiceImpl implements AuthService {
                 farmer.setCropsGrown(request.getCropsGrown().trim());
             }
             if (request.getTotalArea() != null) {
-                if (request.getTotalArea() < 0) {
-                    throw new IllegalArgumentException("Total area cannot be negative");
+                if (!Double.isFinite(request.getTotalArea()) || request.getTotalArea() < 0) {
+                    throw new IllegalArgumentException("Total area must be finite and cannot be negative");
                 }
                 farmer.setTotalArea(request.getTotalArea());
             }
@@ -190,7 +193,7 @@ public class AuthServiceImpl implements AuthService {
                 normalizedIdentifier
         );
 
-        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier).orElse(null);
+        Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier).orElse(null);
         if (farmer == null) {
             log.info("Password reset requested for unknown identifier");
             return genericResponse;
@@ -226,13 +229,14 @@ public class AuthServiceImpl implements AuthService {
         if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
             throw new IllegalArgumentException("Password must be between 8 and 72 characters.");
         }
+        AccountRules.password(request.getNewPassword());
         if (request.getConfirmPassword() != null && !request.getConfirmPassword().isBlank()
                 && !request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("Password confirmation does not match.");
         }
 
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
-        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
+        Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier)
                 .orElseThrow(() -> new BadRequestException(INVALID_RESET_CODE_MESSAGE));
 
         if (farmer.getPasswordResetToken() == null || farmer.getPasswordResetExpiresAt() == null) {
@@ -256,6 +260,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         farmer.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        farmer.setTokenVersion(farmer.getTokenVersion() + 1);
         // Proving ownership by email also lifts a temporary login lock.
         farmer.setFailedLoginAttempts(0);
         farmer.setLockedUntil(null);
@@ -302,7 +307,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Only JPEG, PNG, WEBP, or GIF images are allowed.");
         }
 
-        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+        Farmer farmer = farmerRepository.findLockedByEmailOrPhone(emailOrPhone.trim().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
 
         String ext = ".png";

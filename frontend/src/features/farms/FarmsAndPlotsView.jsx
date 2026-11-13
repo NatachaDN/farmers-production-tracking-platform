@@ -218,7 +218,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
 
       {/* Farms section */}
       <div style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
               My Farms
@@ -253,7 +253,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+        <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
           {farms.map((farm) => (
             <div
               key={farm.id}
@@ -303,7 +303,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
 
       {/* Plots section */}
       <div style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
             Plots
           </h2>
@@ -339,7 +339,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
             {plots.length === 0 ? 'No plots registered yet.' : 'No plot matches your search.'}
           </p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+          <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
             {filteredPlots.map((plot) => (
               <PlotCard
                 key={plot.id}

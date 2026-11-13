@@ -27,6 +27,12 @@ export function CycleActivitiesPage({ farmerId }) {
   const [toastMessage, setToastMessage] = useState(null);
 
   const canRecord = selectedCycle?.status === 'ACTIVE';
+  useEffect(() => {
+    if (!showForm) return;
+    const form = document.getElementById('activity-form-container');
+    form?.scrollIntoView({ block: 'start' });
+    form?.querySelector('input, select, button')?.focus({ preventScroll: true });
+  }, [showForm, editingActivity]);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
@@ -142,8 +148,9 @@ export function CycleActivitiesPage({ farmerId }) {
       )}
 
       {/* Control Bar: Cycle Selector & Action Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <CycleSelector
+          disabled={isSubmitting}
           cycles={cycles}
           selectedCycleId={selectedCycleId}
           onSelect={setSelectedCycleId}
@@ -192,7 +199,7 @@ export function CycleActivitiesPage({ farmerId }) {
       </div>
 
       {/* 4 KPI Summary Cards Row */}
-      <div style={{
+      <div className="acrea-responsive-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '20px'
@@ -228,7 +235,7 @@ export function CycleActivitiesPage({ farmerId }) {
       </div>
 
       {/* Form Drawer / Container */}
-      {showForm && canRecord && (
+      {showForm && (canRecord || editingActivity) && (
         <div id="activity-form-container" style={{
           backgroundColor: '#FFFFFF',
           borderRadius: 'var(--radius-xl)',
@@ -237,6 +244,8 @@ export function CycleActivitiesPage({ farmerId }) {
           boxShadow: 'var(--shadow-card)'
         }}>
           <ActivityForm
+            key={editingActivity?.id ?? 'new'}
+            plantingDate={selectedCycle?.plantingDate}
             onSubmit={handleSaveActivity}
             isSubmitting={isSubmitting}
             initialData={editingActivity}

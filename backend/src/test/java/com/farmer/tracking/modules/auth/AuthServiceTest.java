@@ -52,6 +52,8 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(farmerRepository.findLockedByEmailOrPhone(org.mockito.ArgumentMatchers.anyString())).thenAnswer(i -> farmerRepository.findByEmailOrPhone(i.getArgument(0)));
+
         authMapper = new AuthMapper();
         authService = new AuthServiceImpl(
                 farmerRepository,
@@ -82,7 +84,7 @@ class AuthServiceTest {
         when(farmerRepository.existsByEmailOrPhone("joyce@example.com")).thenReturn(false);
         when(passwordEncoder.encode("SecurePass123")).thenReturn("hashed_password");
         when(farmerRepository.save(any(Farmer.class))).thenReturn(savedFarmer);
-        when(tokenProvider.generateToken(1L, "joyce@example.com")).thenReturn("mock-jwt-token");
+        when(tokenProvider.generateToken(1L, "joyce@example.com", 0L)).thenReturn("mock-jwt-token");
 
         AuthResponse response = authService.register(request);
 
@@ -118,7 +120,7 @@ class AuthServiceTest {
 
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
         when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
-        when(tokenProvider.generateToken(1L, "joyce@example.com")).thenReturn("mock-jwt-token");
+        when(tokenProvider.generateToken(1L, "joyce@example.com", 0L)).thenReturn("mock-jwt-token");
 
         AuthResponse response = authService.login(request);
 
@@ -174,14 +176,14 @@ class AuthServiceTest {
 
         assertTrue(ex.getMessage().contains("10 minutes"));
         verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(tokenProvider, never()).generateToken(any(), any());
+        verify(tokenProvider, never()).generateToken(any(), any(), org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test
     void login_AfterLockExpires_SucceedsAndResetsCounters() {
         Farmer farmer = farmerForLogin(3, LocalDateTime.now().minusMinutes(1));
         when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
-        when(tokenProvider.generateToken(1L, "joyce@example.com")).thenReturn("mock-jwt-token");
+        when(tokenProvider.generateToken(1L, "joyce@example.com", 0L)).thenReturn("mock-jwt-token");
 
         AuthResponse response = authService.login(new LoginRequest("joyce@example.com", "SecurePass123"));
 
@@ -219,7 +221,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches("WrongPassword", "hashed_password")).thenReturn(false);
 
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
-        verify(tokenProvider, never()).generateToken(any(), anyString());
+        verify(tokenProvider, never()).generateToken(any(), anyString(), org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test

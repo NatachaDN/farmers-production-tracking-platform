@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.service;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.util.ProductionRules;
 import com.farmer.tracking.modules.crop.api.CycleActivityRequest;
 import com.farmer.tracking.modules.crop.api.CycleActivityResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
@@ -64,12 +65,13 @@ public class CycleActivityService {
     @Transactional
     public CycleActivityResponse createActivity(Long farmerId, Long cycleId,
                                                   CycleActivityRequest request) {
-        Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+        Cycle cycle = getCycleForFarmerForUpdate(farmerId, cycleId);
 
         if (cycle.getStatus() != null && cycle.getStatus() != CycleStatus.ACTIVE) {
             throw new IllegalStateException("Activities can only be recorded for an ACTIVE cycle. Current status: " + cycle.getStatus());
         }
 
+        ProductionRules.eventDate(cycle, request.getActivityDate());
         CycleActivity activity = new CycleActivity();
         activity.setCycle(cycle);
         activity.setActivityType(request.getActivityType());
@@ -87,10 +89,11 @@ public class CycleActivityService {
     public CycleActivityResponse updateActivity(Long farmerId, Long cycleId,
                                                   Long activityId,
                                                   CycleActivityRequest request) {
-        Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+        Cycle cycle = getCycleForFarmerForUpdate(farmerId, cycleId);
         CycleActivity activity = activityRepository.findByIdAndCycleId(activityId, cycle.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Activity", activityId));
 
+        ProductionRules.eventDate(cycle, request.getActivityDate());
         activity.setActivityType(request.getActivityType());
         activity.setActivityDate(request.getActivityDate());
         activity.setNotes(request.getNotes());
@@ -104,7 +107,7 @@ public class CycleActivityService {
      */
     @Transactional
     public void deleteActivity(Long farmerId, Long cycleId, Long activityId) {
-        Cycle cycle = getCycleForFarmer(farmerId, cycleId);
+        Cycle cycle = getCycleForFarmerForUpdate(farmerId, cycleId);
         CycleActivity activity = activityRepository.findByIdAndCycleId(activityId, cycle.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Activity", activityId));
         activityRepository.delete(activity);
@@ -122,6 +125,11 @@ public class CycleActivityService {
         return cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
+    }
+
+    private Cycle getCycleForFarmerForUpdate(Long farmerId, Long cycleId) {
+        return cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle", cycleId));
     }
 
     /** Maps an entity to the public response DTO. */
