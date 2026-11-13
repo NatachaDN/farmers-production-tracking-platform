@@ -109,4 +109,12 @@ public class FarmInputController {
                                             @Valid @RequestBody UnitCostRequest request) {
         return farmInputService.confirmUnitCost(farmerId, inputId, request.unitCost());
     }
+
+    @PutMapping("/{inputId}/low-stock-threshold")
+    public FarmInputResponse setLowStockThreshold(@PathVariable Long farmerId, @PathVariable Long inputId,
+            @RequestBody LowStockThreshold request) {
+        return farmInputService.setLowStockThreshold(farmerId, inputId, request.threshold());
+    }
+
+    public record LowStockThreshold(Double threshold) {}
 }

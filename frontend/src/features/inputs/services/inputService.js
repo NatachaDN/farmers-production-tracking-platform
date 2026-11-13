@@ -4,6 +4,7 @@ import { apiClient } from '../../../shared/services/apiClient';
  * Service for managing farm inputs (seeds, fertilizers, pesticides).
  */
 export const inputService = {
+  setLowStockThreshold: (farmerId, inputId, threshold) => apiClient.put(`/farmers/${farmerId}/inputs/${inputId}/low-stock-threshold`, { threshold }),
   confirmUnitCost: (farmerId, inputId, unitCost) => apiClient.put(`/farmers/${farmerId}/inputs/${inputId}/unit-cost`, { unitCost }),
   /**
    * Register or update a farm input.

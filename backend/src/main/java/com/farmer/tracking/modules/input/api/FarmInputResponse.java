@@ -18,6 +18,9 @@ public class FarmInputResponse {
     private Double purchasePrice;
     private Double cumulativeCost;
     private Double unitCost;
+    private Double lowStockThreshold;
+
+    public Double getLowStockThreshold() { return lowStockThreshold; }
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -52,6 +55,7 @@ public class FarmInputResponse {
                 input.getUpdatedAt()
         );
         response.setUnitCost(input.getUnitCost() == null ? null : Math.round(input.getUnitCost() * 100.0) / 100.0);
+        response.lowStockThreshold = input.getLowStockThreshold();
         return response;
     }
 

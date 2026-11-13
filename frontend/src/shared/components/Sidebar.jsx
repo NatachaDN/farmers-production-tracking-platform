@@ -2,7 +2,7 @@ import React from 'react';
 import {
   AcreaLogo, IconDashboard, IconFarms, IconCrop, IconLivestock, IconActivities,
   IconProduction, IconInputs, IconReports, IconSettings, IconUsers,
-  IconPulse, IconServer, IconWarning, IconClipboard, IconArrowRight
+  IconPulse, IconServer, IconWarning, IconClipboard, IconArrowRight, IconPackage, IconCalendar, IconScale
 } from './Icons';
 import './Sidebar.css';
 
@@ -15,12 +15,15 @@ const FARMER_NAV = [
     ['crops', 'Crop cycles', IconCrop],
     ['livestock', 'Livestock', IconLivestock],
     ['activities', 'Activities', IconActivities],
+    ['calendar', 'Activity calendar', IconCalendar],
     ['production', 'Harvest records', IconProduction],
   ]],
   ['Records & insights', [
     ['inputs', 'Input inventory', IconInputs],
+    ['equipment', 'Equipment', IconPackage],
     ['cycle-inputs', 'Input usage', IconClipboard],
     ['incidents', 'Incidents', IconWarning],
+    ['finances', 'Finances', IconScale],
     ['reports', 'Reports', IconReports],
   ]],
 ];

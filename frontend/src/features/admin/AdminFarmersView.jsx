@@ -10,6 +10,8 @@ const SORTS = {
   active: { label: 'Most activities', fn: (a, b) => b.activities - a.activities },
   harvest: { label: 'Most harvested', fn: (a, b) => b.harvestedKg - a.harvestedKg },
   name: { label: 'Name', fn: (a, b) => a.fullName.localeCompare(b.fullName) },
+  region: { label: 'Region', fn: (a, b) => (a.regions?.[0] || '').localeCompare(b.regions?.[0] || '') },
+  crop: { label: 'Crop', fn: (a, b) => (a.crops?.[0] || '').localeCompare(b.crops?.[0] || '') },
 };
 const FILTERS = [
   { id: 'all', label: 'All', test: () => true },
@@ -24,6 +26,8 @@ export function AdminFarmersView() {
   const [sort, setSort] = useState('newest');
   const [filter, setFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
+  const [region, setRegion] = useState('');
+  const [crop, setCrop] = useState('');
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query.trim()), 300);
@@ -31,12 +35,15 @@ export function AdminFarmersView() {
   }, [query]);
 
   const state = useAdminData(() => adminService.farmers(debounced), [debounced]);
+  const regions = [...new Set(state.data?.flatMap(row => row.regions ?? []) ?? [])].sort();
+  const crops = [...new Set(state.data?.flatMap(row => row.crops ?? []) ?? [])].sort();
 
   const rows = useMemo(() => {
     if (!state.data) return [];
     const test = FILTERS.find((f) => f.id === filter).test;
-    return state.data.filter(test).sort(SORTS[sort].fn);
-  }, [state.data, filter, sort]);
+    return state.data.filter(row => test(row) && (!region || row.regions?.includes(region))
+      && (!crop || row.crops?.includes(crop))).sort(SORTS[sort].fn);
+  }, [state.data, filter, sort, region, crop]);
 
   return (
     <div className="adm-stack fade-in">
@@ -52,6 +59,12 @@ export function AdminFarmersView() {
       </div>
 
       <div className="adm-toolbar-group">
+        <select className="adm-select" aria-label="Filter by region" value={region} onChange={event => setRegion(event.target.value)}>
+          <option value="">All regions</option>{regions.map(value => <option key={value}>{value}</option>)}
+        </select>
+        <select className="adm-select" aria-label="Filter by crop" value={crop} onChange={event => setCrop(event.target.value)}>
+          <option value="">All crops</option>{crops.map(value => <option key={value}>{value}</option>)}
+        </select>
         {FILTERS.map((f) => (
           <button key={f.id} className="adm-chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>
         ))}
@@ -65,6 +78,7 @@ export function AdminFarmersView() {
                 <thead>
                   <tr>
                     <th>Farmer</th><th>Farm type</th><th>Sign-in</th>
+                    <th>Regions</th><th>Crops</th><th className="num">Plots</th>
                     <th className="num">Cycles</th><th className="num">Activities</th><th className="num">Harvested</th><th className="num">Inputs</th>
                     <th>Last seen</th><th>Joined</th>
                   </tr>
@@ -84,6 +98,9 @@ export function AdminFarmersView() {
                       </td>
                       <td>{label(f.farmType)}</td>
                       <td><Pill value={f.authProvider} /></td>
+                      <td>{f.regions?.join(', ') || '—'}</td>
+                      <td>{f.crops?.join(', ') || '—'}</td>
+                      <td className="num">{fmtNumber(f.plots)}</td>
                       <td className="num">{f.activeCycles}<span className="muted"> / {f.cycles}</span></td>
                       <td className="num">{fmtNumber(f.activities)}</td>
                       <td className="num">{fmtKg(f.harvestedKg)}</td>

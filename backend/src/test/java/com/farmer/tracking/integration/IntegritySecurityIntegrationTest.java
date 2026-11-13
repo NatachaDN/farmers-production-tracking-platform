@@ -110,6 +110,114 @@ class IntegritySecurityIntegrationTest {
     }
 
     @Test
+    void financeLedgerUsesHarvestSalesLinkedExpensesAndVerifiedInputCosts() {
+        var farmer = fixture();
+        var today = LocalDate.now().toString();
+        var ledger = farmer.root() + "/finances";
+        var sale = Map.of("kind", "SALE", "category", "Maize sale", "cycleId", farmer.cycle(), "date", today, "amount", 900);
+        assertThat(request(HttpMethod.POST, ledger, sale, farmer.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        long input = created(farmer.root() + "/inputs", purchase("Fertilizer", 10, "kg", 100), farmer.token()).path("id").asLong();
+        created(farmer.cyclePath() + "/inputs", Map.of("inputId", input, "quantityUsed", 3, "usageDate", today), farmer.token());
+        created(ledger, Map.of("kind", "EXPENSE", "category", "Transport", "cycleId", farmer.cycle(), "date", today, "amount", 50), farmer.token());
+        created(farmer.cyclePath() + "/harvest", Map.of("quantity", 20, "unit", "KG", "harvestDate", today), farmer.token());
+        created(ledger, sale, farmer.token());
+        var margin = request(HttpMethod.GET, ledger, null, farmer.token()).getBody().path("margins").get(0);
+        assertThat(margin.path("inputCosts").asDouble()).isEqualTo(30);
+        assertThat(margin.path("margin").asDouble()).isEqualTo(820);
+    }
+
+    @Test
+    void agendaAndRemindersUseScheduledDateAndCompletion() {
+        var farmer = fixture();
+        var today = LocalDate.now();
+        var tasks = farmer.root() + "/tasks";
+        var due = created(tasks, Map.of("title", "Inspect maize", "date", today.toString()), farmer.token());
+        created(tasks, Map.of("title", "Later task", "date", today.plusDays(2).toString()), farmer.token());
+        var month = java.time.YearMonth.from(today);
+        var agenda = request(HttpMethod.GET, tasks + "?month=" + month, null, farmer.token()).getBody();
+        assertThat(agenda.get(0).path("title").asText()).isEqualTo("Inspect maize");
+        var reminders = tasks + "/reminders";
+        var initial = request(HttpMethod.GET, reminders, null, farmer.token()).getBody().path("tasks");
+        assertThat(initial.size()).isEqualTo(1);
+        assertThat(initial.get(0).path("id").asLong()).isEqualTo(due.path("id").asLong());
+        var completion = request(HttpMethod.PUT, tasks + "/" + due.path("id").asLong() + "/complete", Map.of(), farmer.token());
+        assertThat(completion.getBody().path("completed").asBoolean()).isTrue();
+        assertThat(request(HttpMethod.GET, reminders, null, farmer.token()).getBody().path("tasks").isEmpty()).isTrue();
+    }
+
+    @Test
+    void equipmentStatusIsSavedAndListingIsFarmerScoped() {
+        var farmer = fixture();
+        var other = fixture();
+        var path = farmer.root() + "/equipment";
+        long id = created(path, Map.of("name", "Water pump", "status", "AVAILABLE"), farmer.token()).path("id").asLong();
+        var change = request(HttpMethod.PUT, path + "/" + id + "/status", Map.of("status", "MAINTENANCE"), farmer.token());
+        assertThat(change.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var list = request(HttpMethod.GET, path, null, farmer.token()).getBody();
+        assertThat(list.get(0).path("status").asText()).isEqualTo("MAINTENANCE");
+        assertThat(request(HttpMethod.GET, path, null, other.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.GET, other.root() + "/equipment", null, other.token()).getBody().isEmpty()).isTrue();
+    }
+
+    @Test
+    void inputThresholdCanBeSetAndClearedWithoutChangingStock() {
+        var farmer = fixture();
+        long input = created(farmer.root() + "/inputs", purchase("Seed stock", 10, "kg", 100), farmer.token())
+                .path("id").asLong();
+        var path = farmer.root() + "/inputs/" + input + "/low-stock-threshold";
+        var saved = request(HttpMethod.PUT, path, Map.of("threshold", 15), farmer.token());
+        assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saved.getBody().path("lowStockThreshold").asDouble()).isEqualTo(15);
+        assertThat(saved.getBody().path("quantity").asDouble()).isEqualTo(10);
+        assertThat(request(HttpMethod.PUT, path, Map.of("threshold", -1), farmer.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        var clear = new HashMap<String, Object>();
+        clear.put("threshold", null);
+        assertThat(request(HttpMethod.PUT, path, clear, farmer.token()).getBody().path("lowStockThreshold").isNull()).isTrue();
+    }
+
+    @Test
+    void livestockRecordsPersistInDateOrderAndProtectGroupHistory() {
+        var farmer = fixture();
+        var other = fixture();
+        var today = LocalDate.now();
+        var groupPath = "/api/v1/animals/groups";
+        long group = created(groupPath, Map.of("name", "Laying flock", "animalType", "POULTRY",
+                "purpose", "Eggs", "initialPopulation", 24, "startDate", today.minusDays(3).toString()), farmer.token())
+                .path("id").asLong();
+        String groupUrl = groupPath + "/" + group;
+        String recordsUrl = groupUrl + "/records";
+        var feeding = Map.of("kind", "FEEDING", "name", "Grain", "quantity", 2.5, "unit", "kg", "date", today.toString());
+        var output = Map.of("kind", "PRODUCTION", "name", "Eggs", "quantity", 10, "unit", "eggs",
+                "date", today.minusDays(1).toString());
+        created(recordsUrl, feeding, farmer.token());
+        created(recordsUrl, output, farmer.token());
+        var invalid = new HashMap<String, Object>(output);
+        invalid.put("quantity", 0);
+        assertThat(request(HttpMethod.POST, recordsUrl, invalid, farmer.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(request(HttpMethod.GET, recordsUrl, null, other.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(request(HttpMethod.POST, recordsUrl, feeding, other.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        var rows = request(HttpMethod.GET, recordsUrl, null, farmer.token()).getBody();
+        assertThat(rows.size()).isEqualTo(2);
+        assertThat(rows.get(0).path("kind").asText()).isEqualTo("FEEDING");
+        assertThat(rows.get(1).path("kind").asText()).isEqualTo("PRODUCTION");
+        var recentUrl = "/api/v1/animals/recent-production";
+        var recent = request(HttpMethod.GET, recentUrl, null, farmer.token()).getBody();
+        assertThat(recent.get(0).path("groupName").asText()).isEqualTo("Laying flock");
+        assertThat(recent.get(0).path("record").path("name").asText()).isEqualTo("Eggs");
+        assertThat(request(HttpMethod.GET, recentUrl, null, other.token()).getBody().isEmpty()).isTrue();
+        var birth = Map.of("kind", "BIRTH", "name", "Birth", "quantity", 3, "unit", "animals", "date", today.toString());
+        assertThat(created(recordsUrl, birth, farmer.token()).path("currentPopulation").asInt()).isEqualTo(27);
+        var removal = new HashMap<String, Object>(birth);
+        removal.put("kind", "REMOVAL");
+        removal.put("quantity", 28);
+        assertThat(request(HttpMethod.POST, recordsUrl, removal, farmer.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        removal.put("quantity", 2);
+        assertThat(created(recordsUrl, removal, farmer.token()).path("currentPopulation").asInt()).isEqualTo(25);
+        assertThat(request(HttpMethod.GET, groupUrl, null, farmer.token()).getBody().path("currentPopulation").asInt()).isEqualTo(25);
+        assertThat(request(HttpMethod.DELETE, groupUrl, null, farmer.token()).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
     void productionReportIncludesPeriodBoundariesAndIsFarmerScoped() {
         var farmer = fixture();
         var other = fixture();
@@ -131,6 +239,8 @@ class IntegritySecurityIntegrationTest {
         assertThat(body.path("activities").get(0).path("date").asText()).isEqualTo(yesterday.toString());
         assertThat(body.path("harvests").size()).isEqualTo(1);
         assertThat(body.path("harvests").get(0).path("unit").asText()).isEqualTo("BAGS");
+        assertThat(body.path("harvests").get(0).path("plotId").asLong()).isEqualTo(farmer.plot());
+        assertThat(body.path("harvests").get(0).path("crop").asText()).isEqualTo("Maize");
         assertThat(body.path("cycles").size()).isEqualTo(1);
         assertThat(request(HttpMethod.GET, endpoint + range, null, other.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 

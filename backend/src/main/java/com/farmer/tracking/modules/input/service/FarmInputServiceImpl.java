@@ -133,4 +133,15 @@ public class FarmInputServiceImpl implements FarmInputService {
         input.setUnitCost(unitCost);
         return FarmInputResponse.fromEntity(farmInputRepository.save(input));
     }
+
+    @Override
+    public FarmInputResponse setLowStockThreshold(Long farmerId, Long inputId, Double threshold) {
+        if (threshold != null && (!Double.isFinite(threshold) || threshold <= 0)) {
+            throw new BadRequestException("The low stock threshold must be a positive number.");
+        }
+        FarmInput input = farmInputRepository.findLockedByIdAndFarmerId(inputId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input", inputId));
+        input.setLowStockThreshold(threshold);
+        return FarmInputResponse.fromEntity(farmInputRepository.save(input));
+    }
 }

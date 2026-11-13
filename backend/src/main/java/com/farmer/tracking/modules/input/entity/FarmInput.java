@@ -49,6 +49,12 @@ public class FarmInput {
     @Column(name = "unit_cost")
     private Double unitCost;
 
+    @Column(name = "low_stock_threshold")
+    private Double lowStockThreshold;
+
+    public Double getLowStockThreshold() { return lowStockThreshold; }
+    public void setLowStockThreshold(Double threshold) { lowStockThreshold = threshold; }
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../shared/services/apiClient';
 import { IconLivestock, IconPlus } from '../../shared/components/Icons';
+import { AnimalGroupRecords } from './AnimalGroupRecords';
 
 const endpoint = '/animals/groups';
 const types = ['CATTLE', 'POULTRY', 'GOATS', 'SHEEP', 'PIGS', 'RABBITS', 'BEES', 'FISH', 'OTHER'];
@@ -10,10 +11,13 @@ const label = value => value ? value[0] + value.slice(1).toLowerCase() : '—';
 export function LivestockView() {
   const [groups, setGroups] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [recordsGroup, setRecordsGroup] = useState(null);
   const [status, setStatus] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [recent, setRecent] = useState(null);
+  const [productionRefresh, setProductionRefresh] = useState(0);
 
   useEffect(() => {
     let current = true;
@@ -23,8 +27,17 @@ export function LivestockView() {
     return () => { current = false; };
   }, [attempt]);
 
+  useEffect(() => {
+    let current = true;
+    apiClient.get('/animals/recent-production')
+      .then(rows => { if (current) setRecent(rows); })
+      .catch(() => { if (current) setRecent(false); });
+    return () => { current = false; };
+  }, [productionRefresh]);
+
   const visible = groups?.filter(group => !status || group.status === status);
   const active = groups?.filter(group => group.status === 'ACTIVE') ?? [];
+  const alerts = active.filter(group => group.currentPopulation === 0);
 
   function onSaved(saved) {
     setGroups(previous => previous.some(group => group.id === saved.id)
@@ -43,7 +56,7 @@ export function LivestockView() {
             <span className="workspace-icon" aria-hidden="true"><IconLivestock size={22} /></span>
             <div><h2>Animal groups</h2><p>{groups ? `${active.length} active · ${groups.length} total` : 'Manage herds, flocks and other groups.'}</p></div>
           </div>
-          {groups && !editing && <button type="button" className="workspace-button primary" onClick={() => { setNotice(''); setEditing({}); }}>
+          {groups && !editing && !recordsGroup && <button type="button" className="workspace-button primary" onClick={() => { setNotice(''); setEditing({}); }}>
             <IconPlus size={16} /> Add animal group
           </button>}
         </header>
@@ -53,6 +66,33 @@ export function LivestockView() {
         {notice && <p role="status" className="workspace-success">{notice}</p>}
       </section>
       {editing && <AnimalGroupForm group={editing} onCancel={() => setEditing(null)} onSaved={onSaved} />}
+      {recordsGroup && <AnimalGroupRecords key={recordsGroup.id} group={recordsGroup} onClose={() => setRecordsGroup(null)}
+        onProductionRecorded={() => setProductionRefresh(value => value + 1)}
+        onPopulationChange={currentPopulation => {
+          setGroups(previous => previous.map(group => group.id === recordsGroup.id ? { ...group, currentPopulation } : group));
+          setRecordsGroup({ ...recordsGroup, currentPopulation });
+        }} />}
+      {groups?.length > 0 && !recordsGroup && !editing && (
+        <section className="workspace-panel">
+          <h2>Livestock summary</h2>
+          <dl className="workspace-facts">
+            <div><dt>Active groups</dt><dd>{active.length} of {groups.length}</dd></div>
+            <div><dt>Animals in active groups</dt><dd>{active.reduce((total, group) => total + group.currentPopulation, 0).toLocaleString()}</dd></div>
+          </dl>
+          <h3>Alerts</h3>
+          {alerts.length
+            ? <ul className="summary-list">{alerts.map(group => <li key={group.id}>{group.name} has no animals recorded.</li>)}</ul>
+            : <p className="workspace-muted">No livestock alerts.</p>}
+          <h3>Recent production</h3>
+          {recent === false ? <p className="workspace-error" role="alert">Could not load recent production.</p>
+            : recent === null ? <p role="status">Loading recent production…</p>
+            : recent.length === 0 ? <p className="workspace-muted">No production recorded yet.</p>
+            : <ul className="summary-list">{recent.map(({ groupName, record }) => (
+              <li key={record.id}><strong>{record.name} · {groupName}</strong>
+                <time dateTime={record.date}>{record.date}</time><span>{record.quantity} {record.unit}</span></li>
+            ))}</ul>}
+        </section>
+      )}
       {groups && (
         <section className="workspace-panel">
           <header className="workspace-toolbar">
@@ -71,8 +111,12 @@ export function LivestockView() {
               </dl>
               {group.location && <p className="workspace-muted">{group.location}</p>}
               {group.notes && <p className="workspace-muted">{group.notes}</p>}
-              <button type="button" className="workspace-button" disabled={!!editing}
-                onClick={() => { setNotice(''); setEditing(group); }} aria-label={`Edit ${group.name}`}>Edit group</button>
+              <div className="workspace-form-actions">
+                <button type="button" className="workspace-button" disabled={!!editing || !!recordsGroup}
+                  onClick={() => { setNotice(''); setEditing(group); }} aria-label={`Edit ${group.name}`}>Edit group</button>
+                <button type="button" className="workspace-button" disabled={!!editing || !!recordsGroup}
+                  onClick={() => setRecordsGroup(group)} aria-label={`View records for ${group.name}`}>View records</button>
+              </div>
             </li>
           ))}</ul> : <p className="workspace-empty">{status ? 'No groups match this status.' : 'Add your first animal group to start keeping livestock records.'}</p>}
         </section>

@@ -9,7 +9,9 @@ import com.farmer.tracking.modules.animal.dto.CreateAnimalGroupRequest;
 import com.farmer.tracking.modules.animal.dto.UpdateAnimalGroupRequest;
 import com.farmer.tracking.modules.animal.model.AnimalGroup;
 import com.farmer.tracking.modules.animal.model.AnimalGroupStatus;
+import com.farmer.tracking.modules.animal.model.AnimalGroupRecord.Kind;
 import com.farmer.tracking.modules.animal.repository.AnimalGroupRepository;
+import com.farmer.tracking.modules.animal.repository.AnimalGroupRecordRepository;
 import com.farmer.tracking.modules.auth.model.Farmer;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.farm.model.Farm;
@@ -31,15 +33,18 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
     private final AnimalGroupRepository animalGroupRepository;
     private final FarmerRepository farmerRepository;
     private final FarmRepository farmRepository;
+    private final AnimalGroupRecordRepository records;
 
     public AnimalGroupServiceImpl(
             AnimalGroupRepository animalGroupRepository,
             FarmerRepository farmerRepository,
-            FarmRepository farmRepository
+            FarmRepository farmRepository,
+            AnimalGroupRecordRepository records
     ) {
         this.animalGroupRepository = animalGroupRepository;
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
+        this.records = records;
     }
 
     @Override
@@ -105,13 +110,17 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
 
     @Override
     public AnimalGroupResponse updateAnimalGroup(Long id, Long farmerId, UpdateAnimalGroupRequest request) {
-        AnimalGroup group = animalGroupRepository.findById(id)
+        AnimalGroup group = animalGroupRepository.findForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Animal group not found with ID: " + id));
 
         validateOwnership(group, farmerId);
 
         if (request.getCurrentPopulation() == null || request.getCurrentPopulation() < 0) {
             throw new BadRequestException("Current population cannot be negative");
+        }
+        if (!request.getCurrentPopulation().equals(group.getCurrentPopulation())
+                && records.existsByGroup_IdAndKindIn(id, List.of(Kind.ADDITION, Kind.DEATH, Kind.SALE, Kind.REMOVAL, Kind.BIRTH))) {
+            throw new ConflictException("Record a population change in the group history.");
         }
 
         if (request.getInitialPopulation() != null && request.getInitialPopulation() <= 0) {
@@ -150,7 +159,7 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
 
     @Override
     public void deleteAnimalGroup(Long id, Long farmerId) {
-        AnimalGroup group = animalGroupRepository.findById(id)
+        AnimalGroup group = animalGroupRepository.findForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Animal group not found with ID: " + id));
 
         validateOwnership(group, farmerId);
@@ -158,7 +167,7 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         // Deletion Strategy & Policy (AC-08 & AC-09):
         // Allow deletion only when doing so does not compromise associated production or historical records.
         // If the group is archived with historical records or has active production logs, deletion is rejected.
-        if (hasProtectedHistoricalDependencies(group)) {
+        if (records.existsByGroup_Id(id) || hasProtectedHistoricalDependencies(group)) {
             throw new ConflictException(
                     "Cannot delete animal group '" + group.getName() + "' because it has protected historical records or active production history. Consider updating its status to ARCHIVED instead."
             );

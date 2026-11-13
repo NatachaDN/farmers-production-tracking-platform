@@ -101,8 +101,13 @@ public class SummaryService {
                 .filter(c -> touchedCycles.contains(c.getId()) || inPeriod(c.getStartDate(), from, to))
                 .map(c -> new ProductionReport.CycleRow(c.getId(), c.getName(), c.getStatus(), c.getStartDate())).toList();
         var reportHarvests = recordedHarvests.stream()
-                .map(h -> new ProductionReport.HarvestRow(h.getId(), h.getCycle().getName(),
-                        h.getHarvestDate(), h.getQuantity(), h.getUnit(), h.getCalculatedYield())).toList();
+                .map(h -> {
+                    var cycle = h.getCycle();
+                    var plot = cycle.getPlot();
+                    return new ProductionReport.HarvestRow(h.getId(), cycle.getName(), cycle.getCropName(),
+                            plot == null ? null : plot.getId(), plot == null ? null : plot.getName(),
+                            h.getHarvestDate(), h.getQuantity(), h.getUnit(), h.getCalculatedYield());
+                }).toList();
         return new ProductionReport(from, to, reportCycles, recordedActivities, reportHarvests);
     }
 

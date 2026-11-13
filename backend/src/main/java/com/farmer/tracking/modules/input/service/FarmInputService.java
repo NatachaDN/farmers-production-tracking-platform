@@ -19,4 +19,5 @@ public interface FarmInputService {
     void deleteInput(Long farmerId, Long inputId);
 
     FarmInputResponse confirmUnitCost(Long farmerId, Long inputId, Double unitCost);
+    FarmInputResponse setLowStockThreshold(Long farmerId, Long inputId, Double threshold);
 }

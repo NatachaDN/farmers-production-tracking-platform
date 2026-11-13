@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiClient } from '../../shared/services/apiClient';
 import { IconReports } from '../../shared/components/Icons';
+import { YieldComparison } from './YieldComparison';
 
 const formatNumber = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 const units = { KG: 'kg', TONS: 't', BAGS: 'bags' };
@@ -89,6 +90,7 @@ export function ReportsView({ farmerId }) {
           ) : <p className="workspace-empty" role="status">No crop production records were found for this period.</p>}
         </article>
       )}
+      {hasData && <YieldComparison harvests={report.harvests} />}
     </div>
   );
 }

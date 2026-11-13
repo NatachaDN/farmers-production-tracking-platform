@@ -11,6 +11,7 @@ import com.farmer.tracking.modules.animal.model.AnimalGroup;
 import com.farmer.tracking.modules.animal.model.AnimalGroupStatus;
 import com.farmer.tracking.modules.animal.model.AnimalType;
 import com.farmer.tracking.modules.animal.repository.AnimalGroupRepository;
+import com.farmer.tracking.modules.animal.repository.AnimalGroupRecordRepository;
 import com.farmer.tracking.modules.auth.model.Farmer;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.farm.model.Farm;
@@ -57,7 +58,7 @@ class AnimalGroupServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AnimalGroupServiceImpl(animalGroupRepository, farmerRepository, farmRepository);
+        service = new AnimalGroupServiceImpl(animalGroupRepository, farmerRepository, farmRepository, mock(AnimalGroupRecordRepository.class));
 
         owner = new Farmer();
         owner.setId(OWNER_ID);
@@ -276,7 +277,7 @@ class AnimalGroupServiceTest {
         request.setPurpose("Commercial Dairy");
         request.setStatus(AnimalGroupStatus.ACTIVE);
 
-        when(animalGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
+        when(animalGroupRepository.findForUpdate(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
         when(animalGroupRepository.save(any(AnimalGroup.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AnimalGroupResponse res = service.updateAnimalGroup(GROUP_ID, OWNER_ID, request);
@@ -297,7 +298,7 @@ class AnimalGroupServiceTest {
         request.setAnimalType(AnimalType.CATTLE);
         request.setCurrentPopulation(10);
 
-        when(animalGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
+        when(animalGroupRepository.findForUpdate(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
 
         assertThatThrownBy(() -> service.updateAnimalGroup(GROUP_ID, OTHER_ID, request))
                 .isInstanceOf(ForbiddenException.class)
@@ -314,7 +315,7 @@ class AnimalGroupServiceTest {
         request.setAnimalType(AnimalType.CATTLE);
         request.setCurrentPopulation(-5);
 
-        when(animalGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
+        when(animalGroupRepository.findForUpdate(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
 
         assertThatThrownBy(() -> service.updateAnimalGroup(GROUP_ID, OWNER_ID, request))
                 .isInstanceOf(BadRequestException.class)
@@ -328,7 +329,7 @@ class AnimalGroupServiceTest {
     @Test
     @DisplayName("deleteAnimalGroup: deletes group successfully when no protected historical records exist (AC-08)")
     void deleteAnimalGroup_success() {
-        when(animalGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
+        when(animalGroupRepository.findForUpdate(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
 
         service.deleteAnimalGroup(GROUP_ID, OWNER_ID);
 
@@ -341,7 +342,7 @@ class AnimalGroupServiceTest {
         ownedGroup.setStatus(AnimalGroupStatus.ARCHIVED);
         ownedGroup.setNotes("Archived with official production logs [PROTECTED]");
 
-        when(animalGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
+        when(animalGroupRepository.findForUpdate(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
 
         assertThatThrownBy(() -> service.deleteAnimalGroup(GROUP_ID, OWNER_ID))
                 .isInstanceOf(ConflictException.class)
@@ -353,7 +354,7 @@ class AnimalGroupServiceTest {
     @Test
     @DisplayName("deleteAnimalGroup: throws ForbiddenException when deleting another farmer's group")
     void deleteAnimalGroup_forbiddenForOtherFarmer() {
-        when(animalGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
+        when(animalGroupRepository.findForUpdate(GROUP_ID)).thenReturn(Optional.of(ownedGroup));
 
         assertThatThrownBy(() -> service.deleteAnimalGroup(GROUP_ID, OTHER_ID))
                 .isInstanceOf(ForbiddenException.class)

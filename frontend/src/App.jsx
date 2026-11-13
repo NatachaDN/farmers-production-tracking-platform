@@ -28,6 +28,9 @@ import './features/auth/auth.css';
 import './shared/components/Workspace.css';
 import { LivestockView } from './features/livestock/LivestockView';
 import { ReportsView } from './features/reports/ReportsView';
+import { EquipmentView } from './features/farms/EquipmentView';
+import { FarmCalendar } from './features/farms/FarmCalendar';
+import { FarmFinances } from './features/farms/FarmFinances';
 
 const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
 
@@ -152,6 +155,9 @@ export function App() {
       title: 'Reports',
       subtitle: 'Farm production summaries'
     },
+    equipment: { title: 'Equipment', subtitle: 'Track equipment availability and maintenance' },
+    calendar: { title: 'Activity calendar', subtitle: 'Plan field work and keep track of what is due' },
+    finances: { title: 'Finances', subtitle: 'Record farm expenses, harvest sales and cycle margins' },
     settings: {
       title: 'Settings',
       subtitle: 'Manage your profile and account'
@@ -277,6 +283,9 @@ export function App() {
           )}
           {currentRoute === 'livestock' && <LivestockView key={currentUser?.id} />}
           {currentRoute === 'reports' && <ReportsView key={currentUser?.id} farmerId={currentUser?.id} />}
+          {currentRoute === 'equipment' && <EquipmentView key={currentUser?.id} farmerId={currentUser?.id} />}
+          {currentRoute === 'calendar' && <FarmCalendar key={currentUser?.id} farmerId={currentUser?.id} />}
+          {currentRoute === 'finances' && <FarmFinances key={currentUser?.id} farmerId={currentUser?.id} />}
 
           {/* Quick Edit Profile Modal */}
           <EditProfileModal

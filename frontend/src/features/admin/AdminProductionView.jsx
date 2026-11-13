@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { adminService } from './services/adminService';
 import { Card, DataGate, EmptyState, Pill, Progress, RefreshButton, Tabs, useAdminData } from './components/AdminUi';
 import { fmtDate, fmtKg, fmtNumber, fmtXaf, label } from './adminFormat';
+import { ConsolidatedHarvestReport } from './components/ConsolidatedHarvestReport';
 
 const STATUSES = ['', 'ACTIVE', 'COMPLETED', 'CANCELLED'];
 
@@ -12,16 +13,21 @@ export function AdminProductionView() {
   const cycles = useAdminData(() => adminService.cycles(status), [status]);
   const harvests = useAdminData(() => adminService.harvests(), []);
   const inputs = useAdminData(() => adminService.inputs(), []);
-  const active = { cycles, harvests, inputs }[tab];
+  const farmers = useAdminData(() => tab === 'report' ? adminService.farmers() : Promise.resolve([]), [tab]);
+  const active = { cycles, harvests, inputs, report: farmers }[tab];
 
   return (
     <div className="adm-stack fade-in">
-      <div className="adm-toolbar">
+      <div className="adm-toolbar reports-controls">
         <Tabs label="Production data" value={tab} onChange={setTab} tabs={[
           { id: 'cycles', label: 'Cycles' }, { id: 'harvests', label: 'Harvests' }, { id: 'inputs', label: 'Inputs' },
+          { id: 'report', label: 'Consolidated report' },
         ]} />
         <RefreshButton onClick={active.reload} loading={active.loading} />
       </div>
+      {tab === 'report' && <DataGate state={farmers}>{people => (
+        <DataGate state={harvests}>{rows => <ConsolidatedHarvestReport farmers={people} harvests={rows} />}</DataGate>
+      )}</DataGate>}
 
       {tab === 'cycles' && (
         <>

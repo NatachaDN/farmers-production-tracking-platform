@@ -279,7 +279,10 @@ public class AdminService {
                 cycles.stream().filter(c -> c.getStatus() == CycleStatus.ACTIVE).count(),
                 d.activitiesByFarmer.getOrDefault(f.getId(), 0L),
                 r1(d.harvestKgByFarmer.getOrDefault(f.getId(), 0.0)),
-                d.inputSpendByFarmer.getOrDefault(f.getId(), 0.0));
+                d.inputSpendByFarmer.getOrDefault(f.getId(), 0.0),
+                d.regionsByFarmer.getOrDefault(f.getId(), List.of()),
+                cycles.stream().map(Cycle::getCropName).filter(Objects::nonNull).map(String::strip)
+                        .filter(crop -> !crop.isEmpty()).distinct().sorted().toList());
     }
 
     private CycleRow toCycleRow(Cycle c, Data d) {
@@ -442,6 +445,7 @@ public class AdminService {
         final List<FarmInput> inputs;
 
         final Map<Long, Long> farmsByFarmer;
+        final Map<Long, List<String>> regionsByFarmer;
         final Map<Long, Long> plotsByFarmer;
         final Map<Long, List<Cycle>> cyclesByFarmer;
         final Map<Long, List<CycleActivity>> activitiesByCycle;
@@ -461,6 +465,10 @@ public class AdminService {
             this.inputs = inputs;
 
             this.farmsByFarmer = farms.stream().collect(Collectors.groupingBy(Farm::getFarmerId, Collectors.counting()));
+            this.regionsByFarmer = farms.stream().filter(farm -> farm.getRegion() != null && !farm.getRegion().isBlank())
+                    .collect(Collectors.groupingBy(Farm::getFarmerId, Collectors.collectingAndThen(
+                            Collectors.mapping(farm -> farm.getRegion().strip(), Collectors.toSet()),
+                            regions -> regions.stream().sorted().toList())));
             this.plotsByFarmer = plots.stream().collect(Collectors.groupingBy(Plot::getFarmerId, Collectors.counting()));
             this.cyclesByFarmer = cycles.stream().collect(Collectors.groupingBy(Cycle::getFarmerId));
             this.activitiesByCycle = activities.stream().collect(Collectors.groupingBy(a -> a.getCycle().getId()));

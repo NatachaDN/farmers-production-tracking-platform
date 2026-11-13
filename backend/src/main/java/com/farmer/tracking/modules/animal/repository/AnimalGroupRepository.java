@@ -5,6 +5,8 @@ import com.farmer.tracking.modules.animal.model.AnimalGroupStatus;
 import com.farmer.tracking.modules.animal.model.AnimalType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -25,6 +27,10 @@ public interface AnimalGroupRepository extends JpaRepository<AnimalGroup, Long> 
 
     @Query("SELECT g FROM AnimalGroup g WHERE g.id = :id AND g.farmer.id = :farmerId")
     Optional<AnimalGroup> findByIdAndFarmerId(@Param("id") Long id, @Param("farmerId") Long farmerId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM AnimalGroup g WHERE g.id = :id")
+    Optional<AnimalGroup> findForUpdate(@Param("id") Long id);
 
     @Query("SELECT COUNT(g) > 0 FROM AnimalGroup g WHERE g.id = :id AND g.farmer.id = :farmerId")
     boolean existsByIdAndFarmerId(@Param("id") Long id, @Param("farmerId") Long farmerId);

@@ -57,6 +57,13 @@ export function SummaryPanels({ data, onNavigate, farm = false }) {
           detail={data.costVerified ? 'Recorded cycle consumption · all time' : `${data.unverifiedInputCount} historical applications need confirmation`}
           icon={IconInputs} tone="sand" />
       </dl>
+      {!farm && data.farmCount === 0 && (
+        <section className="summary-card">
+          <h3>Start your farm records</h3>
+          <p>Add a farm and register your first plot to start planning crop cycles.</p>
+          <SummaryAction onClick={() => onNavigate?.('farms-create')}>Add your first farm</SummaryAction>
+        </section>
+      )}
       <div className="summary-columns">
         <section className="summary-card summary-overview">
           <div className="summary-panel-heading">
