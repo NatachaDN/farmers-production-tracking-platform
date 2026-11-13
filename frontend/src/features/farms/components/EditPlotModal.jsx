@@ -4,15 +4,21 @@ import { AcreaMap } from '../../../shared/components/AcreaMap';
 
 const labelStyle = { display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' };
 const inputStyle = {
-  width: '100%',
-  padding: '10px 14px',
-  borderRadius: 'var(--radius-md, 8px)',
-  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-  fontSize: '0.875rem',
-  color: 'var(--color-text-primary, #19201C)',
-  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-  outline: 'none',
-  boxSizing: 'border-box'
+  width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md, 8px)',
+  border: '1px solid var(--color-border-subtle, #DCD6CD)', fontSize: '0.875rem',
+  color: 'var(--color-text-primary, #19201C)', backgroundColor: 'var(--color-canvas, #F9F6F0)',
+  outline: 'none', boxSizing: 'border-box'
+};
+const cancelBtnStyle = {
+  padding: '10px 18px', borderRadius: 'var(--radius-md, 8px)',
+  backgroundColor: 'transparent', border: '1px solid var(--color-border-subtle, #DCD6CD)',
+  color: 'var(--color-text-secondary, #43534B)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer'
+};
+const submitBtnStyle = {
+  padding: '10px 20px', borderRadius: 'var(--radius-md, 8px)',
+  backgroundColor: 'var(--color-brand-primary, #164230)', color: '#FFFFFF', border: 'none',
+  fontWeight: 600, fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '8px',
+  boxShadow: 'var(--shadow-btn-primary, 0 4px 12px rgba(22, 66, 48, 0.25))', cursor: 'pointer'
 };
 
 export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated }) {
@@ -83,15 +89,8 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
   };
 
   const handleMapLocationSelect = ({ latitude, longitude, localityHint }) => {
-    const coordsStr = `${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E`;
-    if (localityHint) {
-      setLocation(`${localityHint} (${coordsStr})`);
-    } else {
-      setLocation((prev) => {
-        const base = prev ? prev.split(' (')[0] : 'Parcel';
-        return `${base} (${coordsStr})`;
-      });
-    }
+    const coords = `${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E`;
+    setLocation((prev) => localityHint ? `${localityHint} (${coords})` : `${prev ? prev.split(' (')[0] : 'Parcel'} (${coords})`);
   };
 
   return (
@@ -281,30 +280,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
 
           {/* Form Actions */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              style={{
-                padding: '10px 18px', borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'transparent', border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                color: 'var(--color-text-secondary, #43534B)', fontWeight: 600, fontSize: '0.875rem',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer'
-              }}
-            >
+            <button type="button" onClick={onClose} disabled={isSubmitting} style={{ ...cancelBtnStyle, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: '10px 20px', borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'var(--color-brand-primary, #164230)', color: '#FFFFFF', border: 'none',
-                fontWeight: 600, fontSize: '0.875rem', cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                boxShadow: 'var(--shadow-btn-primary, 0 4px 12px rgba(22, 66, 48, 0.25))'
-              }}
-            >
+            <button type="submit" disabled={isSubmitting} style={{ ...submitBtnStyle, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
               <IconCheck size={16} />
               <span>{isSubmitting ? 'Saving Changes...' : 'Save Plot Changes'}</span>
             </button>

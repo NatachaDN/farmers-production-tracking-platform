@@ -18,45 +18,27 @@ import {
   IconPlus
 } from '../../shared/components/Icons';
 
+import { FarmDetailSkeleton, FarmDetailError } from './components/FarmDetailStatusStates';
+
 // ─── Shared button styles ────────────────────────────────────────────────────
 const backBtnStyle = {
-  display: 'inline-flex', alignItems: 'center', gap: '8px',
-  padding: '10px 20px',
-  borderRadius: '9999px',
-  backgroundColor: '#FFFFFF',
-  color: '#164230',
-  border: '1.5px solid #164230',
-  fontWeight: 600,
-  fontSize: '0.9375rem',
-  cursor: 'pointer',
-  boxShadow: '0 2px 6px rgba(22,66,48,0.08)'
+  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+  borderRadius: '9999px', backgroundColor: '#FFFFFF', color: '#164230',
+  border: '1.5px solid #164230', fontWeight: 600, fontSize: '0.9375rem',
+  cursor: 'pointer', boxShadow: '0 2px 6px rgba(22,66,48,0.08)'
 };
 
 const ghostBtnStyle = {
-  display: 'inline-flex', alignItems: 'center', gap: '8px',
-  padding: '10px 18px',
-  borderRadius: '9999px',
-  backgroundColor: '#FFFFFF',
-  color: '#164230',
-  border: '1px solid #ECE7DC',
-  fontWeight: 600,
-  fontSize: '0.875rem',
-  cursor: 'pointer'
+  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+  borderRadius: '9999px', backgroundColor: '#FFFFFF', color: '#164230',
+  border: '1px solid #ECE7DC', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer'
 };
 
 const primaryBtnStyle = {
-  display: 'inline-flex', alignItems: 'center', gap: '8px',
-  padding: '10px 18px',
-  borderRadius: '9999px',
-  backgroundColor: '#164230',
-  color: '#FFFFFF',
-  fontWeight: 600,
-  fontSize: '0.875rem',
-  cursor: 'pointer',
-  border: 'none'
+  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+  borderRadius: '9999px', backgroundColor: '#164230', color: '#FFFFFF',
+  fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', border: 'none'
 };
-
-import { FarmDetailSkeleton, FarmDetailError } from './components/FarmDetailStatusStates';
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onBack }) {

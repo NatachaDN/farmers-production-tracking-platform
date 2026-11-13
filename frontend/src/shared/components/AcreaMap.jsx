@@ -121,22 +121,14 @@ export function AcreaMap({
   const handleToggleMode = (mode) => {
     const map = mapInstanceRef.current;
     if (!map || !tileLayerRef.current) return;
-
     setMapMode(mode);
     map.removeLayer(tileLayerRef.current);
-
-    if (mode === 'satellite') {
-      const satLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 19 }
-      );
-      satLayer.addTo(map);
-      tileLayerRef.current = satLayer;
-    } else {
-      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-      osmLayer.addTo(map);
-      tileLayerRef.current = osmLayer;
-    }
+    const tileUrl = mode === 'satellite'
+      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const newLayer = L.tileLayer(tileUrl, { maxZoom: 19 });
+    newLayer.addTo(map);
+    tileLayerRef.current = newLayer;
   };
 
   // GPS Geolocation
@@ -145,30 +137,21 @@ export function AcreaMap({
       setGpsMsg({ type: 'error', text: 'GPS not supported on this browser.' });
       return;
     }
-
     setGpsLoading(true);
     setGpsMsg(null);
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = parseFloat(pos.coords.latitude.toFixed(6));
         const lng = parseFloat(pos.coords.longitude.toFixed(6));
         setGpsLoading(false);
         setGpsMsg({ type: 'success', text: `GPS Pinned (±${Math.round(pos.coords.accuracy || 10)}m)` });
-
         const map = mapInstanceRef.current;
         if (map) {
           map.setView([lat, lng], 15, { animate: true });
-          if (markerRef.current) {
-            markerRef.current.setLatLng([lat, lng]);
-          } else {
-            markerRef.current = L.marker([lat, lng], { icon: createPinIcon('#2E7D32', 'My GPS') }).addTo(map);
-          }
+          if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
+          else markerRef.current = L.marker([lat, lng], { icon: createPinIcon('#2E7D32', 'My GPS') }).addTo(map);
         }
-
-        if (onLocationSelect) {
-          onLocationSelect({ latitude: lat, longitude: lng });
-        }
+        if (onLocationSelect) onLocationSelect({ latitude: lat, longitude: lng });
       },
       (err) => {
         setGpsLoading(false);
@@ -183,14 +166,9 @@ export function AcreaMap({
     if (!map) return;
     map.setView([hub.lat, hub.lng], 13, { animate: true });
     if (interactive) {
-      if (markerRef.current) {
-        markerRef.current.setLatLng([hub.lat, hub.lng]);
-      } else {
-        markerRef.current = L.marker([hub.lat, hub.lng], { icon: createPinIcon(pinColor, hub.name) }).addTo(map);
-      }
-      if (onLocationSelect) {
-        onLocationSelect({ latitude: hub.lat, longitude: hub.lng, localityHint: hub.name });
-      }
+      if (markerRef.current) markerRef.current.setLatLng([hub.lat, hub.lng]);
+      else markerRef.current = L.marker([hub.lat, hub.lng], { icon: createPinIcon(pinColor, hub.name) }).addTo(map);
+      if (onLocationSelect) onLocationSelect({ latitude: hub.lat, longitude: hub.lng, localityHint: hub.name });
     }
   };
 

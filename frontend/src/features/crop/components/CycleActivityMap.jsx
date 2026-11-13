@@ -46,3 +46,4 @@ export function CycleActivityMap({ activities = [], cycleName = '' }) {
     </div>
   );
 }
+

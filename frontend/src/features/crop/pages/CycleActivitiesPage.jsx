@@ -203,19 +203,11 @@ export function CycleActivitiesPage({ farmerId }) {
               setShowForm(!showForm);
             }}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              borderRadius: 'var(--radius-pill)',
-              backgroundColor: showForm ? '#FFFFFF' : 'var(--color-brand-primary)',
+              display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+              borderRadius: 'var(--radius-pill)', backgroundColor: showForm ? '#FFFFFF' : 'var(--color-brand-primary)',
               color: showForm ? 'var(--color-text-primary)' : '#FFFFFF',
               border: showForm ? '1px solid var(--color-card-border)' : 'none',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              boxShadow: 'var(--shadow-subtle)',
-              transition: 'all var(--transition-fast)'
+              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', boxShadow: 'var(--shadow-subtle)'
             }}
           >
             {showForm ? <IconClose size={16} /> : <IconPlus size={16} />}
@@ -260,14 +252,8 @@ export function CycleActivitiesPage({ farmerId }) {
 
       {/* Activity Timeline List */}
       <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: 'var(--radius-xl)',
-        border: '1px solid var(--color-card-border)',
-        boxShadow: 'var(--shadow-card)',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px'
+        backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-card-border)',
+        boxShadow: 'var(--shadow-card)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>

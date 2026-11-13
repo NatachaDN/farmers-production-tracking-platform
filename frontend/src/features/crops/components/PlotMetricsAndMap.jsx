@@ -95,3 +95,4 @@ export function PlotMetricsAndMap({ plot, areaVal, targetYield, plantingDate, ha
     </>
   );
 }
+
