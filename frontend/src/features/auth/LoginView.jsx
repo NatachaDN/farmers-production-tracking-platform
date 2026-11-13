@@ -38,12 +38,12 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
       <AuthHeroBanner />
 
       {/* Right — Form Area */}
-      <div className="auth-form-wrapper">
+      <main className="auth-form-wrapper">
         <AuthMetaHeader subtitle="Secure farmer access" />
 
         {/* Centered Login Form */}
-        <div style={{ maxWidth: '420px', width: '100%', margin: '0 auto', padding: '24px 0' }}>
-          <h2 style={{
+        <div className="auth-panel" style={{ maxWidth: '420px', width: '100%', margin: '0 auto', padding: '24px 0' }}>
+          <h1 style={{
             fontSize: '1.875rem',
             fontWeight: 700,
             color: 'var(--color-text-primary)',
@@ -51,7 +51,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
             marginBottom: '6px'
           }}>
             Welcome back
-          </h2>
+          </h1>
           <p style={{
             fontSize: '0.875rem',
             color: 'var(--color-text-muted)',
@@ -62,7 +62,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
 
           {/* Success Alert */}
           {success && (
-            <div style={{
+            <div role="status" style={{
               backgroundColor: 'var(--color-brand-tint, #EAF4ED)',
               border: '1px solid var(--color-brand-border, #C8E2D0)',
               color: 'var(--color-brand-primary, #3E7B52)',
@@ -83,7 +83,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
 
           {/* Error Alert */}
           {error && (
-            <div style={{
+            <div role="alert" style={{
               backgroundColor: 'var(--color-accent-red-bg)',
               border: '1px solid var(--color-accent-red-border)',
               color: 'var(--color-accent-red)',
@@ -101,7 +101,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Email or Phone */}
             <div>
-              <label style={{
+              <label htmlFor="login-identifier" style={{
                 display: 'block',
                 fontSize: '0.8125rem',
                 fontWeight: 500,
@@ -145,7 +145,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
             {/* Password */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <label style={{
+                <label htmlFor="login-password" style={{
                   fontSize: '0.8125rem',
                   fontWeight: 500,
                   color: 'var(--color-text-secondary)'
@@ -276,7 +276,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
         }}>
           Acrea Agricultural Platform · Secure & Private
         </div>
-      </div>
+      </main>
     </div>
   );
 }

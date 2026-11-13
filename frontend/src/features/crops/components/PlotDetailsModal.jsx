@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   IconClose,
   IconSprout,
@@ -18,6 +18,8 @@ import {
 } from '../../../shared/components/Icons';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import { RecordCycleInputModal } from './RecordCycleInputModal';
+import { HarvestComparison } from '../../crop/components/HarvestComparison';
+import { harvestService } from '../../crop/services/harvestService';
 
 function getCropIcon(cropName) {
   const name = (cropName || '').toLowerCase();
@@ -41,7 +43,25 @@ function formatDate(dateStr) {
   }
 }
 
-export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId }) {
+function CycleHarvestComparison({ cycle, farmerId }) {
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    let current = true;
+    harvestService.getHarvest(farmerId, cycle.id)
+      .then(harvest => { if (current) setResult({ harvest }); })
+      .catch(error => {
+        if (current) setResult({ error: error?.status === 404 ? 'No harvest has been recorded.' : 'Could not load the harvest comparison.' });
+      });
+    return () => { current = false; };
+  }, [farmerId, cycle.id]);
+
+  if (!result) return <p role="status">Loading harvest comparison…</p>;
+  if (!result.harvest) return <p role="status">{result.error || 'No harvest has been recorded.'}</p>;
+  return <HarvestComparison cycle={cycle} harvest={result.harvest} />;
+}
+
+export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId, showHarvestComparison }) {
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
   if (!isOpen || !plot) return null;
@@ -211,6 +231,10 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
               </div>
             </div>
           </div>
+
+          {showHarvestComparison && farmerId && plot.status === 'COMPLETED' && plot.expectedQuantity > 0 && (
+            <CycleHarvestComparison key={`${farmerId}:${plot.id}`} farmerId={farmerId} cycle={plot} />
+          )}
 
           {/* Growth Stage Progress Section */}
           <div style={{

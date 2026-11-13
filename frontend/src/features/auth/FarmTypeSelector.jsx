@@ -9,8 +9,8 @@ const FARM_TYPES = [
 
 export function FarmTypeSelector({ value, onChange }) {
   return (
-    <div>
-      <label
+    <fieldset className="auth-farm-types">
+      <legend
         style={{
           display: 'block',
           fontSize: '0.8125rem',
@@ -20,14 +20,15 @@ export function FarmTypeSelector({ value, onChange }) {
         }}
       >
         Farm type
-      </label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+      </legend>
+      <div className="auth-farm-type-options">
         {FARM_TYPES.map(({ id, label, Icon }) => {
           const isSelected = value === id;
           return (
             <button
               key={id}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => onChange(id)}
               style={{
                 display: 'flex',
@@ -54,6 +55,6 @@ export function FarmTypeSelector({ value, onChange }) {
           );
         })}
       </div>
-    </div>
+    </fieldset>
   );
 }

@@ -48,14 +48,6 @@ function mapPlot(p) {
   };
 }
 
-const cardStyle = {
-  backgroundColor: '#FFFFFF',
-  border: '1px solid var(--color-card-border)',
-  borderRadius: 'var(--radius-xl)',
-  padding: '24px 28px',
-  boxShadow: 'var(--shadow-card)'
-};
-
 const primaryButtonStyle = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -166,7 +158,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   };
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="workspace-screen fade-in farms-workspace">
       {toast && (
         <div
           style={{
@@ -217,11 +209,11 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
       />
 
       {/* Farms section */}
-      <div style={cardStyle}>
+      <div className="workspace-panel">
         <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-              My Farms
+              Farms
             </h2>
             <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
               {farms.length} farm{farms.length === 1 ? '' : 's'} · {totalArea} ha in registered plots
@@ -302,7 +294,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
       </div>
 
       {/* Plots section */}
-      <div style={cardStyle}>
+      <div className="workspace-panel">
         <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
             Plots
@@ -321,7 +313,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
               <IconSearch size={16} color="var(--color-text-muted)" />
               <input
                 type="text"
-                placeholder="Search plots..."
+                placeholder="Search plots" aria-label="Search plots"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.875rem' }}

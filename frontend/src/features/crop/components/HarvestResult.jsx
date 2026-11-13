@@ -1,5 +1,6 @@
 import React from 'react';
 import './HarvestResult.css';
+import { HarvestComparison } from './HarvestComparison';
 import {
   IconCheckCircle,
   IconCalendar,
@@ -15,7 +16,7 @@ const UNIT_LABELS = { KG: 'kg', BAGS: 'bags', TONS: 'tons' };
  * Displays the harvest record for a completed cycle.
  * Shows quantity, unit, harvest date, calculated yield, and notes.
  */
-export function HarvestResult({ harvest }) {
+export function HarvestResult({ harvest, cycle }) {
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
     try {
@@ -56,6 +57,8 @@ export function HarvestResult({ harvest }) {
         <div className="yield-label">Total Harvested</div>
         <div className="yield-display-pill">{harvest.yieldDisplay}</div>
       </div>
+
+      <HarvestComparison cycle={cycle} harvest={harvest} />
 
       {/* Detail grid */}
       <div className="result-detail-grid">

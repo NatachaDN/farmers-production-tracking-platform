@@ -19,7 +19,7 @@ export function RegisterPasswordFields({
     <div className="grid-two-cols">
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <label style={labelStyle}>Password</label>
+          <label htmlFor="reg-password" style={labelStyle}>Password</label>
           {password.length > 0 && (
             <span style={{
               fontSize: '0.75rem',
@@ -51,6 +51,7 @@ export function RegisterPasswordFields({
           />
           <button
             type="button"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
             onClick={() => setShowPassword(!showPassword)}
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}
           >
@@ -61,7 +62,7 @@ export function RegisterPasswordFields({
 
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <label style={labelStyle}>Confirm</label>
+          <label htmlFor="reg-confirm-password" style={labelStyle}>Confirm</label>
           {confirmPassword.length > 0 && (
             <span style={{
               fontSize: '0.75rem',
@@ -93,6 +94,7 @@ export function RegisterPasswordFields({
           />
           <button
             type="button"
+            aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}
           >

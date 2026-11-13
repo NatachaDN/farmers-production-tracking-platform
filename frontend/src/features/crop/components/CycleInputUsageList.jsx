@@ -73,7 +73,7 @@ export function CycleInputUsageList({
             </p>
           </div>
         ) : (
-          <div className="table-wrapper">
+          <div className="table-wrapper" role="region" aria-label="Recorded input usage" tabIndex={0}>
             <table className="consumed-table">
               <thead>
                 <tr>

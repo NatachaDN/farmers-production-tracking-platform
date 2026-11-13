@@ -136,7 +136,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
     }, 0);
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="workspace-screen fade-in crops-workspace">
 
       {/* Toast */}
       {toast && (
@@ -236,14 +236,14 @@ export function CropProductionView({ farmerId, onNavigate }) {
       )}
 
       {/* Control Bar: Tabs & Action Button */}
-      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="workspace-toolbar workspace-toolbar-panel">
         {/* Navigation Filter Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="workspace-segments" role="group" aria-label="Filter crop cycles">
           {['All', 'Active', 'Completed'].map((tab) => {
             const isSelected = activeTab === tab;
             return (
               <button
-                key={tab}
+                key={tab} type="button" aria-pressed={isSelected}
                 onClick={() => setActiveTab(tab)}
                 style={{
                   padding: '8px 18px',
@@ -265,7 +265,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="workspace-form-actions">
           {/* Manage Personal Crops Catalog */}
           <button
             onClick={() => setIsManageCropsOpen(true)}
@@ -294,7 +294,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
             }}
           >
             <IconSprout size={16} color="var(--color-brand-primary)" />
-            <span>Manage Crops</span>
+            <span>Crop catalog</span>
           </button>
 
           {/* Cycle Inputs & Real Costs Action */}
@@ -325,7 +325,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
             }}
           >
             <IconInputs size={16} color="var(--color-brand-primary)" />
-            <span>Cycle Inputs & Costs</span>
+            <span>Input usage</span>
           </button>
 
           {/* New Production Cycle Action */}
@@ -350,7 +350,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)'}
           >
             <IconPlus size={16} />
-            <span>New Production Cycle</span>
+            <span>New crop cycle</span>
           </button>
         </div>
       </div>
@@ -499,6 +499,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
         }}
         plot={selectedPlotDetails}
         farmerId={farmerId}
+        showHarvestComparison
         onGoToActivities={(plotItem) => {
           if (onNavigate) onNavigate('activities');
         }}

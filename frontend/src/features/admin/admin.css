@@ -129,3 +129,24 @@
 @media (max-width: 560px) { .adm-mini-stats { grid-template-columns: 1fr 1fr; } }
 @media (prefers-reduced-motion: reduce) { .adm-drawer, .adm-skeleton { animation: none; } .adm-progress-fill { transition: none; } }
 .adm-drawer-body > * { flex-shrink: 0; }
+
+/* Keep dense tables readable while letting filters and headings reflow. */
+.adm-stack > .adm-toolbar, .adm-stack > .adm-toolbar-group {
+  padding: 12px 16px;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-card-bg);
+}
+.adm-card-title { font-size: 1.25rem; font-weight: 700; }
+.adm-card-sub { font-size: .875rem; }
+.adm-btn, .adm-input, .adm-select, .adm-chip, .adm-tab { min-height: 44px; }
+.adm-input { width: min(100%, 330px); min-width: 0; }
+.adm-toolbar-group { min-width: 0; }
+.adm-table-wrap { scrollbar-color: var(--color-border-input) transparent; }
+.adm-table thead th { color: var(--color-sidebar-bg); font-weight: 700; }
+.adm-table tr:focus-within td { background: var(--color-brand-tint); }
+@media (max-width: 600px) {
+  .adm-card-head { padding: 16px 14px 0; gap: 10px; flex-wrap: wrap; }
+  .adm-card-body { padding: 14px; }
+  .adm-table td, .adm-table th { padding-inline: 10px; }
+}

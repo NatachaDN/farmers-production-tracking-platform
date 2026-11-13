@@ -189,6 +189,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
           {/* Cycle Dropdown */}
           <select
             className="cycle-dropdown-select"
+            aria-label="Crop cycle"
             disabled={cycles.length === 0}
             value={selectedCycleId ?? ''}
             onChange={(e) => setSelectedCycleId(Number(e.target.value))}
@@ -206,6 +207,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
             type="button"
             className="btn-open-record-form"
             id="btn-toggle-record-input-form"
+            aria-expanded={showForm}
             disabled={!canRecord}
             title={canRecord ? undefined : 'Inputs can only be recorded on an active cycle'}
             style={canRecord ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}

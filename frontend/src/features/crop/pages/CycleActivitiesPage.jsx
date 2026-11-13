@@ -121,7 +121,7 @@ export function CycleActivitiesPage({ farmerId }) {
   const lastIntervention = cycleActivities.length > 0 ? cycleActivities[0].activityDate : 'None';
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="workspace-screen fade-in activities-workspace">
       {/* Toast Alert */}
       {toastMessage && (
         <div style={{
@@ -148,7 +148,7 @@ export function CycleActivitiesPage({ farmerId }) {
       )}
 
       {/* Control Bar: Cycle Selector & Action Button */}
-      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="workspace-toolbar workspace-toolbar-panel">
         <CycleSelector
           disabled={isSubmitting}
           cycles={cycles}
@@ -162,6 +162,7 @@ export function CycleActivitiesPage({ farmerId }) {
         {/* Action Button: Record Activity */}
         <button
           type="button"
+          aria-expanded={showForm}
           disabled={!canRecord}
           title={canRecord ? undefined : 'Activities can only be recorded on an active cycle'}
           onClick={() => {

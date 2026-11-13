@@ -19,7 +19,7 @@ export function CropCycleCard({
   onDelete
 }) {
   return (
-    <div style={{
+    <article className="workspace-record-card" style={{
       backgroundColor: 'var(--color-card-bg)',
       border: '1px solid var(--color-card-border)',
       borderRadius: 'var(--radius-xl)',
@@ -178,6 +178,6 @@ export function CropCycleCard({
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

@@ -1,0 +1,11 @@
+.production-harvest-comparison {
+  display: grid;
+  gap: 6px;
+  background: var(--color-surface-subtle, #f4efe6);
+  border: 1px solid var(--color-border-subtle, #ece7dc);
+  border-radius: var(--radius-lg);
+  padding: clamp(16px, 3vw, 24px);
+  overflow-wrap: anywhere;
+}
+
+.production-harvest-comparison h4 { font-size: 1rem; }

@@ -261,7 +261,7 @@ export function FarmInputsView({ farmerId, onNavigate }) {
   const typeCount = (t) => inputs.filter((i) => i.type === t).length;
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div className="workspace-screen fade-in inventory-workspace">
 
       {/* Toast */}
       {toast && (

@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.summary;
 
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.modules.crop.entity.*;
 import com.farmer.tracking.modules.crop.repository.*;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
@@ -83,4 +84,29 @@ public class SummaryService {
     }
     private static double bags(Harvest h) { return h.getUnit() == HarvestUnit.BAGS ? h.getQuantity() : 0; }
     private static double round(double value) { return Math.round(value * 100.0) / 100.0; }
+
+    public ProductionReport productionReport(Long farmerId, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) throw new BadRequestException("Start date must be on or before end date.");
+        var recordedActivities = activities.findByCycle_FarmerId(farmerId).stream()
+                .filter(a -> inPeriod(a.getActivityDate(), from, to))
+                .sorted(Comparator.comparing(CycleActivity::getActivityDate).thenComparing(CycleActivity::getId))
+                .map(a -> new Activity(a.getId(), a.getCycle().getId(), a.getCycle().getName(),
+                        a.getActivityType().name(), a.getActivityDate(), a.getNotes())).toList();
+        var recordedHarvests = harvests.findByCycle_FarmerId(farmerId).stream()
+                .filter(h -> inPeriod(h.getHarvestDate(), from, to))
+                .sorted(Comparator.comparing(Harvest::getHarvestDate).thenComparing(Harvest::getId)).toList();
+        var touchedCycles = recordedActivities.stream().map(Activity::cycleId).collect(Collectors.toSet());
+        recordedHarvests.forEach(h -> touchedCycles.add(h.getCycle().getId()));
+        var reportCycles = cycles.findByFarmerIdOrderByCreatedAtDesc(farmerId).stream()
+                .filter(c -> touchedCycles.contains(c.getId()) || inPeriod(c.getStartDate(), from, to))
+                .map(c -> new ProductionReport.CycleRow(c.getId(), c.getName(), c.getStatus(), c.getStartDate())).toList();
+        var reportHarvests = recordedHarvests.stream()
+                .map(h -> new ProductionReport.HarvestRow(h.getId(), h.getCycle().getName(),
+                        h.getHarvestDate(), h.getQuantity(), h.getUnit(), h.getCalculatedYield())).toList();
+        return new ProductionReport(from, to, reportCycles, recordedActivities, reportHarvests);
+    }
+
+    private static boolean inPeriod(LocalDate date, LocalDate from, LocalDate to) {
+        return date != null && !date.isBefore(from) && !date.isAfter(to);
+    }
 }

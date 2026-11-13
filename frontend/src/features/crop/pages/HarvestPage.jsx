@@ -3,22 +3,59 @@ import { HarvestForm } from '../components/HarvestForm';
 import { HarvestResult } from '../components/HarvestResult';
 import { harvestService } from '../services/harvestService';
 import { MetricCard } from '../../../shared/components/MetricCard';
-import { CycleSelector } from '../components/CycleSelector';
+import { ProductionHistory, emptyFilters } from '../components/ProductionHistory';
+import { ProductionCycleRecords } from '../components/ProductionCycleRecords';
+import { filterProductionCycles } from '../productionHistory';
+import './ProductionHistory.css';
 import { useFarmerCycles, cycleLabel } from '../hooks/useFarmerCycles';
 import {
   IconCrop,
   IconSprout,
   IconProduction,
   IconCheck,
-  IconClose,
-  IconWheat
+  IconClose
 } from '../../../shared/components/Icons';
 
 export function HarvestPage({ farmerId }) {
   const {
-    cycles, selectedCycle, selectedCycleId, setSelectedCycleId,
+    cycles, selectedCycleId, setSelectedCycleId,
     isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
   } = useFarmerCycles(farmerId);
+  const [filters, setFilters] = useState(emptyFilters);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const toastTimer = useRef(null);
+  const results = filterProductionCycles(cycles, filters);
+  const selectedCycle = results.find(cycle => cycle.id === selectedCycleId) ?? results[0];
+
+  const showToast = (message, type = 'success') => {
+    clearTimeout(toastTimer.current);
+    setToastMessage({ message, type });
+    toastTimer.current = setTimeout(() => setToastMessage(null), 5000);
+  };
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  return (
+    <div className="production-page">
+      <ProductionHistory cycles={cycles} results={results} filters={filters} onFiltersChange={setFilters}
+        selectedId={selectedCycle?.id} onSelect={setSelectedCycleId}
+        loading={cyclesLoading} error={cyclesError} onRetry={reloadCycles} disabled={isSubmitting} />
+      {toastMessage && (
+        <div className="production-history-card production-feedback" role={toastMessage.type === 'error' ? 'alert' : 'status'}>
+          <span>{toastMessage.message}</span>
+          <button type="button" onClick={() => setToastMessage(null)} aria-label="Dismiss message"><IconClose size={16} /></button>
+        </div>
+      )}
+      {selectedCycle && (
+        <HarvestCycleDetail key={`${farmerId}:${selectedCycle.id}`} farmerId={farmerId} selectedCycle={selectedCycle}
+          reloadCycles={reloadCycles} isSubmitting={isSubmitting} setIsSubmitting={setIsSubmitting} showToast={showToast} />
+      )}
+    </div>
+  );
+}
+
+function HarvestCycleDetail({ farmerId, selectedCycle, reloadCycles, isSubmitting, setIsSubmitting, showToast }) {
+  const selectedCycleId = selectedCycle.id;
   const [harvest, setHarvest] = useState(null);
   const [correcting, setCorrecting] = useState(false);
   const [corrections, setCorrections] = useState([]);
@@ -30,24 +67,8 @@ export function HarvestPage({ farmerId }) {
     form?.scrollIntoView({ block: 'start' });
     form?.querySelector('input')?.focus({ preventScroll: true });
   }, [correcting]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
-  const toastTimerRef = useRef(null);
-
-  const showToast = (text, type = 'success') => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage({ text, type });
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 5000);
-  };
-
-  // Clear any pending toast timer when the component unmounts
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     setHarvest(null);
@@ -111,47 +132,6 @@ export function HarvestPage({ farmerId }) {
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div style={{
-          padding: '12px 20px',
-          borderRadius: 'var(--radius-lg)',
-          backgroundColor: toastMessage.type === 'error' ? 'var(--color-accent-red-bg)' : 'var(--color-brand-tint)',
-          color: toastMessage.type === 'error' ? 'var(--color-accent-red)' : 'var(--color-brand-primary)',
-          border: `1px solid ${toastMessage.type === 'error' ? 'var(--color-accent-red-border)' : 'var(--color-brand-border)'}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontWeight: 600,
-          fontSize: '0.875rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <IconWheat size={18} color="currentColor" />
-            <span>{toastMessage.text}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
-            <IconClose size={16} color="currentColor" />
-          </button>
-        </div>
-      )}
-
-      {/* Control Bar: Cycle Selector */}
-      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <CycleSelector
-          disabled={isSubmitting}
-          cycles={cycles}
-          selectedCycleId={selectedCycleId}
-          onSelect={setSelectedCycleId}
-          isLoading={cyclesLoading}
-          error={cyclesError}
-          onRetry={reloadCycles}
-        />
-      </div>
-
       {/* 4 Summary KPI Cards */}
       <div className="acrea-responsive-grid" style={{
         display: 'grid',
@@ -199,7 +179,7 @@ export function HarvestPage({ farmerId }) {
             <HarvestForm key={`${selectedCycleId}-${harvest.revision}`} initialData={harvest} plantingDate={selectedCycle?.plantingDate} onSubmit={handleCorrectHarvest} isSubmitting={isSubmitting} onCancel={() => setCorrecting(false)} />
             <button type="button" disabled={isSubmitting} onClick={() => setReload(value => value + 1)}>Reload latest harvest</button>
           </> : <>
-            <HarvestResult harvest={harvest} />
+            <HarvestResult harvest={harvest} cycle={selectedCycle} />
             {harvest.cycleStatus === 'COMPLETED' && <button type="button" className="btn btn-harvest" onClick={() => setCorrecting(true)}>Correct harvest</button>}
           </>}
           <section className="harvest-correction-history" aria-label="Harvest correction history">
@@ -221,6 +201,7 @@ export function HarvestPage({ farmerId }) {
           <p>This cycle is {selectedCycle.status.toLowerCase()} and has no harvest record. A harvest can only be recorded on an active cycle.</p>
         </div>
       )}
+      <ProductionCycleRecords farmerId={farmerId} cycleId={selectedCycleId} />
     </div>
   );
 }

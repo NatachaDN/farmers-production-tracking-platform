@@ -24,6 +24,10 @@ import { AdminSystemView } from './features/admin/AdminSystemView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
 import './features/admin/admin.css';
+import './features/auth/auth.css';
+import './shared/components/Workspace.css';
+import { LivestockView } from './features/livestock/LivestockView';
+import { ReportsView } from './features/reports/ReportsView';
 
 const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
 
@@ -117,40 +121,40 @@ export function App() {
       subtitle: 'Organize land, plots and active production cycles'
     },
     crops: {
-      title: 'Crop Production Cycles',
+      title: 'Crop cycles',
       subtitle: 'Plan and follow every crop from planting to harvest'
     },
     livestock: {
-      title: 'Livestock & Animal Production',
-      subtitle: 'Track herds, flocks, feed logs and daily yields'
+      title: 'Livestock',
+      subtitle: 'Animal groups and production'
     },
     activities: {
-      title: 'Farm Activities',
+      title: 'Activities',
       subtitle: 'Record and track daily farming activities per cycle'
     },
     production: {
-      title: 'Harvest & Production Records',
-      subtitle: 'Harvest tallies, batch weighings, and yield logs'
+      title: 'Harvest records',
+      subtitle: 'Record harvests and compare results with your crop targets'
     },
     inputs: {
-      title: 'Farm Inputs',
+      title: 'Input inventory',
       subtitle: 'Track seeds, fertilizers, and pesticides — stock & costs'
     },
     'cycle-inputs': {
-      title: 'Cycle Inputs & Cost Tracking',
+      title: 'Input usage',
       subtitle: 'Record and deduct inputs used in crop cycles'
     },
     incidents: {
-      title: 'Cycle Incidents & Protection',
+      title: 'Incidents',
       subtitle: 'Log and monitor pests, diseases, and damages'
     },
     reports: {
-      title: 'Reports & Analytics',
-      subtitle: 'Seasonal output forecasts and historical performance'
+      title: 'Reports',
+      subtitle: 'Farm production summaries'
     },
     settings: {
-      title: 'Farm Settings',
-      subtitle: 'Configure acreage units, team members, and farm profiles'
+      title: 'Settings',
+      subtitle: 'Manage your profile and account'
     }
   };
 
@@ -271,22 +275,8 @@ export function App() {
               }}
             />
           )}
-          {['livestock', 'reports'].includes(currentRoute) && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--color-card-border)',
-              padding: '40px',
-              textAlign: 'center'
-            }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
-                {currentHeader.title}
-              </h2>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                This module follows the Acrea Design System standards.
-              </p>
-            </div>
-          )}
+          {currentRoute === 'livestock' && <LivestockView key={currentUser?.id} />}
+          {currentRoute === 'reports' && <ReportsView key={currentUser?.id} farmerId={currentUser?.id} />}
 
           {/* Quick Edit Profile Modal */}
           <EditProfileModal

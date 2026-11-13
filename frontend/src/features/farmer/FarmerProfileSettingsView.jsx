@@ -202,37 +202,11 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
     : 'JM';
 
   return (
-    <div className="fade-in" style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header Info */}
-      <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
-            Farm & Profile Settings
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-            Manage your personal farmer identity, holding details, crops grown and cultivated land area.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            padding: '4px 10px',
-            borderRadius: 'var(--radius-pill, 9999px)',
-            backgroundColor: 'var(--color-brand-tint, #EAF4ED)',
-            color: 'var(--color-brand-primary, #164230)',
-            border: '1px solid #C8E2D0'
-          }}>
-            Authenticated Farmer
-          </span>
-        </div>
-      </div>
-
+    <div className="workspace-screen fade-in profile-workspace">
       {/* Confirmation & Error Banners */}
       {successMessage && (
         <div
-          id="profile-success-message"
+          id="profile-success-message" role="status"
           style={{
             backgroundColor: '#ECFDF5',
             border: '1px solid #A7F3D0',

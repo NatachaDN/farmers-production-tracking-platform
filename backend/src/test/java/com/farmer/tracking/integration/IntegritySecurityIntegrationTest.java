@@ -109,6 +109,40 @@ class IntegritySecurityIntegrationTest {
                 "purchaseDate", LocalDate.now().toString(), "purchasePrice", price);
     }
 
+    @Test
+    void productionReportIncludesPeriodBoundariesAndIsFarmerScoped() {
+        var farmer = fixture();
+        var other = fixture();
+        var today = LocalDate.now();
+        var yesterday = today.minusDays(1);
+        created(farmer.cyclePath() + "/activities", Map.of("activityType", "WATERING",
+                "activityDate", yesterday.toString(), "notes", "Within the report period"), farmer.token());
+        created(other.cyclePath() + "/activities", Map.of("activityType", "WATERING",
+                "activityDate", yesterday.toString(), "notes", "Private to another farmer"), other.token());
+        created(farmer.cyclePath() + "/harvest", Map.of("quantity", 12, "unit", "BAGS",
+                "harvestDate", today.toString()), farmer.token());
+
+        var endpoint = farmer.root() + "/summary/production-report";
+        var range = "?from=" + yesterday + "&to=" + today;
+        var response = request(HttpMethod.GET, endpoint + range, null, farmer.token());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var body = response.getBody();
+        assertThat(body.path("activities").size()).isEqualTo(1);
+        assertThat(body.path("activities").get(0).path("date").asText()).isEqualTo(yesterday.toString());
+        assertThat(body.path("harvests").size()).isEqualTo(1);
+        assertThat(body.path("harvests").get(0).path("unit").asText()).isEqualTo("BAGS");
+        assertThat(body.path("cycles").size()).isEqualTo(1);
+        assertThat(request(HttpMethod.GET, endpoint + range, null, other.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        var empty = request(HttpMethod.GET, endpoint + "?from=" + today.minusYears(1) + "&to=" + today.minusYears(1), null, farmer.token());
+        assertThat(empty.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(empty.getBody().path("cycles").isEmpty()).isTrue();
+        assertThat(empty.getBody().path("activities").isEmpty()).isTrue();
+        assertThat(empty.getBody().path("harvests").isEmpty()).isTrue();
+        assertThat(request(HttpMethod.GET, endpoint + "?from=" + today + "&to=" + yesterday, null, farmer.token())
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     private ResponseEntity<JsonNode> consume(Fixture f, long cycle, long input, double quantity) {
         return request(HttpMethod.POST, f.root() + "/cycles/" + cycle + "/inputs",
                 Map.of("inputId", input, "quantityUsed", quantity, "usageDate", LocalDate.now().toString()), f.token());

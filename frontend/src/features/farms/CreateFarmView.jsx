@@ -118,7 +118,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
   ];
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="workspace-screen fade-in farm-editor-workspace">
       {/* Top Header & Breadcrumb */}
       <div>
         <button
@@ -139,9 +139,9 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
           ← Back to farms
         </button>
 
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}>
           Create a new farm
-        </h1>
+        </h2>
         <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-muted)' }}>
           Add the details of your farm to start managing your land, crops and resources.
         </p>

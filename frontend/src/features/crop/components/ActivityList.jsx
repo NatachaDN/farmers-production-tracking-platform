@@ -69,7 +69,7 @@ export function ActivityList({
       {/* Header & Filter Bar */}
       <div className="list-toolbar">
         <div>
-          <h3 className="toolbar-title">Cycle Interventions History</h3>
+          <h3 className="toolbar-title">Activity history</h3>
           <p className="toolbar-count">
             {filteredActivities.length} {filteredActivities.length === 1 ? 'activity' : 'activities'} recorded
           </p>
@@ -124,7 +124,7 @@ export function ActivityList({
         </div>
       ) : (
         /* History Table */
-        <div className="table-responsive">
+        <div className="table-responsive" role="region" aria-label="Activity history" tabIndex={0}>
           <table className="activities-table">
             <thead>
               <tr>

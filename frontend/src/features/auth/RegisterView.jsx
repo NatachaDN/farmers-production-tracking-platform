@@ -79,12 +79,12 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
       <AuthHeroBanner />
 
       {/* Right — Registration Form */}
-      <div className="auth-form-wrapper">
+      <main className="auth-form-wrapper">
         <AuthMetaHeader subtitle="Free registration for farmers" />
 
         {/* Centered Form Body */}
-        <div style={{ maxWidth: '480px', width: '100%', margin: '0 auto', padding: '16px 0' }}>
-          <h2 style={{
+        <div className="auth-panel" style={{ maxWidth: '480px', width: '100%', margin: '0 auto', padding: '16px 0' }}>
+          <h1 style={{
             fontSize: '1.75rem',
             fontWeight: 700,
             color: 'var(--color-text-primary)',
@@ -92,7 +92,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
             marginBottom: '4px'
           }}>
             Create your account
-          </h2>
+          </h1>
           <p style={{
             fontSize: '0.875rem',
             color: 'var(--color-text-muted)',
@@ -103,7 +103,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
 
           {/* Error Alert */}
           {error && (
-            <div style={{
+            <div role="alert" style={{
               backgroundColor: 'var(--color-accent-red-bg)',
               border: '1px solid var(--color-accent-red-border)',
               color: 'var(--color-accent-red)',
@@ -122,7 +122,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
             {/* Full Name & Email/Phone — 2 columns */}
             <div className="grid-two-cols">
               <div>
-                <label style={labelStyle}>Full name</label>
+                <label htmlFor="reg-fullname" style={labelStyle}>Full name</label>
                 <input
                   id="reg-fullname"
                   type="text"
@@ -135,7 +135,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Email or phone number</label>
+                <label htmlFor="reg-identifier" style={labelStyle}>Email or phone number</label>
                 <input
                   id="reg-identifier"
                   type="text"
@@ -151,7 +151,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
 
             {/* Location */}
             <div>
-              <label style={labelStyle}>Location</label>
+              <label htmlFor="reg-location" style={labelStyle}>Location</label>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -261,7 +261,7 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
         }}>
           Acrea Agricultural Platform · Supporting farmers everywhere
         </div>
-      </div>
+      </main>
     </div>
   );
 }

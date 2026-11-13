@@ -124,7 +124,7 @@ export function CycleIncidentsPage({ farmerId }) {
       )}
 
       {/* Control bar: cycle selector + action button */}
-      <div className="control-bar">
+      <div className="control-bar workspace-toolbar-panel">
         <CycleSelector
           cycles={cycles}
           selectedCycleId={selectedCycleId}
@@ -137,11 +137,12 @@ export function CycleIncidentsPage({ farmerId }) {
         <button
           type="button"
           className="record-btn"
+          aria-expanded={showForm}
           disabled={!canRecord}
           title={canRecord ? undefined : 'Incidents can only be recorded on an active cycle'}
           style={{
             backgroundColor:
-              showForm && !editingIncident ? 'var(--color-text-muted)' : '#DC2626',
+              showForm && !editingIncident ? 'var(--color-text-muted)' : 'var(--color-brand-hover)',
             opacity: canRecord ? 1 : 0.5,
             cursor: canRecord ? 'pointer' : 'not-allowed',
           }}

@@ -1,323 +1,91 @@
-import React, { useRef, useState } from 'react';
-import { IconSearch, IconBell, IconChevronDown, IconCamera, IconSettings } from './Icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { IconChevronDown, IconCamera, IconSettings, IconLogout, IconUser } from './Icons';
 import { authService } from '../../features/auth/services/authService';
 
 export function TopBar({
-  title = "Dashboard",
-  subtitle,
-  userName = "",
-  userInitials = "",
-  avatarUrl = null,
-  farmName = "",
-  onSearch,
-  onNotificationClick,
-  onLogout,
-  onUserUpdate,
-  onEditProfile,
-  onOpenNavigation,
-  navigationOpen = false
+  title = 'Dashboard', subtitle, userName = '', userInitials = '', avatarUrl = null,
+  farmName = '', onLogout, onUserUpdate, onEditProfile, onOpenNavigation, navigationOpen = false
 }) {
-  // Default subtitle: today's real date, followed by the farmer's farm name when known.
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const headerSubtitle = subtitle ?? [today, farmName].filter(Boolean).join(' · ');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
+  const [uploadError, setUploadError] = useState('');
+  const account = useRef(null);
+  const trigger = useRef(null);
+  const fileInput = useRef(null);
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const closeOutside = event => {
+      if (!account.current?.contains(event.target)) setDropdownOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, [dropdownOpen]);
+
+  const closeMenu = () => {
+    setDropdownOpen(false);
+    trigger.current?.focus();
+  };
+
+  const handleFileChange = async event => {
+    const file = event.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
+    setUploadError('');
     try {
-      const updatedUser = await authService.uploadAvatar(file);
-      if (onUserUpdate) {
-        onUserUpdate(updatedUser);
-      }
-    } catch (err) {
-      alert(err.message || 'Failed to upload profile picture.');
+      onUserUpdate?.(await authService.uploadAvatar(file));
+    } catch (error) {
+      setUploadError(error.message || 'Failed to upload profile picture.');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInput.current) fileInput.current.value = '';
     }
   };
 
   return (
-    <header className="acrea-topbar" style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '24px 36px 16px 36px',
-      backgroundColor: 'transparent'
-    }}>
-      {/* Title & Date Metadata */}
-      <button type="button" className="navigation-toggle" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="mobile-navigation" onClick={onOpenNavigation}>☰</button>
+    <header className="acrea-topbar">
+      <button type="button" className="navigation-toggle" aria-label="Open navigation"
+        aria-expanded={navigationOpen} aria-controls="mobile-navigation" onClick={onOpenNavigation}>
+        <span aria-hidden="true" />
+      </button>
       <div className="topbar-heading">
-        <h1 style={{
-          fontSize: '1.75rem',
-          fontWeight: 700,
-          color: 'var(--color-text-primary)',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.2
-        }}>
-          {title}
-        </h1>
-        {headerSubtitle && (
-          <p style={{
-            fontSize: '0.8125rem',
-            color: 'var(--color-text-muted)',
-            marginTop: '4px'
-          }}>
-            {headerSubtitle}
-          </p>
-        )}
+        <h1>{title}</h1>
+        {headerSubtitle && <p>{headerSubtitle}</p>}
       </div>
-
-      {/* Right Controls: Search, Notification, Profile */}
-      <div className="topbar-controls" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {/* Hidden file input for avatar upload */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-
-        {/* Global Search */}
-        <div className="topbar-search" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          backgroundColor: '#FFFFFF',
-          border: '1px solid var(--color-card-border)',
-          borderRadius: 'var(--radius-pill)',
-          padding: '8px 16px',
-          width: '240px',
-          boxShadow: 'var(--shadow-subtle)'
-        }}>
-          <IconSearch size={16} color="var(--color-text-muted)" />
-          <input
-            type="text"
-            placeholder="Search Acrea"
-            style={{
-              border: 'none',
-              outline: 'none',
-              fontSize: '0.8125rem',
-              color: 'var(--color-text-primary)',
-              width: '100%',
-              backgroundColor: 'transparent'
-            }}
-            onChange={(e) => onSearch && onSearch(e.target.value)}
-          />
-          <kbd style={{
-            fontSize: '0.7rem',
-            color: 'var(--color-text-muted)',
-            backgroundColor: '#F4EFE6',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            whiteSpace: 'nowrap',
-            fontFamily: 'inherit'
-          }}>
-            ⌘ K
-          </kbd>
-        </div>
-
-        {/* Notifications */}
-        <button
-          onClick={onNotificationClick}
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid var(--color-card-border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-text-secondary)',
-            position: 'relative',
-            boxShadow: 'var(--shadow-subtle)',
-            transition: 'background-color var(--transition-fast)'
-          }}
-          aria-label="Notifications"
-        >
-          <IconBell size={18} />
-          <span style={{
-            position: 'absolute',
-            top: '8px',
-            right: '9px',
-            width: '7px',
-            height: '7px',
-            backgroundColor: '#EF4444',
-            borderRadius: '50%',
-            border: '1.5px solid #FFFFFF'
-          }} />
+      <div className="topbar-account" ref={account}
+        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setDropdownOpen(false); }}
+        onKeyDown={event => { if (dropdownOpen && event.key === 'Escape') { event.stopPropagation(); closeMenu(); } }}>
+        <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+          hidden onChange={handleFileChange} />
+        <button id="profile-dropdown-trigger" ref={trigger} type="button" className="topbar-profile"
+          aria-label="Account menu" aria-expanded={dropdownOpen} aria-controls="profile-dropdown"
+          onClick={() => setDropdownOpen(open => !open)}>
+          <span className="topbar-avatar" aria-hidden="true">
+            {avatarUrl ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" /> : userInitials || <IconUser size={17} />}
+          </span>
+          <span className="topbar-user-name">
+            <strong>{userName || 'Account'}</strong>
+            {farmName && <small>{farmName}</small>}
+          </span>
+          <span className="topbar-chevron" aria-hidden="true"><IconChevronDown size={14} /></span>
         </button>
-
-        {/* User Profile Pill */}
-        <div style={{ position: 'relative' }}>
-          <div
-            id="profile-dropdown-trigger"
-            role="button" tabIndex={0} aria-label="Account menu" aria-expanded={dropdownOpen}
-            onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setDropdownOpen(!dropdownOpen); } if (event.key === 'Escape') setDropdownOpen(false); }}
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '4px 10px 4px 4px',
-              borderRadius: 'var(--radius-pill)',
-              cursor: 'pointer',
-              backgroundColor: dropdownOpen ? '#FFFFFF' : 'transparent',
-              boxShadow: dropdownOpen ? 'var(--shadow-card)' : 'none',
-              transition: 'background-color var(--transition-fast)'
-            }}
-          >
-            <div style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '50%',
-              backgroundColor: '#E2EAE5',
-              color: 'var(--color-sidebar-bg)',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              position: 'relative'
-            }}>
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }}
-                />
-              ) : (
-                userInitials
-              )}
-            </div>
-
-            <div className="topbar-user-name" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                {userName}
-              </span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                {farmName}
-              </span>
-            </div>
-
-            <IconChevronDown size={14} color="var(--color-text-muted)" />
-          </div>
-
-          {dropdownOpen && (
-            <div style={{
-              position: 'absolute',
-              top: '46px',
-              right: 0,
-              backgroundColor: '#FFFFFF',
-              border: '1px solid var(--color-card-border)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-card-hover)',
-              padding: '8px',
-              width: '200px',
-              zIndex: 100,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px'
-            }}>
-              <div style={{ padding: '8px 12px', borderBottom: '1px solid #F4EFE6' }}>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{userName}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{farmName}</div>
-              </div>
-
-              {/* Upload Profile Picture Action */}
-              <button
-                id="upload-avatar-btn"
-                type="button"
-                onClick={() => {
-                  setDropdownOpen(false);
-                  fileInputRef.current?.click();
-                }}
-                disabled={uploading}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  fontSize: '0.8125rem',
-                  color: 'var(--color-text-primary)',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: 500,
-                  cursor: uploading ? 'wait' : 'pointer',
-                  transition: 'background-color 150ms'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <IconCamera size={16} color="var(--color-brand-primary)" />
-                <span>{uploading ? 'Uploading photo...' : 'Change profile photo'}</span>
-              </button>
-
-              <button
-                id="topbar-edit-profile-btn"
-                onClick={() => {
-                  setDropdownOpen(false);
-                  if (onEditProfile) onEditProfile();
-                }}
-                style={{
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  fontSize: '0.8125rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  borderRadius: '6px',
-                  fontWeight: 500,
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'background-color 150ms'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F4EFE6'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <IconSettings size={15} color="var(--color-brand-primary, #164230)" />
-                <span>Edit Profile</span>
-              </button>
-              <button
-                onClick={() => {
-                  setDropdownOpen(false);
-                  if (onLogout) onLogout();
-                }}
-                style={{
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  fontSize: '0.8125rem',
-                  color: '#DC2626',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'background-color 150ms'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEE2E2'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                Sign out
-              </button>
-            </div>
-          )}
+        <div id="profile-dropdown" className="topbar-dropdown" hidden={!dropdownOpen}>
+          <div className="topbar-account-name"><strong>{userName || 'Account'}</strong>{farmName && <small>{farmName}</small>}</div>
+          <button id="upload-avatar-btn" type="button" disabled={uploading}
+            onClick={() => { closeMenu(); fileInput.current?.click(); }}>
+            <IconCamera size={17} /> Change profile photo
+          </button>
+          {onEditProfile && <button id="topbar-edit-profile-btn" type="button"
+            onClick={() => { closeMenu(); onEditProfile(); }}><IconSettings size={17} /> Edit profile</button>}
+          {onLogout && <button type="button" className="topbar-sign-out"
+            onClick={() => { closeMenu(); onLogout(); }}><IconLogout size={17} /> Sign out</button>}
+          {dropdownOpen && uploading && <p className="topbar-feedback" role="status">Uploading profile photo…</p>}
+          {dropdownOpen && uploadError && <p className="topbar-feedback" role="alert">{uploadError}</p>}
         </div>
+        {!dropdownOpen && uploading && <p className="topbar-feedback" role="status">Uploading profile photo…</p>}
+        {!dropdownOpen && uploadError && <p className="topbar-feedback" role="alert">{uploadError}</p>}
       </div>
     </header>
   );

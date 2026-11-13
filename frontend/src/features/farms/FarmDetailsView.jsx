@@ -120,7 +120,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
   const tabs = ['Overview', 'Crops', 'Livestock', 'Resources', 'Activities', 'Settings'];
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="workspace-screen fade-in farm-detail-workspace">
       {/* Back Link & Header Bar */}
       <div className="acrea-responsive-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -141,9 +141,9 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
           >
             ← All farms
           </button>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}>
             {currentFarm.name}
-          </h1>
+          </h2>
           <p style={{ fontSize: '0.9375rem', color: 'var(--color-text-muted)' }}>
             Monitor and manage all aspects of your farm in one place.
           </p>

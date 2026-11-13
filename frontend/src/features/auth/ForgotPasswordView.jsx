@@ -97,10 +97,10 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
       <AuthHeroBanner />
 
       {/* Right — Form Canvas */}
-      <div className="auth-form-wrapper">
+      <main className="auth-form-wrapper">
         <AuthMetaHeader subtitle="Account recovery" />
 
-        <div style={{ maxWidth: '420px', width: '100%', margin: '0 auto', padding: '24px 0' }}>
+        <div className="auth-panel" style={{ maxWidth: '420px', width: '100%', margin: '0 auto', padding: '24px 0' }}>
           {/* Back button */}
           <button
             type="button"
@@ -126,7 +126,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
           {/* STEP 1: REQUEST CODE */}
           {step === 1 && (
             <div>
-              <h2 style={{
+              <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 700,
                 color: 'var(--color-text-primary)',
@@ -134,7 +134,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 marginBottom: '6px'
               }}>
                 Reset your password
-              </h2>
+              </h1>
               <p style={{
                 fontSize: '0.875rem',
                 color: 'var(--color-text-muted)',
@@ -146,7 +146,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
 
               {/* Error Alert */}
               {error && (
-                <div style={{
+                <div role="alert" style={{
                   backgroundColor: 'var(--color-accent-red-bg)',
                   border: '1px solid var(--color-accent-red-border)',
                   color: 'var(--color-accent-red)',
@@ -163,7 +163,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
 
               <form onSubmit={handleRequestCode} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <label style={{
+                  <label htmlFor="forgot-identifier-input" style={{
                     display: 'block',
                     fontSize: '0.8125rem',
                     fontWeight: 500,
@@ -232,7 +232,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
           {/* STEP 2: ENTER CODE & NEW PASSWORD */}
           {step === 2 && (
             <div>
-              <h2 style={{
+              <h1 style={{
                 fontSize: '1.875rem',
                 fontWeight: 700,
                 color: 'var(--color-text-primary)',
@@ -240,7 +240,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 marginBottom: '6px'
               }}>
                 Set new password
-              </h2>
+              </h1>
               <p style={{
                 fontSize: '0.875rem',
                 color: 'var(--color-text-muted)',
@@ -272,7 +272,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
 
               {/* Error Alert */}
               {error && (
-                <div style={{
+                <div role="alert" style={{
                   backgroundColor: 'var(--color-accent-red-bg)',
                   border: '1px solid var(--color-accent-red-border)',
                   color: 'var(--color-accent-red)',
@@ -291,7 +291,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 {/* Reset Code */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <label style={{
+                    <label htmlFor="reset-code-input" style={{
                       fontSize: '0.8125rem',
                       fontWeight: 500,
                       color: 'var(--color-text-secondary)'
@@ -352,7 +352,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
 
                 {/* New Password */}
                 <div>
-                  <label style={{
+                  <label htmlFor="new-password-input" style={{
                     display: 'block',
                     fontSize: '0.8125rem',
                     fontWeight: 500,
@@ -409,7 +409,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
 
                 {/* Confirm Password */}
                 <div>
-                  <label style={{
+                  <label htmlFor="confirm-password-input" style={{
                     display: 'block',
                     fontSize: '0.8125rem',
                     fontWeight: 500,
@@ -564,7 +564,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 <IconCheckCircle size={32} color="var(--color-brand-primary, #3E7B52)" />
               </div>
 
-              <h2 style={{
+              <h1 style={{
                 fontSize: '1.5rem',
                 fontWeight: 700,
                 color: 'var(--color-text-primary)',
@@ -572,7 +572,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 marginBottom: '8px'
               }}>
                 Password updated
-              </h2>
+              </h1>
               <p style={{
                 fontSize: '0.875rem',
                 color: 'var(--color-text-muted)',
@@ -622,7 +622,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
         }}>
           Acrea Agricultural Platform · Secure & Private
         </div>
-      </div>
+      </main>
     </div>
   );
 }
