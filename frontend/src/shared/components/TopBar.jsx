@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { IconSearch, IconBell, IconChevronDown, IconCamera, IconSettings } from './Icons';
 import { authService } from '../../features/auth/services/authService';
+import { notificationService } from '../services/notificationService';
 
 export function TopBar({
   title = "Dashboard",
@@ -17,8 +18,43 @@ export function TopBar({
   onOpenMobileMenu
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadNotifs = () => {
+      notificationService.getMyNotifications()
+        .then((list) => {
+          if (mounted && Array.isArray(list)) setNotifications(list);
+        })
+        .catch(() => {});
+    };
+    loadNotifs();
+    const timer = setInterval(loadNotifs, 45000);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleMarkRead = async (id) => {
+    try {
+      await notificationService.markRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    } catch { /* ignore */ }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch { /* ignore */ }
+  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -133,36 +169,131 @@ export function TopBar({
         </div>
 
         {/* Notifications */}
-        <button
-          onClick={onNotificationClick}
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid var(--color-card-border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-text-secondary)',
-            position: 'relative',
-            boxShadow: 'var(--shadow-subtle)',
-            transition: 'background-color var(--transition-fast)'
-          }}
-          aria-label="Notifications"
-        >
-          <IconBell size={18} />
-          <span style={{
-            position: 'absolute',
-            top: '8px',
-            right: '9px',
-            width: '7px',
-            height: '7px',
-            backgroundColor: '#EF4444',
-            borderRadius: '50%',
-            border: '1.5px solid #FFFFFF'
-          }} />
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setNotifOpen((prev) => !prev);
+              setDropdownOpen(false);
+              if (onNotificationClick) onNotificationClick();
+            }}
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-card-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-secondary)',
+              position: 'relative',
+              cursor: 'pointer',
+              boxShadow: 'var(--shadow-subtle)',
+              transition: 'background-color var(--transition-fast)'
+            }}
+            aria-label="Notifications"
+          >
+            <IconBell size={18} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '5px',
+                right: '6px',
+                minWidth: '15px',
+                height: '15px',
+                padding: '0 4px',
+                backgroundColor: '#EF4444',
+                color: '#FFFFFF',
+                fontSize: '0.625rem',
+                fontWeight: 700,
+                borderRadius: '9999px',
+                border: '1.5px solid #FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {notifOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                onClick={() => setNotifOpen(false)}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '46px',
+                right: 0,
+                width: 'min(92vw, 340px)',
+                maxHeight: '420px',
+                overflowY: 'auto',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '14px',
+                border: '1px solid var(--color-card-border)',
+                boxShadow: '0 12px 32px rgba(22, 66, 48, 0.14)',
+                zIndex: 100,
+                padding: '12px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid #ECE7DC' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#164230' }}>
+                    Notifications {unreadCount > 0 ? `(${unreadCount})` : ''}
+                  </span>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllRead}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#3E7B52',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                {notifications.length === 0 ? (
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '20px 8px', margin: 0 }}>
+                    No notifications yet.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                    {notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => !n.isRead && handleMarkRead(n.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          backgroundColor: n.isRead ? '#FAF9F6' : '#EAF4ED',
+                          border: n.isRead ? '1px solid #ECE7DC' : '1px solid #B7DEC2',
+                          cursor: n.isRead ? 'default' : 'pointer',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#19201C' }}>{n.title}</span>
+                          <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#3E7B52' }}>{n.type}</span>
+                        </div>
+                        <p style={{ fontSize: '0.8125rem', color: '#4B5752', margin: '4px 0 4px', lineHeight: 1.4 }}>{n.message}</p>
+                        <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
+                          {n.senderName ? `From ${n.senderName} · ` : ''}
+                          {n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* User Profile Pill */}
         <div style={{ position: 'relative' }}>

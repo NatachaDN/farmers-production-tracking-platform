@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "farms", indexes = {
-        @Index(name = "idx_farm_farmer_id", columnList = "farmer_id")
+        @Index(name = "idx_farm_farmer_id", columnList = "farmer_id"),
+        @Index(name = "idx_farm_manager_id", columnList = "manager_id")
 })
 public class Farm {
 
@@ -18,6 +19,10 @@ public class Farm {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "farmer_id", nullable = false)
     private Farmer farmer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_id")
+    private Farmer manager;
 
     @Column(name = "name", nullable = false, length = 120)
     private String name;
@@ -253,5 +258,13 @@ public class Farm {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Farmer getManager() {
+        return manager;
+    }
+
+    public void setManager(Farmer manager) {
+        this.manager = manager;
     }
 }

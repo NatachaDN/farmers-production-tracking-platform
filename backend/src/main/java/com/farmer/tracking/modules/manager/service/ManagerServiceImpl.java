@@ -4,6 +4,7 @@ import com.farmer.tracking.common.audit.AuditEvent;
 import com.farmer.tracking.common.audit.AuditEventRepository;
 import com.farmer.tracking.common.audit.AuditEventType;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.UserPrincipal;
 import com.farmer.tracking.modules.animal.model.AnimalGroup;
 import com.farmer.tracking.modules.animal.repository.AnimalGroupRepository;
 import com.farmer.tracking.modules.auth.model.Farmer;
@@ -21,6 +22,7 @@ import com.farmer.tracking.modules.farm.repository.FarmRepository;
 import com.farmer.tracking.modules.input.entity.FarmInput;
 import com.farmer.tracking.modules.input.repository.FarmInputRepository;
 import com.farmer.tracking.modules.manager.dto.ManagerDtos.*;
+import com.farmer.tracking.modules.manager.service.ManagerScopeHelper.ManagerScope;
 import com.farmer.tracking.modules.plot.entity.Plot;
 import com.farmer.tracking.modules.plot.repository.PlotRepository;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,7 @@ public class ManagerServiceImpl implements ManagerService {
     private final FarmInputRepository inputRepository;
     private final AnimalGroupRepository animalGroupRepository;
     private final AuditEventRepository auditEventRepository;
+    private final ManagerScopeHelper scopeHelper;
 
     public ManagerServiceImpl(
             FarmerRepository farmerRepository,
@@ -58,7 +61,8 @@ public class ManagerServiceImpl implements ManagerService {
             CycleIncidentRepository incidentRepository,
             FarmInputRepository inputRepository,
             AnimalGroupRepository animalGroupRepository,
-            AuditEventRepository auditEventRepository
+            AuditEventRepository auditEventRepository,
+            ManagerScopeHelper scopeHelper
     ) {
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
@@ -69,6 +73,7 @@ public class ManagerServiceImpl implements ManagerService {
         this.inputRepository = inputRepository;
         this.animalGroupRepository = animalGroupRepository;
         this.auditEventRepository = auditEventRepository;
+        this.scopeHelper = scopeHelper;
     }
 
     private static double toKg(Harvest h) {
@@ -95,9 +100,11 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
-    public ManagerDashboardSummary getDashboardSummary() {
+    public ManagerDashboardSummary getDashboardSummary(UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         List<Farmer> farmers = farmerRepository.findAll().stream()
                 .filter(ManagerServiceImpl::isSupervisedFarmer)
+                .filter(f -> scope.allowsFarmer(f.getId()))
                 .toList();
         Map<Long, Farmer> farmerMap = farmers.stream().collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
 
@@ -106,25 +113,35 @@ public class ManagerServiceImpl implements ManagerService {
         long approvedFarmers = farmers.stream().filter(f -> f.getStatus() == RegistrationStatus.APPROVED).count();
         long rejectedFarmers = farmers.stream().filter(f -> f.getStatus() == RegistrationStatus.REJECTED).count();
 
-        List<Cycle> allCycles = cycleRepository.findAll();
+        List<Cycle> allCycles = cycleRepository.findAll().stream()
+                .filter(c -> scope.allowsFarmer(c.getFarmerId()))
+                .toList();
         int activeCyclesCount = (int) allCycles.stream().filter(c -> c.getStatus() == CycleStatus.ACTIVE).count();
         int completedCyclesCount = (int) allCycles.stream().filter(c -> c.getStatus() == CycleStatus.COMPLETED).count();
 
-        List<Harvest> allHarvests = harvestRepository.findAll();
+        List<Harvest> allHarvests = harvestRepository.findAll().stream()
+                .filter(h -> scope.allowsFarmer(getFarmerId(h)))
+                .toList();
         double totalHarvestKg = allHarvests.stream().mapToDouble(ManagerServiceImpl::toKg).sum();
         totalHarvestKg = Math.round(totalHarvestKg * 10.0) / 10.0;
         double totalHarvestTons = Math.round((totalHarvestKg / 1000.0) * 10.0) / 10.0;
 
-        List<Plot> allPlots = plotRepository.findAll();
+        List<Plot> allPlots = plotRepository.findAll().stream()
+                .filter(p -> scope.allowsFarmer(p.getFarmerId()))
+                .toList();
         int totalPlotsCount = allPlots.size();
         double totalAreaHa = allPlots.stream().mapToDouble(p -> p.getArea() != null ? p.getArea() : 0.0).sum();
         totalAreaHa = Math.round(totalAreaHa * 100.0) / 100.0;
 
-        List<AnimalGroup> allAnimals = animalGroupRepository.findAll();
+        List<AnimalGroup> allAnimals = animalGroupRepository.findAll().stream()
+                .filter(ag -> scope.allowsFarmer(ag.getFarmerId()))
+                .toList();
         int totalAnimalGroupsCount = allAnimals.size();
         long totalAnimalPopulation = allAnimals.stream().mapToLong(ag -> ag.getCurrentPopulation() != null ? ag.getCurrentPopulation() : 0).sum();
 
-        List<CycleIncident> allIncidents = incidentRepository.findAll();
+        List<CycleIncident> allIncidents = incidentRepository.findAll().stream()
+                .filter(inc -> scope.allowsFarmer(inc.getFarmerId()))
+                .toList();
         int activeAlertsCount = (int) allIncidents.stream().filter(i -> i.getSeverityLevel() != null && i.getSeverityLevel() >= 3).count();
 
         // Recent alerts
@@ -227,9 +244,11 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
-    public List<ManagerFarmerRow> getFarmers(String search, String region, String crop, RegistrationStatus status, String sort) {
+    public List<ManagerFarmerRow> getFarmers(String search, String region, String crop, RegistrationStatus status, String sort, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         List<Farmer> farmers = farmerRepository.findAll().stream()
                 .filter(ManagerServiceImpl::isSupervisedFarmer)
+                .filter(f -> scope.allowsFarmer(f.getId()))
                 .toList();
         List<Plot> allPlots = plotRepository.findAll();
         List<Cycle> allCycles = cycleRepository.findAll();
@@ -337,7 +356,9 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
-    public ManagerFarmerDetail getFarmerDetail(Long farmerId) {
+    public ManagerFarmerDetail getFarmerDetail(Long farmerId, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmerAccess(scope, farmerId);
         Farmer f = farmerRepository.findById(farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found with ID: " + farmerId));
 
@@ -398,7 +419,9 @@ public class ManagerServiceImpl implements ManagerService {
 
     @Override
     @Transactional
-    public ManagerFarmerRow updateFarmerStatus(Long farmerId, UpdateFarmerStatusRequest request, String managerEmail) {
+    public ManagerFarmerRow updateFarmerStatus(Long farmerId, UpdateFarmerStatusRequest request, String managerEmail, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmerAccess(scope, farmerId);
         Farmer farmer = farmerRepository.findById(farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found with ID: " + farmerId));
 
@@ -429,7 +452,8 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
-    public ConsolidatedReportResponse generateConsolidatedReport(ConsolidatedReportRequest request) {
+    public ConsolidatedReportResponse generateConsolidatedReport(ConsolidatedReportRequest request, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         LocalDate startDate = request.getStartDate() != null ? request.getStartDate() : LocalDate.now().minusMonths(6);
         LocalDate endDate = request.getEndDate() != null ? request.getEndDate() : LocalDate.now();
 
@@ -437,10 +461,12 @@ public class ManagerServiceImpl implements ManagerService {
         if (request.getFarmerIds() != null && !request.getFarmerIds().isEmpty()) {
             farmers = farmerRepository.findAllById(request.getFarmerIds()).stream()
                     .filter(ManagerServiceImpl::isSupervisedFarmer)
+                    .filter(f -> scope.allowsFarmer(f.getId()))
                     .toList();
         } else {
             farmers = farmerRepository.findAll().stream()
                     .filter(ManagerServiceImpl::isSupervisedFarmer)
+                    .filter(f -> scope.allowsFarmer(f.getId()))
                     .toList();
         }
 
@@ -452,11 +478,21 @@ public class ManagerServiceImpl implements ManagerService {
                     .toList();
         }
 
-        List<Plot> allPlots = plotRepository.findAll();
-        List<Cycle> allCycles = cycleRepository.findAll();
-        List<Harvest> allHarvests = harvestRepository.findAll();
-        List<CycleIncident> allIncidents = incidentRepository.findAll();
-        List<FarmInput> allInputs = inputRepository.findAll();
+        List<Plot> allPlots = plotRepository.findAll().stream()
+                .filter(p -> scope.allowsFarmer(p.getFarmerId()))
+                .toList();
+        List<Cycle> allCycles = cycleRepository.findAll().stream()
+                .filter(c -> scope.allowsFarmer(c.getFarmerId()))
+                .toList();
+        List<Harvest> allHarvests = harvestRepository.findAll().stream()
+                .filter(h -> scope.allowsFarmer(getFarmerId(h)))
+                .toList();
+        List<CycleIncident> allIncidents = incidentRepository.findAll().stream()
+                .filter(i -> scope.allowsFarmer(i.getFarmerId()))
+                .toList();
+        List<FarmInput> allInputs = inputRepository.findAll().stream()
+                .filter(inp -> scope.allowsFarmer(inp.getFarmerId()))
+                .toList();
 
         // Filter harvests by date range
         List<Harvest> periodHarvests = allHarvests.stream()
@@ -586,8 +622,8 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
-    public String exportConsolidatedReportCsv(ConsolidatedReportRequest request) {
-        ConsolidatedReportResponse rep = generateConsolidatedReport(request);
+    public String exportConsolidatedReportCsv(ConsolidatedReportRequest request, UserPrincipal principal) {
+        ConsolidatedReportResponse rep = generateConsolidatedReport(request, principal);
         StringBuilder sb = new StringBuilder();
 
         sb.append("# ACREA PLATFORM — CONSOLIDATED PRODUCTION REPORT\n");
@@ -630,9 +666,11 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
-    public ManagerProductionsResponse getSupervisedProductions(String search, Long farmerId, String status) {
+    public ManagerProductionsResponse getSupervisedProductions(String search, Long farmerId, String status, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         List<Farmer> farmers = farmerRepository.findAll().stream()
                 .filter(ManagerServiceImpl::isSupervisedFarmer)
+                .filter(f -> scope.allowsFarmer(f.getId()))
                 .toList();
         Map<Long, Farmer> farmerMap = farmers.stream()
                 .collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));

@@ -69,6 +69,14 @@ public class GoogleAuthService {
         Farmer farmer = existing.orElseGet(() -> newFarmer(identity));
 
         if (!created) {
+            if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.SUSPENDED) {
+                throw new com.farmer.tracking.common.exception.UnauthorizedException(
+                        "Your account has been suspended by an administrator. Please contact support.");
+            }
+            if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.REJECTED) {
+                throw new com.farmer.tracking.common.exception.UnauthorizedException(
+                        "Your registration was rejected. Please contact support.");
+            }
             if (farmer.getGoogleId() == null) {
                 // First time this existing account signs in with Google. The password was set by
                 // whoever registered the email, before Google proved ownership of it, so it is

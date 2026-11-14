@@ -6,6 +6,7 @@ import com.farmer.tracking.common.exception.UnauthorizedException;
 import com.farmer.tracking.common.telemetry.SystemInfoService;
 import com.farmer.tracking.common.telemetry.TelemetryService;
 import com.farmer.tracking.modules.admin.api.AdminDtos.*;
+import com.farmer.tracking.modules.admin.service.AdminManagementService;
 import com.farmer.tracking.modules.admin.service.AdminService;
 import com.farmer.tracking.modules.auth.dto.PasswordChangeRequestResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,9 +14,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,13 +36,16 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AdminManagementService adminManagementService;
     private final SystemInfoService systemInfoService;
     private final TelemetryService telemetryService;
     private final AuditService auditService;
 
-    public AdminController(AdminService adminService, SystemInfoService systemInfoService,
+    public AdminController(AdminService adminService, AdminManagementService adminManagementService,
+                           SystemInfoService systemInfoService,
                            TelemetryService telemetryService, AuditService auditService) {
         this.adminService = adminService;
+        this.adminManagementService = adminManagementService;
         this.systemInfoService = systemInfoService;
         this.telemetryService = telemetryService;
         this.auditService = auditService;
@@ -138,5 +144,93 @@ public class AdminController {
         auditService.record(AuditEventType.PASSWORD_CHANGE_REJECTED, response.farmerId(),
                 response.farmerName(), "Admin rejected password change request #" + id, http);
         return response;
+    }
+
+    // ── User Management (Complete CRUD + Manager Creation + Suspend) ──
+
+    @GetMapping("/users")
+    @Operation(summary = "List all platform users (farmers, managers, admins)")
+    public List<AdminUserRow> users(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String q) {
+        return adminManagementService.listUsers(role, status, q);
+    }
+
+    @PostMapping("/users")
+    @Operation(summary = "Create a new user or manager account")
+    public AdminUserRow createUser(@RequestBody CreateUserRequest request) {
+        return adminManagementService.createUser(request);
+    }
+
+    @PutMapping("/users/{id}")
+    @Operation(summary = "Update user profile, role, status, or password")
+    public AdminUserRow updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
+        return adminManagementService.updateUser(id, request);
+    }
+
+    @PutMapping("/users/{id}/status")
+    @Operation(summary = "Suspend, activate, approve, or reject a user account")
+    public AdminUserRow updateUserStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateUserStatusRequest request,
+            @AuthenticationPrincipal UserDetails admin) {
+        String actor = admin != null ? admin.getUsername() : null;
+        return adminManagementService.updateUserStatus(id, request, actor);
+    }
+
+    @DeleteMapping("/users/{id}")
+    @Operation(summary = "Delete a user account")
+    public void deleteUser(@PathVariable Long id, @AuthenticationPrincipal UserDetails admin) {
+        String actor = admin != null ? admin.getUsername() : null;
+        adminManagementService.deleteUser(id, actor);
+    }
+
+    // ── Activity Management ──
+
+    @PostMapping("/activities")
+    @Operation(summary = "Create a field activity on a cycle")
+    public ActivityRow createActivity(@RequestBody AdminActivityRequest request) {
+        return adminManagementService.createActivity(request);
+    }
+
+    @PutMapping("/activities/{id}")
+    @Operation(summary = "Update a field activity")
+    public ActivityRow updateActivity(@PathVariable Long id, @RequestBody AdminActivityRequest request) {
+        return adminManagementService.updateActivity(id, request);
+    }
+
+    @DeleteMapping("/activities/{id}")
+    @Operation(summary = "Delete a field activity")
+    public void deleteActivity(@PathVariable Long id) {
+        adminManagementService.deleteActivity(id);
+    }
+
+    // ── Production Management ──
+
+    @PutMapping("/cycles/{id}")
+    @Operation(summary = "Update a production cycle status, stage, or progress")
+    public void updateCycle(@PathVariable Long id, @RequestBody AdminCycleUpdateRequest request) {
+        adminManagementService.updateCycle(id, request);
+    }
+
+    @DeleteMapping("/cycles/{id}")
+    @Operation(summary = "Delete a production cycle")
+    public void deleteCycle(@PathVariable Long id) {
+        adminManagementService.deleteCycle(id);
+    }
+
+    @DeleteMapping("/harvests/{id}")
+    @Operation(summary = "Delete a harvest record")
+    public void deleteHarvest(@PathVariable Long id) {
+        adminManagementService.deleteHarvest(id);
+    }
+
+    // ── Global Analytics ──
+
+    @GetMapping("/analytics")
+    @Operation(summary = "Global platform analytics across users, farms, plots, livestock, production, and incidents")
+    public AdminAnalyticsResponse analytics() {
+        return adminManagementService.analytics();
     }
 }

@@ -227,7 +227,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm, onSelect
         </div>
 
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
             {[1, 2].map((n) => (
               <div key={n} style={{ border: '1px solid #ECE7DC', borderRadius: '20px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div className="acrea-skeleton" style={{ width: '60%', height: '20px', borderRadius: '4px' }} />

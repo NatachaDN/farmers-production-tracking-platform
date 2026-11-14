@@ -26,8 +26,10 @@ const cardStyle = {
   backgroundColor: '#FFFFFF',
   border: '1px solid var(--color-card-border, #ECE7DC)',
   borderRadius: 'var(--radius-xl, 16px)',
-  padding: '28px',
+  padding: 'clamp(16px, 3.5vw, 28px)',
   boxShadow: 'var(--shadow-card, 0 4px 16px rgba(0,0,0,0.05))',
+  minWidth: 0,
+  maxWidth: '100%',
 };
 
 const labelStyle = {
@@ -40,6 +42,8 @@ const labelStyle = {
 
 const inputStyle = {
   width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
   padding: '11px 14px',
   borderRadius: '10px',
   border: '1px solid var(--color-border-input, #DFD8CA)',
@@ -48,6 +52,7 @@ const inputStyle = {
   fontSize: '0.9375rem',
   outline: 'none',
   boxSizing: 'border-box',
+  textOverflow: 'ellipsis',
 };
 
 export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, onPlotCreated }) {
@@ -379,9 +384,9 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px' }}>
                 {/* Plot Name */}
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <label htmlFor="plot-name" style={labelStyle}>
                     Plot Name <span style={{ color: '#DC2626' }}>*</span>
                   </label>
@@ -397,7 +402,7 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
                 </div>
 
                 {/* Cultivated Area */}
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <label htmlFor="plot-area" style={labelStyle}>
                     Cultivated Area (ha) <span style={{ color: '#DC2626' }}>*</span>
                   </label>
@@ -434,10 +439,10 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px' }}>
                 {/* Primary Crop */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
                     <label htmlFor="plot-crop" style={{ ...labelStyle, marginBottom: 0 }}>
                       Primary Crop
                     </label>
@@ -480,7 +485,7 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
                 </div>
 
                 {/* Growth Stage */}
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <label htmlFor="plot-stage" style={labelStyle}>
                     Current Growth Stage
                   </label>
@@ -539,9 +544,9 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
             </div>
 
             {hasAnimalGroup && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '14px', borderTop: '1px solid #ECE7DC' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '14px', borderTop: '1px solid #ECE7DC', minWidth: 0 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
                     <label htmlFor="plot-animal-group" style={{ ...labelStyle, marginBottom: 0 }}>
                       Select Animal Group
                     </label>

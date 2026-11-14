@@ -104,5 +104,109 @@ export const managerService = {
     window.URL.revokeObjectURL(url);
     return true;
   },
+
+  // ── Shared Farm, Plot, Animal Group & Incident Management (Admin + Manager) ──
+
+  async listFarms(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/farms${qs}`);
+  },
+  async createFarm(payload) {
+    return await apiClient.post('/manager/farms', payload);
+  },
+  async updateFarm(id, payload) {
+    return await apiClient.put(`/manager/farms/${id}`, payload);
+  },
+  async deleteFarm(id) {
+    return await apiClient.delete(`/manager/farms/${id}`);
+  },
+
+  async listPlots({ search = '', farmId = '' } = {}) {
+    const params = new URLSearchParams();
+    if (search && search.trim()) params.append('search', search.trim());
+    if (farmId) params.append('farmId', farmId);
+    const qs = params.toString();
+    return await apiClient.get(`/manager/plots${qs ? `?${qs}` : ''}`);
+  },
+  async createPlot(payload) {
+    return await apiClient.post('/manager/plots', payload);
+  },
+  async updatePlot(id, payload) {
+    return await apiClient.put(`/manager/plots/${id}`, payload);
+  },
+  async deletePlot(id) {
+    return await apiClient.delete(`/manager/plots/${id}`);
+  },
+
+  async listAnimalGroups(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/animal-groups${qs}`);
+  },
+  async createAnimalGroup(payload) {
+    return await apiClient.post('/manager/animal-groups', payload);
+  },
+  async updateAnimalGroup(id, payload) {
+    return await apiClient.put(`/manager/animal-groups/${id}`, payload);
+  },
+  async deleteAnimalGroup(id) {
+    return await apiClient.delete(`/manager/animal-groups/${id}`);
+  },
+
+  async listIncidents({ kind = '', status = '', search = '' } = {}) {
+    const params = new URLSearchParams();
+    if (kind && kind !== 'ALL') params.append('kind', kind);
+    if (status && status !== 'ALL') params.append('status', status);
+    if (search && search.trim()) params.append('search', search.trim());
+    const qs = params.toString();
+    return await apiClient.get(`/manager/incidents${qs ? `?${qs}` : ''}`);
+  },
+  async takeIncidentAction(kind, id, payload) {
+    return await apiClient.put(`/manager/incidents/${kind}/${id}/action`, payload);
+  },
+
+  async listCrops(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/crops${qs}`);
+  },
+  async createCrop(payload) {
+    return await apiClient.post('/manager/crops', payload);
+  },
+  async updateCrop(id, payload) {
+    return await apiClient.put(`/manager/crops/${id}`, payload);
+  },
+  async deleteCrop(id) {
+    return await apiClient.delete(`/manager/crops/${id}`);
+  },
+
+  async listCycleOptions() {
+    return await apiClient.get('/manager/cycles-summary');
+  },
+  async listHarvests(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/harvests${qs}`);
+  },
+  async createHarvest(payload) {
+    return await apiClient.post('/manager/harvests', payload);
+  },
+  async updateHarvest(id, payload) {
+    return await apiClient.put(`/manager/harvests/${id}`, payload);
+  },
+  async deleteHarvest(id) {
+    return await apiClient.delete(`/manager/harvests/${id}`);
+  },
+
+  async listInputs(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/inputs${qs}`);
+  },
+  async createInput(payload) {
+    return await apiClient.post('/manager/inputs', payload);
+  },
+  async updateInput(id, payload) {
+    return await apiClient.put(`/manager/inputs/${id}`, payload);
+  },
+  async deleteInput(id) {
+    return await apiClient.delete(`/manager/inputs/${id}`);
+  },
 };
 

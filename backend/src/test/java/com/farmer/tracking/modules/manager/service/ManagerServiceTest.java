@@ -87,7 +87,8 @@ class ManagerServiceTest {
                 incidentRepository,
                 inputRepository,
                 animalGroupRepository,
-                auditEventRepository
+                auditEventRepository,
+                new ManagerScopeHelper(farmRepository, plotRepository, animalGroupRepository)
         );
 
         approvedFarmer = new Farmer();
@@ -169,7 +170,7 @@ class ManagerServiceTest {
         when(animalGroupRepository.findAll()).thenReturn(List.of(testAnimalGroup));
         when(incidentRepository.findAll()).thenReturn(List.of(testIncident));
 
-        ManagerDashboardSummary summary = managerService.getDashboardSummary();
+        ManagerDashboardSummary summary = managerService.getDashboardSummary(null);
 
         assertNotNull(summary);
         assertEquals(2, summary.totalFarmers());
@@ -194,12 +195,12 @@ class ManagerServiceTest {
         when(harvestRepository.findAll()).thenReturn(List.of(testHarvest));
 
         // 1. Filter by status PENDING
-        List<ManagerFarmerRow> pendingList = managerService.getFarmers(null, null, null, RegistrationStatus.PENDING, "name");
+        List<ManagerFarmerRow> pendingList = managerService.getFarmers(null, null, null, RegistrationStatus.PENDING, "name", null);
         assertEquals(1, pendingList.size());
         assertEquals("Kofi Mensah", pendingList.get(0).fullName());
 
         // 2. Filter by search query "Joyce"
-        List<ManagerFarmerRow> joyceList = managerService.getFarmers("Joyce", null, null, null, "name");
+        List<ManagerFarmerRow> joyceList = managerService.getFarmers("Joyce", null, null, null, "name", null);
         assertEquals(1, joyceList.size());
         assertEquals("Joyce Muthoni", joyceList.get(0).fullName());
         assertEquals(1, joyceList.get(0).plotsCount());
@@ -207,12 +208,12 @@ class ManagerServiceTest {
         assertEquals(1800.0, joyceList.get(0).harvestedKg());
 
         // 3. Filter by crop "Maize"
-        List<ManagerFarmerRow> maizeList = managerService.getFarmers(null, null, "Maize", null, "name");
+        List<ManagerFarmerRow> maizeList = managerService.getFarmers(null, null, "Maize", null, "name", null);
         assertEquals(1, maizeList.size());
         assertEquals("Joyce Muthoni", maizeList.get(0).fullName());
 
         // 4. Filter by region "Bono"
-        List<ManagerFarmerRow> bonoList = managerService.getFarmers(null, "Bono", null, null, "name");
+        List<ManagerFarmerRow> bonoList = managerService.getFarmers(null, "Bono", null, null, "name", null);
         assertEquals(1, bonoList.size());
         assertEquals("Kofi Mensah", bonoList.get(0).fullName());
     }
@@ -228,7 +229,7 @@ class ManagerServiceTest {
         when(incidentRepository.findByCycleIdOrderByIncidentDateDesc(40L)).thenReturn(List.of(testIncident));
         when(animalGroupRepository.findByFarmerIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(testAnimalGroup));
 
-        ManagerFarmerDetail detail = managerService.getFarmerDetail(1L);
+        ManagerFarmerDetail detail = managerService.getFarmerDetail(1L, null);
 
         assertNotNull(detail);
         assertEquals("Joyce Muthoni", detail.farmer().fullName());
@@ -246,7 +247,7 @@ class ManagerServiceTest {
     void getFarmerDetail_NotFound() {
         when(farmerRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> managerService.getFarmerDetail(999L));
+        assertThrows(ResourceNotFoundException.class, () -> managerService.getFarmerDetail(999L, null));
     }
 
     @Test
@@ -259,7 +260,7 @@ class ManagerServiceTest {
         when(harvestRepository.findAll()).thenReturn(List.of());
 
         UpdateFarmerStatusRequest req = new UpdateFarmerStatusRequest(RegistrationStatus.APPROVED, null);
-        ManagerFarmerRow row = managerService.updateFarmerStatus(2L, req, "manager@coop.org");
+        ManagerFarmerRow row = managerService.updateFarmerStatus(2L, req, "manager@coop.org", null);
 
         assertNotNull(row);
         assertEquals(RegistrationStatus.APPROVED, row.status());
@@ -278,7 +279,7 @@ class ManagerServiceTest {
         when(harvestRepository.findAll()).thenReturn(List.of());
 
         UpdateFarmerStatusRequest req = new UpdateFarmerStatusRequest(RegistrationStatus.REJECTED, "Invalid national ID");
-        ManagerFarmerRow row = managerService.updateFarmerStatus(2L, req, "manager@coop.org");
+        ManagerFarmerRow row = managerService.updateFarmerStatus(2L, req, "manager@coop.org", null);
 
         assertNotNull(row);
         assertEquals(RegistrationStatus.REJECTED, row.status());
@@ -305,7 +306,7 @@ class ManagerServiceTest {
                 null
         );
 
-        ConsolidatedReportResponse report = managerService.generateConsolidatedReport(req);
+        ConsolidatedReportResponse report = managerService.generateConsolidatedReport(req, null);
 
         assertNotNull(report);
         assertEquals(1, report.totalFarmersCount());
@@ -335,7 +336,7 @@ class ManagerServiceTest {
                 null
         );
 
-        String csv = managerService.exportConsolidatedReportCsv(req);
+        String csv = managerService.exportConsolidatedReportCsv(req, null);
 
         assertNotNull(csv);
         assertTrue(csv.contains("ACREA PLATFORM — CONSOLIDATED PRODUCTION REPORT"));

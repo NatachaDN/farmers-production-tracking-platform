@@ -40,6 +40,15 @@ public class AnimalIncident {
     @Column(name = "action_taken", columnDefinition = "TEXT")
     private String actionTaken;
 
+    @Column(name = "status", length = 30)
+    private String status = "OPEN";
+
+    @Column(name = "resolved_by", length = 120)
+    private String resolvedBy;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -91,5 +100,14 @@ public class AnimalIncident {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getStatus() { return status != null ? status : "OPEN"; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getResolvedBy() { return resolvedBy; }
+    public void setResolvedBy(String resolvedBy) { this.resolvedBy = resolvedBy; }
+
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
 }
 

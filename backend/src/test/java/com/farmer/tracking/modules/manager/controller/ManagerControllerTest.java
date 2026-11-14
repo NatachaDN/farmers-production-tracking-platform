@@ -5,10 +5,12 @@ import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.security.CustomUserDetailsService;
 import com.farmer.tracking.common.security.JwtAuthenticationFilter;
 import com.farmer.tracking.common.security.JwtTokenProvider;
+import com.farmer.tracking.common.security.UserPrincipal;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.RegistrationStatus;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.manager.dto.ManagerDtos.*;
+import com.farmer.tracking.modules.manager.service.ManagementOperationsService;
 import com.farmer.tracking.modules.manager.service.ManagerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +46,9 @@ class ManagerControllerTest {
         @MockBean
         private ManagerService managerService;
 
+        @MockBean
+        private ManagementOperationsService operationsService;
+
         // Security infrastructure mocks required by WebMvcTest
         @MockBean
         private JwtTokenProvider jwtTokenProvider;
@@ -68,7 +73,7 @@ class ManagerControllerTest {
                                 2,
                                 List.of(), List.of(), List.of(), List.of());
 
-                when(managerService.getDashboardSummary()).thenReturn(mockSummary);
+                when(managerService.getDashboardSummary(nullable(UserPrincipal.class))).thenReturn(mockSummary);
 
                 mockMvc.perform(get("/api/v1/manager/dashboard"))
                                 .andExpect(status().isOk())
@@ -89,7 +94,7 @@ class ManagerControllerTest {
                                 RegistrationStatus.APPROVED, null,
                                 LocalDateTime.now().minusMonths(6), null);
 
-                when(managerService.getFarmers(any(), any(), any(), any(), any())).thenReturn(List.of(row));
+                when(managerService.getFarmers(any(), any(), any(), any(), any(), nullable(UserPrincipal.class))).thenReturn(List.of(row));
 
                 mockMvc.perform(get("/api/v1/manager/farmers")
                                 .param("search", "Joyce")
@@ -117,7 +122,7 @@ class ManagerControllerTest {
                 ManagerFarmerDetail detail = new ManagerFarmerDetail(
                                 row, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
 
-                when(managerService.getFarmerDetail(1L)).thenReturn(detail);
+                when(managerService.getFarmerDetail(eq(1L), nullable(UserPrincipal.class))).thenReturn(detail);
 
                 mockMvc.perform(get("/api/v1/manager/farmers/1"))
                                 .andExpect(status().isOk())
@@ -127,7 +132,7 @@ class ManagerControllerTest {
         @Test
         @DisplayName("GET /api/v1/manager/farmers/{id} returns 404 when not found")
         void getFarmerDetail_NotFound() throws Exception {
-                when(managerService.getFarmerDetail(999L)).thenThrow(new ResourceNotFoundException("Farmer not found"));
+                when(managerService.getFarmerDetail(eq(999L), nullable(UserPrincipal.class))).thenThrow(new ResourceNotFoundException("Farmer not found"));
 
                 mockMvc.perform(get("/api/v1/manager/farmers/999"))
                                 .andExpect(status().isNotFound());
@@ -144,7 +149,7 @@ class ManagerControllerTest {
                                 RegistrationStatus.APPROVED, null,
                                 LocalDateTime.now(), null);
 
-                when(managerService.updateFarmerStatus(eq(2L), any(), any())).thenReturn(row);
+                when(managerService.updateFarmerStatus(eq(2L), any(), any(), nullable(UserPrincipal.class))).thenReturn(row);
 
                 mockMvc.perform(put("/api/v1/manager/farmers/2/status")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -174,7 +179,7 @@ class ManagerControllerTest {
                                 0, 1200.0,
                                 List.of(), List.of());
 
-                when(managerService.generateConsolidatedReport(any())).thenReturn(report);
+                when(managerService.generateConsolidatedReport(any(), nullable(UserPrincipal.class))).thenReturn(report);
 
                 mockMvc.perform(post("/api/v1/manager/reports/consolidated")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -194,7 +199,7 @@ class ManagerControllerTest {
                                 null,
                                 null);
 
-                when(managerService.exportConsolidatedReportCsv(any()))
+                when(managerService.exportConsolidatedReportCsv(any(), nullable(UserPrincipal.class)))
                                 .thenReturn("Period Start,Period End\n2026-01-01,2026-06-30\n");
 
                 mockMvc.perform(post("/api/v1/manager/reports/consolidated/export")

@@ -1,0 +1,1166 @@
+package com.farmer.tracking.modules.manager.service;
+
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.UserPrincipal;
+import com.farmer.tracking.modules.manager.service.ManagerScopeHelper.ManagerScope;
+import com.farmer.tracking.modules.animal.model.AnimalGroup;
+import com.farmer.tracking.modules.animal.model.AnimalGroupStatus;
+import com.farmer.tracking.modules.animal.model.AnimalIncident;
+import com.farmer.tracking.modules.animal.model.AnimalType;
+import com.farmer.tracking.modules.animal.repository.AnimalGroupRepository;
+import com.farmer.tracking.modules.animal.repository.AnimalIncidentRepository;
+import com.farmer.tracking.modules.auth.model.FarmType;
+import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.repository.FarmerRepository;
+import com.farmer.tracking.modules.crop.entity.Crop;
+import com.farmer.tracking.modules.crop.entity.Cycle;
+import com.farmer.tracking.modules.crop.entity.CycleIncident;
+import com.farmer.tracking.modules.crop.entity.Harvest;
+import com.farmer.tracking.modules.crop.entity.HarvestUnit;
+import com.farmer.tracking.modules.crop.repository.CropRepository;
+import com.farmer.tracking.modules.crop.repository.CycleIncidentRepository;
+import com.farmer.tracking.modules.crop.repository.CycleRepository;
+import com.farmer.tracking.modules.crop.repository.HarvestRepository;
+import com.farmer.tracking.modules.farm.model.Farm;
+import com.farmer.tracking.modules.farm.model.FarmStatus;
+import com.farmer.tracking.modules.farm.model.SizeUnit;
+import com.farmer.tracking.modules.farm.repository.FarmRepository;
+import com.farmer.tracking.modules.input.entity.FarmInput;
+import com.farmer.tracking.modules.input.entity.InputType;
+import com.farmer.tracking.modules.input.repository.FarmInputRepository;
+import com.farmer.tracking.modules.manager.dto.ManagementOperationsDtos.*;
+import com.farmer.tracking.modules.notification.dto.NotificationDtos.SendNotificationRequest;
+import com.farmer.tracking.modules.notification.service.NotificationService;
+import com.farmer.tracking.modules.plot.entity.Plot;
+import com.farmer.tracking.modules.plot.repository.PlotRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@Service
+public class ManagementOperationsService {
+
+    private final FarmerRepository farmerRepository;
+    private final FarmRepository farmRepository;
+    private final PlotRepository plotRepository;
+    private final AnimalGroupRepository animalGroupRepository;
+    private final CycleIncidentRepository cycleIncidentRepository;
+    private final AnimalIncidentRepository animalIncidentRepository;
+    private final CropRepository cropRepository;
+    private final CycleRepository cycleRepository;
+    private final HarvestRepository harvestRepository;
+    private final FarmInputRepository farmInputRepository;
+    private final NotificationService notificationService;
+    private final ManagerScopeHelper scopeHelper;
+
+    public ManagementOperationsService(
+            FarmerRepository farmerRepository,
+            FarmRepository farmRepository,
+            PlotRepository plotRepository,
+            AnimalGroupRepository animalGroupRepository,
+            CycleIncidentRepository cycleIncidentRepository,
+            AnimalIncidentRepository animalIncidentRepository,
+            CropRepository cropRepository,
+            CycleRepository cycleRepository,
+            HarvestRepository harvestRepository,
+            FarmInputRepository farmInputRepository,
+            NotificationService notificationService,
+            ManagerScopeHelper scopeHelper) {
+        this.farmerRepository = farmerRepository;
+        this.farmRepository = farmRepository;
+        this.plotRepository = plotRepository;
+        this.animalGroupRepository = animalGroupRepository;
+        this.cycleIncidentRepository = cycleIncidentRepository;
+        this.animalIncidentRepository = animalIncidentRepository;
+        this.cropRepository = cropRepository;
+        this.cycleRepository = cycleRepository;
+        this.harvestRepository = harvestRepository;
+        this.farmInputRepository = farmInputRepository;
+        this.notificationService = notificationService;
+        this.scopeHelper = scopeHelper;
+    }
+
+    // ------------------------------------------------------------------ Farms
+
+    @Transactional(readOnly = true)
+    public List<ManagedFarmRow> listFarms(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        List<Farmer> allPeople = farmerRepository.findAll();
+        Map<Long, Farmer> peopleById = allPeople.stream()
+                .collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
+        List<RelatedPersonSummary> platformManagers = allPeople.stream()
+                .filter(p -> "ROLE_MANAGER".equalsIgnoreCase(p.getRole()))
+                .map(p -> new RelatedPersonSummary(p.getId(), p.getFullName(), p.getEmailOrPhone(), p.getRole()))
+                .toList();
+
+        List<Plot> allPlots = plotRepository.findAll();
+        Map<Long, List<Plot>> plotsByFarm = allPlots.stream()
+                .filter(p -> p.getFarm() != null)
+                .collect(Collectors.groupingBy(p -> p.getFarm().getId()));
+
+        List<AnimalGroup> allGroups = animalGroupRepository.findAll();
+        Map<Long, AnimalGroup> groupById = allGroups.stream()
+                .collect(Collectors.toMap(AnimalGroup::getId, Function.identity(), (a, b) -> a));
+        Map<Long, List<AnimalGroup>> groupsByFarm = allGroups.stream()
+                .filter(g -> g.getFarm() != null)
+                .collect(Collectors.groupingBy(g -> g.getFarm().getId()));
+
+        List<Crop> allCrops = cropRepository.findAll();
+        List<Cycle> allCycles = cycleRepository.findAll();
+        Map<Long, List<Cycle>> cyclesByPlot = allCycles.stream()
+                .filter(c -> c.getPlot() != null)
+                .collect(Collectors.groupingBy(c -> c.getPlot().getId()));
+
+        return farmRepository.findAll().stream()
+                .filter(f -> scope.allowsFarm(f.getId()))
+                .map(f -> toRichFarmRow(f, plotsByFarm.getOrDefault(f.getId(), List.of()),
+                        groupsByFarm.getOrDefault(f.getId(), List.of()), groupById,
+                        allCrops, cyclesByPlot, peopleById, platformManagers))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || (r.region() != null && r.region().toLowerCase().contains(q))
+                        || (r.district() != null && r.district().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedFarmRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedFarmRow createFarm(ManagedFarmRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        Farm farm = new Farm();
+        farm.setFarmer(farmer);
+        applyFarmFields(farm, req, scope);
+        Farm saved = farmRepository.save(farm);
+        return toFarmRow(saved, 0);
+    }
+
+    @Transactional
+    public ManagedFarmRow updateFarm(Long id, ManagedFarmRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmAccess(scope, id);
+        Farm farm = farmRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm not found."));
+        if (req.farmerId() != null && !req.farmerId().equals(farm.getFarmer().getId())) {
+            Farmer farmer = farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            farm.setFarmer(farmer);
+        }
+        applyFarmFields(farm, req, scope);
+        Farm saved = farmRepository.save(farm);
+        int plots = (int) plotRepository.findAll().stream()
+                .filter(p -> p.getFarm() != null && id.equals(p.getFarm().getId())).count();
+        return toFarmRow(saved, plots);
+    }
+
+    @Transactional
+    public void deleteFarm(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmAccess(scope, id);
+        if (!farmRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Farm not found.");
+        }
+        farmRepository.deleteById(id);
+    }
+
+    private void applyFarmFields(Farm farm, ManagedFarmRequest req, ManagerScope scope) {
+        if (scope.restricted() && scope.managerId() != null) {
+            if (farm.getManager() == null) {
+                farmerRepository.findById(scope.managerId()).ifPresent(farm::setManager);
+            }
+        } else if (req.managerId() != null) {
+            Farmer mgr = farmerRepository.findById(req.managerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found."));
+            farm.setManager(mgr);
+        } else {
+            farm.setManager(null);
+        }
+        farm.setName(req.name().trim());
+        farm.setType(parseFarmType(req.type()));
+        farm.setSize(req.size() != null && req.size() > 0 ? req.size() : 1.0);
+        farm.setSizeUnit(parseSizeUnit(req.sizeUnit()));
+        farm.setStatus(parseFarmStatus(req.status()));
+        farm.setCountry(nonBlankOr(req.country(), "Cameroon"));
+        farm.setRegion(nonBlankOr(req.region(), "Central"));
+        farm.setDistrict(nonBlankOr(req.district(), "Main"));
+        farm.setDescription(req.description() != null ? req.description().trim() : null);
+    }
+
+    private ManagedFarmRow toFarmRow(Farm f, int plotCount) {
+        return new ManagedFarmRow(
+                f.getId(),
+                f.getFarmer().getId(),
+                f.getFarmer().getFullName(),
+                f.getManager() != null ? f.getManager().getId() : null,
+                f.getManager() != null ? f.getManager().getFullName() : null,
+                f.getName(),
+                f.getType() != null ? f.getType().name() : "MIXED",
+                f.getSize(),
+                f.getSizeUnit() != null ? f.getSizeUnit().name() : "HECTARES",
+                f.getStatus() != null ? f.getStatus().name() : "ACTIVE",
+                f.getCountry(),
+                f.getRegion(),
+                f.getDistrict(),
+                f.getDescription(),
+                plotCount,
+                f.getCreatedAt(),
+                List.of(), List.of(), List.of(), List.of(), List.of()
+        );
+    }
+
+    private ManagedFarmRow toRichFarmRow(
+            Farm f,
+            List<Plot> farmPlots,
+            List<AnimalGroup> directGroups,
+            Map<Long, AnimalGroup> groupById,
+            List<Crop> allCrops,
+            Map<Long, List<Cycle>> cyclesByPlot,
+            Map<Long, Farmer> peopleById,
+            List<RelatedPersonSummary> platformManagers) {
+
+        Map<Long, RelatedPersonSummary> farmerMap = new LinkedHashMap<>();
+        Map<Long, RelatedPersonSummary> managerMap = new LinkedHashMap<>();
+
+        Consumer<Farmer> addPerson = (person) -> {
+            if (person == null) return;
+            RelatedPersonSummary summary = new RelatedPersonSummary(
+                    person.getId(), person.getFullName(), person.getEmailOrPhone(), person.getRole());
+            if ("ROLE_MANAGER".equalsIgnoreCase(person.getRole()) || "ROLE_ADMIN".equalsIgnoreCase(person.getRole())) {
+                managerMap.putIfAbsent(person.getId(), summary);
+            } else {
+                farmerMap.putIfAbsent(person.getId(), summary);
+            }
+        };
+
+        addPerson.accept(f.getFarmer());
+        if (f.getManager() != null) {
+            managerMap.putIfAbsent(f.getManager().getId(), new RelatedPersonSummary(
+                    f.getManager().getId(), f.getManager().getFullName(),
+                    f.getManager().getEmailOrPhone(), f.getManager().getRole()));
+        }
+        for (Plot p : farmPlots) {
+            addPerson.accept(peopleById.get(p.getFarmerId()));
+        }
+        for (AnimalGroup g : directGroups) {
+            addPerson.accept(g.getFarmer());
+        }
+
+        List<RelatedPlotSummary> plotSummaries = farmPlots.stream()
+                .map(p -> new RelatedPlotSummary(
+                        p.getId(), p.getName(), p.getArea(), p.getLocation(),
+                        p.getCropType(), p.getStage(), f.getId(), f.getName()))
+                .toList();
+
+        Map<Long, RelatedAnimalGroupSummary> groupMap = new LinkedHashMap<>();
+        for (AnimalGroup g : directGroups) {
+            groupMap.putIfAbsent(g.getId(), new RelatedAnimalGroupSummary(
+                    g.getId(), g.getName(), g.getAnimalType() != null ? g.getAnimalType().name() : "OTHER",
+                    g.getCurrentPopulation(), g.getStatus() != null ? g.getStatus().name() : "ACTIVE"));
+        }
+        for (Plot p : farmPlots) {
+            if (p.getAnimalGroupId() != null) {
+                AnimalGroup linked = groupById.get(p.getAnimalGroupId());
+                if (linked != null) {
+                    groupMap.putIfAbsent(linked.getId(), new RelatedAnimalGroupSummary(
+                            linked.getId(), linked.getName(),
+                            linked.getAnimalType() != null ? linked.getAnimalType().name() : "OTHER",
+                            linked.getCurrentPopulation(),
+                            linked.getStatus() != null ? linked.getStatus().name() : "ACTIVE"));
+                }
+            }
+        }
+
+        Set<String> plotAndCycleCropNames = new LinkedHashSet<>();
+        for (Plot p : farmPlots) {
+            if (p.getCropType() != null && !p.getCropType().isBlank() && !"Unspecified".equalsIgnoreCase(p.getCropType())) {
+                plotAndCycleCropNames.add(p.getCropType().trim());
+            }
+            for (Cycle c : cyclesByPlot.getOrDefault(p.getId(), List.of())) {
+                if (c.getCropName() != null && !c.getCropName().isBlank()) {
+                    plotAndCycleCropNames.add(c.getCropName().trim());
+                }
+            }
+        }
+
+        Map<String, RelatedCropSummary> cropMap = new LinkedHashMap<>();
+        for (Crop c : allCrops) {
+            boolean ownedByFarmPeople = farmerMap.containsKey(c.getFarmerId()) || managerMap.containsKey(c.getFarmerId());
+            boolean matchesPlotCrop = plotAndCycleCropNames.stream().anyMatch(n -> cropNameMatches(c, n));
+            if (ownedByFarmPeople && (matchesPlotCrop || farmPlots.isEmpty())) {
+                cropMap.putIfAbsent("ID:" + c.getId(), new RelatedCropSummary(c.getId(), c.getName(), c.getVariety(), c.getCategory()));
+            } else if (matchesPlotCrop) {
+                cropMap.putIfAbsent("ID:" + c.getId(), new RelatedCropSummary(c.getId(), c.getName(), c.getVariety(), c.getCategory()));
+            }
+        }
+        for (String rawName : plotAndCycleCropNames) {
+            boolean alreadyMatched = allCrops.stream().anyMatch(c -> cropNameMatches(c, rawName));
+            if (!alreadyMatched) {
+                cropMap.putIfAbsent("RAW:" + rawName.toLowerCase(), new RelatedCropSummary(null, rawName, null, "Plot Crop"));
+            }
+        }
+
+        return new ManagedFarmRow(
+                f.getId(),
+                f.getFarmer().getId(),
+                f.getFarmer().getFullName(),
+                f.getManager() != null ? f.getManager().getId() : null,
+                f.getManager() != null ? f.getManager().getFullName() : null,
+                f.getName(),
+                f.getType() != null ? f.getType().name() : "MIXED",
+                f.getSize(),
+                f.getSizeUnit() != null ? f.getSizeUnit().name() : "HECTARES",
+                f.getStatus() != null ? f.getStatus().name() : "ACTIVE",
+                f.getCountry(),
+                f.getRegion(),
+                f.getDistrict(),
+                f.getDescription(),
+                farmPlots.size(),
+                f.getCreatedAt(),
+                new ArrayList<>(farmerMap.values()),
+                new ArrayList<>(managerMap.values()),
+                plotSummaries,
+                new ArrayList<>(cropMap.values()),
+                new ArrayList<>(groupMap.values())
+        );
+    }
+
+    private static boolean cropNameMatches(Crop c, String targetName) {
+        if (c == null || c.getName() == null || targetName == null) return false;
+        String t = targetName.trim().toLowerCase();
+        String base = c.getName().trim().toLowerCase();
+        String withVar = c.getVariety() != null && !c.getVariety().isBlank()
+                ? base + " (" + c.getVariety().trim().toLowerCase() + ")"
+                : base;
+        return t.equals(base) || t.equals(withVar) || t.startsWith(base + " (");
+    }
+
+    // ------------------------------------------------------------------ Plots
+
+    @Transactional(readOnly = true)
+    public List<ManagedPlotRow> listPlots(String search, Long farmId, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, Farmer> farmers = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
+
+        return plotRepository.findAll().stream()
+                .filter(p -> farmId == null || (p.getFarm() != null && farmId.equals(p.getFarm().getId())))
+                .filter(p -> !scope.restricted() || (p.getFarm() != null && scope.allowsFarm(p.getFarm().getId())))
+                .map(p -> toPlotRow(p, farmers.get(p.getFarmerId()), p.getFarm()))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || (r.farmName() != null && r.farmName().toLowerCase().contains(q))
+                        || (r.cropType() != null && r.cropType().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedPlotRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedPlotRow createPlot(ManagedPlotRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        if (scope.restricted()) {
+            scopeHelper.requireFarmAccess(scope, req.farmId());
+        }
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        Plot plot = new Plot();
+        plot.setFarmerId(farmer.getId());
+        applyPlotFields(plot, req);
+        Plot saved = plotRepository.save(plot);
+        return toPlotRow(saved, farmer, saved.getFarm());
+    }
+
+    @Transactional
+    public ManagedPlotRow updatePlot(Long id, ManagedPlotRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Plot plot = plotRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Plot not found."));
+        if (scope.restricted()) {
+            scopeHelper.requireFarmAccess(scope, plot.getFarm() != null ? plot.getFarm().getId() : null);
+            if (req.farmId() != null) {
+                scopeHelper.requireFarmAccess(scope, req.farmId());
+            }
+        }
+        if (req.farmerId() != null) {
+            farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            plot.setFarmerId(req.farmerId());
+        }
+        applyPlotFields(plot, req);
+        Plot saved = plotRepository.save(plot);
+        Farmer farmer = farmerRepository.findById(saved.getFarmerId()).orElse(null);
+        return toPlotRow(saved, farmer, saved.getFarm());
+    }
+
+    @Transactional
+    public void deletePlot(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Plot plot = plotRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Plot not found."));
+        if (scope.restricted()) {
+            scopeHelper.requireFarmAccess(scope, plot.getFarm() != null ? plot.getFarm().getId() : null);
+        }
+        plotRepository.delete(plot);
+    }
+
+    private void applyPlotFields(Plot plot, ManagedPlotRequest req) {
+        if (req.farmId() != null) {
+            Farm farm = farmRepository.findById(req.farmId()).orElse(null);
+            plot.setFarm(farm);
+        } else {
+            plot.setFarm(null);
+        }
+        plot.setName(req.name().trim());
+        plot.setArea(req.area() != null && req.area() > 0 ? req.area() : 1.0);
+        plot.setLocation(req.location().trim());
+        plot.setCropType(nonBlankOr(req.cropType(), "Unspecified"));
+        plot.setStage(nonBlankOr(req.stage(), "Planned"));
+        plot.setSoilType(blankToNull(req.soilType()));
+        plot.setIrrigationType(blankToNull(req.irrigationType()));
+        plot.setSlope(blankToNull(req.slope()));
+        plot.setNotes(blankToNull(req.notes()));
+        plot.setAnimalGroupId(req.animalGroupId());
+        if (req.animalGroupId() != null) {
+            if (req.animalGroupName() != null && !req.animalGroupName().isBlank()) {
+                plot.setAnimalGroupName(req.animalGroupName().trim());
+            } else {
+                animalGroupRepository.findById(req.animalGroupId())
+                        .ifPresent(g -> plot.setAnimalGroupName(g.getName()));
+            }
+        } else {
+            plot.setAnimalGroupName(null);
+        }
+    }
+
+    private ManagedPlotRow toPlotRow(Plot p, Farmer farmer, Farm farm) {
+        return new ManagedPlotRow(
+                p.getId(),
+                p.getFarmerId(),
+                farmer != null ? farmer.getFullName() : "Farmer #" + p.getFarmerId(),
+                p.getFarm() != null ? p.getFarm().getId() : null,
+                farm != null ? farm.getName() : null,
+                p.getName(),
+                p.getArea(),
+                p.getLocation(),
+                p.getCropType(),
+                p.getStage(),
+                p.getSoilType(),
+                p.getIrrigationType(),
+                p.getSlope(),
+                p.getNotes(),
+                p.getAnimalGroupId(),
+                p.getAnimalGroupName(),
+                p.getCreatedAt()
+        );
+    }
+
+    // ------------------------------------------------------------------ Animal Groups
+
+    @Transactional(readOnly = true)
+    public List<ManagedAnimalGroupRow> listAnimalGroups(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, List<Plot>> plotsByGroup = plotRepository.findAll().stream()
+                .filter(p -> p.getAnimalGroupId() != null)
+                .collect(Collectors.groupingBy(Plot::getAnimalGroupId));
+
+        return animalGroupRepository.findAll().stream()
+                .filter(g -> !scope.restricted()
+                        || (g.getFarm() != null && scope.allowsFarm(g.getFarm().getId()))
+                        || plotsByGroup.getOrDefault(g.getId(), List.of()).stream()
+                                .anyMatch(p -> p.getFarm() != null && scope.allowsFarm(p.getFarm().getId()))
+                        || (g.getFarmer() != null && scope.allowsFarmer(g.getFarmer().getId())))
+                .map(g -> toAnimalGroupRow(g, plotsByGroup.getOrDefault(g.getId(), List.of())))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || r.animalType().toLowerCase().contains(q)
+                        || (r.breed() != null && r.breed().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedAnimalGroupRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedAnimalGroupRow createAnimalGroup(ManagedAnimalGroupRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        if (scope.restricted()) {
+            if (req.farmId() != null) {
+                scopeHelper.requireFarmAccess(scope, req.farmId());
+            } else {
+                scopeHelper.requireFarmerAccess(scope, req.farmerId());
+            }
+        }
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        AnimalGroup group = new AnimalGroup();
+        group.setFarmer(farmer);
+        applyAnimalGroupFields(group, req);
+        return toAnimalGroupRow(animalGroupRepository.save(group));
+    }
+
+    @Transactional
+    public ManagedAnimalGroupRow updateAnimalGroup(Long id, ManagedAnimalGroupRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        AnimalGroup group = animalGroupRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Animal group not found."));
+        if (scope.restricted()) {
+            boolean allowed = (group.getFarm() != null && scope.allowsFarm(group.getFarm().getId()))
+                    || (group.getFarmer() != null && scope.allowsFarmer(group.getFarmer().getId()));
+            if (!allowed) {
+                throw new BadRequestException("Access denied: animal group is not linked to your assigned farms.");
+            }
+            if (req.farmId() != null) {
+                scopeHelper.requireFarmAccess(scope, req.farmId());
+            }
+        }
+        if (req.farmerId() != null && !req.farmerId().equals(group.getFarmer().getId())) {
+            Farmer farmer = farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            group.setFarmer(farmer);
+        }
+        applyAnimalGroupFields(group, req);
+        return toAnimalGroupRow(animalGroupRepository.save(group));
+    }
+
+    @Transactional
+    public void deleteAnimalGroup(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        AnimalGroup group = animalGroupRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Animal group not found."));
+        if (scope.restricted()) {
+            boolean allowed = (group.getFarm() != null && scope.allowsFarm(group.getFarm().getId()))
+                    || (group.getFarmer() != null && scope.allowsFarmer(group.getFarmer().getId()));
+            if (!allowed) {
+                throw new BadRequestException("Access denied: animal group is not linked to your assigned farms.");
+            }
+        }
+        animalGroupRepository.delete(group);
+    }
+
+    private void applyAnimalGroupFields(AnimalGroup g, ManagedAnimalGroupRequest req) {
+        if (req.farmId() != null) {
+            Farm farm = farmRepository.findById(req.farmId()).orElse(null);
+            g.setFarm(farm);
+        } else {
+            g.setFarm(null);
+        }
+        g.setName(req.name().trim());
+        g.setAnimalType(AnimalType.fromString(req.animalType()));
+        g.setBreed(blankToNull(req.breed()));
+        int initPop = req.initialPopulation() != null ? Math.max(0, req.initialPopulation()) : 0;
+        int currPop = req.currentPopulation() != null ? Math.max(0, req.currentPopulation()) : initPop;
+        g.setInitialPopulation(initPop);
+        g.setCurrentPopulation(currPop);
+        g.setNumberOfAnimals(currPop);
+        g.setLocation(blankToNull(req.location()));
+        g.setPurpose(blankToNull(req.purpose()));
+        g.setStatus(AnimalGroupStatus.fromString(req.status()));
+        g.setHealthStatus(blankToNull(req.healthStatus()));
+        g.setNotes(blankToNull(req.notes()));
+        g.setStartDate(req.startDate());
+    }
+
+    private ManagedAnimalGroupRow toAnimalGroupRow(AnimalGroup g) {
+        return toAnimalGroupRow(g, List.of());
+    }
+
+    private ManagedAnimalGroupRow toAnimalGroupRow(AnimalGroup g, List<Plot> linkedPlots) {
+        List<RelatedPlotSummary> plotSummaries = linkedPlots.stream()
+                .map(p -> new RelatedPlotSummary(
+                        p.getId(), p.getName(), p.getArea(), p.getLocation(),
+                        p.getCropType(), p.getStage(),
+                        p.getFarm() != null ? p.getFarm().getId() : null,
+                        p.getFarm() != null ? p.getFarm().getName() : null))
+                .toList();
+
+        Map<Long, RelatedFarmSummary> farmMap = new LinkedHashMap<>();
+        if (g.getFarm() != null) {
+            Farm gf = g.getFarm();
+            farmMap.put(gf.getId(), new RelatedFarmSummary(
+                    gf.getId(), gf.getName(), gf.getType() != null ? gf.getType().name() : null, gf.getRegion()));
+        }
+        for (Plot p : linkedPlots) {
+            if (p.getFarm() != null) {
+                Farm pf = p.getFarm();
+                farmMap.putIfAbsent(pf.getId(), new RelatedFarmSummary(
+                        pf.getId(), pf.getName(), pf.getType() != null ? pf.getType().name() : null, pf.getRegion()));
+            }
+        }
+
+        return new ManagedAnimalGroupRow(
+                g.getId(),
+                g.getFarmer().getId(),
+                g.getFarmer().getFullName(),
+                g.getFarm() != null ? g.getFarm().getId() : null,
+                g.getFarm() != null ? g.getFarm().getName() : null,
+                g.getName(),
+                g.getAnimalType() != null ? g.getAnimalType().name() : "OTHER",
+                g.getBreed(),
+                g.getInitialPopulation(),
+                g.getCurrentPopulation(),
+                g.getLocation(),
+                g.getPurpose(),
+                g.getStatus() != null ? g.getStatus().name() : "ACTIVE",
+                g.getHealthStatus(),
+                g.getNotes(),
+                g.getStartDate(),
+                g.getCreatedAt(),
+                plotSummaries,
+                new ArrayList<>(farmMap.values())
+        );
+    }
+
+    // ------------------------------------------------------------------ Incidents
+
+    @Transactional(readOnly = true)
+    public List<ManagedIncidentRow> listIncidents(String kind, String status, String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        String k = kind != null ? kind.trim().toUpperCase() : "";
+        String st = status != null ? status.trim().toUpperCase() : "";
+
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+
+        List<ManagedIncidentRow> all = new ArrayList<>();
+
+        if (k.isEmpty() || "CROP".equals(k)) {
+            for (CycleIncident ci : cycleIncidentRepository.findAll()) {
+                String targetName = ci.getCycle() != null && ci.getCycle().getCropName() != null
+                        ? ci.getCycle().getCropName()
+                        : "Crop Cycle #" + (ci.getCycle() != null ? ci.getCycle().getId() : "?");
+                all.add(new ManagedIncidentRow(
+                        ci.getId(),
+                        "CROP",
+                        ci.getFarmerId(),
+                        farmerNames.getOrDefault(ci.getFarmerId(), "Farmer #" + ci.getFarmerId()),
+                        targetName,
+                        ci.getIncidentType() != null ? ci.getIncidentType().name() : "OTHER",
+                        ci.getIncidentDate(),
+                        ci.getSeverityLevel(),
+                        null,
+                        ci.getDescription(),
+                        ci.getActionTaken(),
+                        ci.getStatus(),
+                        ci.getResolvedBy(),
+                        ci.getResolvedAt(),
+                        ci.getCreatedAt()
+                ));
+            }
+        }
+
+        if (k.isEmpty() || "ANIMAL".equals(k)) {
+            for (AnimalIncident ai : animalIncidentRepository.findAll()) {
+                String targetName = ai.getAnimalGroup() != null
+                        ? ai.getAnimalGroup().getName()
+                        : "Animal Group";
+                all.add(new ManagedIncidentRow(
+                        ai.getId(),
+                        "ANIMAL",
+                        ai.getFarmerId(),
+                        farmerNames.getOrDefault(ai.getFarmerId(), "Farmer #" + ai.getFarmerId()),
+                        targetName,
+                        ai.getIncidentType(),
+                        ai.getIncidentDate(),
+                        ai.getSeverityLevel(),
+                        ai.getAffectedCount(),
+                        ai.getDescription(),
+                        ai.getActionTaken(),
+                        ai.getStatus(),
+                        ai.getResolvedBy(),
+                        ai.getResolvedAt(),
+                        ai.getCreatedAt()
+                ));
+            }
+        }
+
+        return all.stream()
+                .filter(r -> scope.allowsFarmer(r.farmerId()))
+                .filter(r -> st.isEmpty() || st.equalsIgnoreCase(r.status()))
+                .filter(r -> q.isEmpty()
+                        || r.farmerName().toLowerCase().contains(q)
+                        || r.targetName().toLowerCase().contains(q)
+                        || (r.incidentType() != null && r.incidentType().toLowerCase().contains(q))
+                        || (r.description() != null && r.description().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedIncidentRow::incidentDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(ManagedIncidentRow::id, Comparator.reverseOrder()))
+                .toList();
+    }
+
+    @Transactional
+    public ManagedIncidentRow takeIncidentAction(String kind, Long id, IncidentActionRequest req, String actorName, Long actorId, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String normalizedKind = kind != null ? kind.trim().toUpperCase() : "";
+        String normalizedStatus = req.status().trim().toUpperCase();
+        if (!List.of("OPEN", "IN_PROGRESS", "RESOLVED", "DISMISSED").contains(normalizedStatus)) {
+            throw new BadRequestException("Invalid incident status. Use OPEN, IN_PROGRESS, RESOLVED, or DISMISSED.");
+        }
+
+        Long farmerId;
+        String targetName;
+        ManagedIncidentRow updatedRow;
+
+        if ("CROP".equals(normalizedKind)) {
+            CycleIncident ci = cycleIncidentRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Crop incident not found."));
+            scopeHelper.requireFarmerAccess(scope, ci.getFarmerId());
+            ci.setStatus(normalizedStatus);
+            ci.setActionTaken(req.actionTaken().trim());
+            ci.setResolvedBy(actorName);
+            ci.setResolvedAt("RESOLVED".equals(normalizedStatus) || "DISMISSED".equals(normalizedStatus)
+                    ? LocalDateTime.now() : null);
+            CycleIncident saved = cycleIncidentRepository.save(ci);
+            farmerId = saved.getFarmerId();
+            targetName = saved.getCycle() != null && saved.getCycle().getCropName() != null
+                    ? saved.getCycle().getCropName() : "Crop Cycle";
+            String farmerName = farmerRepository.findById(farmerId).map(Farmer::getFullName).orElse("Farmer #" + farmerId);
+            updatedRow = new ManagedIncidentRow(
+                    saved.getId(), "CROP", farmerId, farmerName, targetName,
+                    saved.getIncidentType() != null ? saved.getIncidentType().name() : "OTHER",
+                    saved.getIncidentDate(), saved.getSeverityLevel(), null,
+                    saved.getDescription(), saved.getActionTaken(), saved.getStatus(),
+                    saved.getResolvedBy(), saved.getResolvedAt(), saved.getCreatedAt()
+            );
+        } else if ("ANIMAL".equals(normalizedKind)) {
+            AnimalIncident ai = animalIncidentRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Animal incident not found."));
+            scopeHelper.requireFarmerAccess(scope, ai.getFarmerId());
+            ai.setStatus(normalizedStatus);
+            ai.setActionTaken(req.actionTaken().trim());
+            ai.setResolvedBy(actorName);
+            ai.setResolvedAt("RESOLVED".equals(normalizedStatus) || "DISMISSED".equals(normalizedStatus)
+                    ? LocalDateTime.now() : null);
+            AnimalIncident saved = animalIncidentRepository.save(ai);
+            farmerId = saved.getFarmerId();
+            targetName = saved.getAnimalGroup() != null ? saved.getAnimalGroup().getName() : "Animal Group";
+            String farmerName = farmerRepository.findById(farmerId).map(Farmer::getFullName).orElse("Farmer #" + farmerId);
+            updatedRow = new ManagedIncidentRow(
+                    saved.getId(), "ANIMAL", farmerId, farmerName, targetName,
+                    saved.getIncidentType(), saved.getIncidentDate(), saved.getSeverityLevel(),
+                    saved.getAffectedCount(), saved.getDescription(), saved.getActionTaken(),
+                    saved.getStatus(), saved.getResolvedBy(), saved.getResolvedAt(), saved.getCreatedAt()
+            );
+        } else {
+            throw new BadRequestException("Incident kind must be CROP or ANIMAL.");
+        }
+
+        if (req.notifyFarmer()) {
+            String msg = (req.notificationMessage() != null && !req.notificationMessage().isBlank())
+                    ? req.notificationMessage().trim()
+                    : "Incident on " + targetName + " marked " + normalizedStatus + ". Action: " + req.actionTaken().trim();
+            notificationService.send(
+                    actorId,
+                    actorName,
+                    new SendNotificationRequest(farmerId, null, "Incident Action: " + targetName, msg, "ACTION")
+            );
+        }
+
+        return updatedRow;
+    }
+
+    // ------------------------------------------------------------------ Crops
+
+    @Transactional(readOnly = true)
+    public List<ManagedCropRow> listCrops(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        List<Plot> allPlots = plotRepository.findAll();
+        List<Cycle> allCycles = cycleRepository.findAll();
+
+        return cropRepository.findAll().stream()
+                .filter(c -> scope.allowsFarmer(c.getFarmerId()))
+                .map(c -> toRichCropRow(c, farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId()), allPlots, allCycles))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || (r.variety() != null && r.variety().toLowerCase().contains(q))
+                        || (r.category() != null && r.category().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedCropRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedCropRow createCrop(ManagedCropRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmerAccess(scope, req.farmerId());
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        Crop crop = new Crop();
+        crop.setFarmerId(farmer.getId());
+        applyCropFields(crop, req);
+        return toCropRow(cropRepository.save(crop), farmer.getFullName());
+    }
+
+    @Transactional
+    public ManagedCropRow updateCrop(Long id, ManagedCropRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Crop crop = cropRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Crop not found."));
+        scopeHelper.requireFarmerAccess(scope, crop.getFarmerId());
+        if (req.farmerId() != null) {
+            scopeHelper.requireFarmerAccess(scope, req.farmerId());
+            farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            crop.setFarmerId(req.farmerId());
+        }
+        applyCropFields(crop, req);
+        Crop saved = cropRepository.save(crop);
+        String farmerName = farmerRepository.findById(saved.getFarmerId()).map(Farmer::getFullName).orElse("Farmer");
+        return toCropRow(saved, farmerName);
+    }
+
+    @Transactional
+    public void deleteCrop(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Crop crop = cropRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Crop not found."));
+        scopeHelper.requireFarmerAccess(scope, crop.getFarmerId());
+        cropRepository.delete(crop);
+    }
+
+    private void applyCropFields(Crop c, ManagedCropRequest req) {
+        c.setName(req.name().trim());
+        c.setVariety(blankToNull(req.variety()));
+        c.setCategory(blankToNull(req.category()));
+        c.setGrowthDurationDays(req.growthDurationDays());
+        c.setExpectedYieldPerHectare(req.expectedYieldPerHectare());
+        c.setYieldUnit(blankToNull(req.yieldUnit()));
+        c.setPlantingSeason(blankToNull(req.plantingSeason()));
+        c.setWaterRequirement(blankToNull(req.waterRequirement()));
+        c.setSoilPreference(blankToNull(req.soilPreference()));
+        c.setDescription(blankToNull(req.description()));
+    }
+
+    private ManagedCropRow toCropRow(Crop c, String farmerName) {
+        return toRichCropRow(c, farmerName, List.of(), List.of());
+    }
+
+    private ManagedCropRow toRichCropRow(Crop c, String farmerName, List<Plot> allPlots, List<Cycle> allCycles) {
+        Map<Long, RelatedPlotSummary> plotMap = new LinkedHashMap<>();
+        Map<Long, RelatedFarmSummary> farmMap = new LinkedHashMap<>();
+
+        Consumer<Plot> addPlot = (p) -> {
+            if (p == null) return;
+            plotMap.putIfAbsent(p.getId(), new RelatedPlotSummary(
+                    p.getId(), p.getName(), p.getArea(), p.getLocation(),
+                    p.getCropType(), p.getStage(),
+                    p.getFarm() != null ? p.getFarm().getId() : null,
+                    p.getFarm() != null ? p.getFarm().getName() : null));
+            if (p.getFarm() != null) {
+                Farm pf = p.getFarm();
+                farmMap.putIfAbsent(pf.getId(), new RelatedFarmSummary(
+                        pf.getId(), pf.getName(), pf.getType() != null ? pf.getType().name() : null, pf.getRegion()));
+            }
+        };
+
+        for (Plot p : allPlots) {
+            if (cropNameMatches(c, p.getCropType())) {
+                addPlot.accept(p);
+            }
+        }
+        for (Cycle cy : allCycles) {
+            if (cy.getPlot() != null && cropNameMatches(c, cy.getCropName())) {
+                addPlot.accept(cy.getPlot());
+            }
+        }
+
+        return new ManagedCropRow(
+                c.getId(),
+                c.getFarmerId(),
+                farmerName,
+                c.getName(),
+                c.getVariety(),
+                c.getCategory(),
+                c.getGrowthDurationDays(),
+                c.getExpectedYieldPerHectare(),
+                c.getYieldUnit(),
+                c.getPlantingSeason(),
+                c.getWaterRequirement(),
+                c.getSoilPreference(),
+                c.getDescription(),
+                c.getCreatedAt(),
+                new ArrayList<>(plotMap.values()),
+                new ArrayList<>(farmMap.values())
+        );
+    }
+
+    // ------------------------------------------------------------------ Harvests
+
+    @Transactional(readOnly = true)
+    public List<SimpleCycleOption> listCycleOptions(UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        return cycleRepository.findAll().stream()
+                .filter(c -> !scope.restricted()
+                        || (c.getPlot() != null && c.getPlot().getFarm() != null && scope.allowsFarm(c.getPlot().getFarm().getId()))
+                        || scope.allowsFarmer(c.getFarmerId()))
+                .map(c -> new SimpleCycleOption(
+                        c.getId(),
+                        c.getName(),
+                        c.getCropName(),
+                        c.getFarmerId(),
+                        farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId())))
+                .sorted(Comparator.comparing(SimpleCycleOption::id).reversed())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ManagedHarvestRow> listHarvests(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+
+        return harvestRepository.findAll().stream()
+                .filter(h -> !scope.restricted() || (h.getCycle() != null && scope.allowsFarmer(h.getCycle().getFarmerId())))
+                .map(h -> toHarvestRow(h, farmerNames))
+                .filter(r -> q.isEmpty()
+                        || (r.cropName() != null && r.cropName().toLowerCase().contains(q))
+                        || r.farmerName().toLowerCase().contains(q)
+                        || (r.cycleName() != null && r.cycleName().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedHarvestRow::harvestDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(ManagedHarvestRow::id, Comparator.reverseOrder()))
+                .toList();
+    }
+
+    @Transactional
+    public ManagedHarvestRow createHarvest(ManagedHarvestRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Cycle cycle = cycleRepository.findById(req.cycleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Production cycle not found."));
+        scopeHelper.requireFarmerAccess(scope, cycle.getFarmerId());
+        Harvest h = new Harvest();
+        h.setCycle(cycle);
+        applyHarvestFields(h, cycle, req);
+        Harvest saved = harvestRepository.save(h);
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        return toHarvestRow(saved, farmerNames);
+    }
+
+    @Transactional
+    public ManagedHarvestRow updateHarvest(Long id, ManagedHarvestRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Harvest h = harvestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Harvest not found."));
+        Cycle cycle = h.getCycle();
+        if (cycle != null) {
+            scopeHelper.requireFarmerAccess(scope, cycle.getFarmerId());
+        }
+        if (req.cycleId() != null && (cycle == null || !req.cycleId().equals(cycle.getId()))) {
+            cycle = cycleRepository.findById(req.cycleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Production cycle not found."));
+            scopeHelper.requireFarmerAccess(scope, cycle.getFarmerId());
+            h.setCycle(cycle);
+        }
+        applyHarvestFields(h, cycle, req);
+        Harvest saved = harvestRepository.save(h);
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        return toHarvestRow(saved, farmerNames);
+    }
+
+    @Transactional
+    public void deleteHarvest(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Harvest h = harvestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Harvest not found."));
+        if (h.getCycle() != null) {
+            scopeHelper.requireFarmerAccess(scope, h.getCycle().getFarmerId());
+        }
+        harvestRepository.delete(h);
+    }
+
+    private void applyHarvestFields(Harvest h, Cycle cycle, ManagedHarvestRequest req) {
+        h.setQuantity(req.quantity() != null ? req.quantity() : 0.0);
+        HarvestUnit unit = HarvestUnit.KG;
+        if (req.unit() != null && !req.unit().isBlank()) {
+            try {
+                unit = HarvestUnit.valueOf(req.unit().trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        h.setUnit(unit);
+        h.setHarvestDate(req.harvestDate() != null ? req.harvestDate() : java.time.LocalDate.now());
+        if (cycle != null && cycle.getAcreage() != null && cycle.getAcreage() > 0) {
+            h.setCalculatedYield(h.getQuantity() / cycle.getAcreage());
+        }
+        h.setQualityGrade(blankToNull(req.qualityGrade()));
+        h.setMarketDestination(blankToNull(req.marketDestination()));
+        h.setEstimatedRevenue(req.estimatedRevenue());
+        h.setNotes(blankToNull(req.notes()));
+    }
+
+    private ManagedHarvestRow toHarvestRow(Harvest h, Map<Long, String> farmerNames) {
+        Cycle c = h.getCycle();
+        Long fId = c != null ? c.getFarmerId() : null;
+        return new ManagedHarvestRow(
+                h.getId(),
+                c != null ? c.getId() : null,
+                c != null ? c.getName() : null,
+                c != null ? c.getCropName() : null,
+                fId,
+                fId != null ? farmerNames.getOrDefault(fId, "Farmer #" + fId) : "Farmer",
+                h.getQuantity(),
+                h.getUnit() != null ? h.getUnit().name() : "KG",
+                h.getHarvestDate(),
+                h.getCalculatedYield(),
+                h.getQualityGrade(),
+                h.getMarketDestination(),
+                h.getEstimatedRevenue(),
+                h.getNotes(),
+                h.getCreatedAt()
+        );
+    }
+
+    // ------------------------------------------------------------------ Farm Inputs
+
+    @Transactional(readOnly = true)
+    public List<ManagedInputRow> listInputs(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+
+        return farmInputRepository.findAll().stream()
+                .filter(i -> scope.allowsFarmer(i.getFarmerId()))
+                .map(i -> toInputRow(i, farmerNames.getOrDefault(i.getFarmerId(), "Farmer #" + i.getFarmerId())))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || r.type().toLowerCase().contains(q)
+                        || (r.supplier() != null && r.supplier().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedInputRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedInputRow createInput(ManagedInputRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmerAccess(scope, req.farmerId());
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        FarmInput input = new FarmInput();
+        input.setFarmerId(farmer.getId());
+        applyInputFields(input, req);
+        return toInputRow(farmInputRepository.save(input), farmer.getFullName());
+    }
+
+    @Transactional
+    public ManagedInputRow updateInput(Long id, ManagedInputRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        FarmInput input = farmInputRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input not found."));
+        scopeHelper.requireFarmerAccess(scope, input.getFarmerId());
+        if (req.farmerId() != null) {
+            scopeHelper.requireFarmerAccess(scope, req.farmerId());
+            farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            input.setFarmerId(req.farmerId());
+        }
+        applyInputFields(input, req);
+        FarmInput saved = farmInputRepository.save(input);
+        String farmerName = farmerRepository.findById(saved.getFarmerId()).map(Farmer::getFullName).orElse("Farmer");
+        return toInputRow(saved, farmerName);
+    }
+
+    @Transactional
+    public void deleteInput(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        FarmInput input = farmInputRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input not found."));
+        scopeHelper.requireFarmerAccess(scope, input.getFarmerId());
+        farmInputRepository.delete(input);
+    }
+
+    private void applyInputFields(FarmInput i, ManagedInputRequest req) {
+        i.setName(req.name().trim());
+        InputType t = InputType.OTHER;
+        if (req.type() != null && !req.type().isBlank()) {
+            try {
+                t = InputType.valueOf(req.type().trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        i.setType(t);
+        i.setQuantity(req.quantity() != null ? req.quantity() : 0.0);
+        i.setUnit(nonBlankOr(req.unit(), "kg"));
+        i.setPurchaseDate(req.purchaseDate() != null ? req.purchaseDate() : java.time.LocalDate.now());
+        i.setPurchasePrice(req.purchasePrice() != null ? req.purchasePrice() : 0.0);
+        double cumCost = req.cumulativeCost() != null ? req.cumulativeCost() : (i.getPurchasePrice() * Math.max(1.0, i.getQuantity()));
+        i.setCumulativeCost(cumCost);
+        i.setBrand(blankToNull(req.brand()));
+        i.setSupplier(blankToNull(req.supplier()));
+        i.setStorageLocation(blankToNull(req.storageLocation()));
+        i.setDescription(blankToNull(req.description()));
+    }
+
+    private ManagedInputRow toInputRow(FarmInput i, String farmerName) {
+        return new ManagedInputRow(
+                i.getId(),
+                i.getFarmerId(),
+                farmerName,
+                i.getName(),
+                i.getType() != null ? i.getType().name() : "OTHER",
+                i.getQuantity(),
+                i.getUnit(),
+                i.getPurchaseDate(),
+                i.getPurchasePrice(),
+                i.getCumulativeCost(),
+                i.getBrand(),
+                i.getSupplier(),
+                i.getStorageLocation(),
+                i.getDescription(),
+                i.getCreatedAt()
+        );
+    }
+
+    // ------------------------------------------------------------------ Helpers
+
+    private static FarmType parseFarmType(String value) {
+        if (value == null || value.isBlank()) return FarmType.MIXED;
+        try {
+            return FarmType.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return FarmType.MIXED;
+        }
+    }
+
+    private static SizeUnit parseSizeUnit(String value) {
+        if (value == null || value.isBlank()) return SizeUnit.HECTARES;
+        try {
+            return SizeUnit.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return SizeUnit.HECTARES;
+        }
+    }
+
+    private static FarmStatus parseFarmStatus(String value) {
+        if (value == null || value.isBlank()) return FarmStatus.ACTIVE;
+        try {
+            return FarmStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return FarmStatus.ACTIVE;
+        }
+    }
+
+    private static String nonBlankOr(String val, String fallback) {
+        return (val != null && !val.trim().isEmpty()) ? val.trim() : fallback;
+    }
+
+    private static String blankToNull(String val) {
+        return (val != null && !val.trim().isEmpty()) ? val.trim() : null;
+    }
+}
+
