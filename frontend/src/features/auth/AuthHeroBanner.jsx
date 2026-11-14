@@ -1,12 +1,17 @@
 import React from 'react';
 import { AcreaLogo, IconCrop, IconLivestock } from '../../shared/components/Icons';
+import authFarmBg from '../../assets/auth-farm-bg.jpg';
 
 export function AuthHeroBanner() {
   return (
     <div className="auth-hero-banner" style={{
       flex: 1,
       minHeight: '100%',
-      background: 'linear-gradient(175deg, #184D35 0%, #123C29 45%, #0C281B 100%)',
+      backgroundColor: '#123C29',
+      backgroundImage: `linear-gradient(180deg, rgba(14, 38, 27, 0.36) 0%, rgba(12, 34, 24, 0.50) 48%, rgba(8, 24, 17, 0.84) 100%), url(${authFarmBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       color: '#FFFFFF',
       padding: '48px 56px',
       display: 'flex',
@@ -15,26 +20,6 @@ export function AuthHeroBanner() {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Subtle organic field contour lines SVG background */}
-      <svg
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          opacity: 0.12,
-          pointerEvents: 'none'
-        }}
-        viewBox="0 0 800 1000"
-        fill="none"
-      >
-        <path d="M-100 200 C 200 150, 400 450, 900 350" stroke="#FFFFFF" strokeWidth="2" />
-        <path d="M-100 380 C 150 320, 450 620, 900 500" stroke="#FFFFFF" strokeWidth="2" />
-        <path d="M-100 560 C 250 500, 500 800, 900 680" stroke="#FFFFFF" strokeWidth="2" />
-        <path d="M-100 740 C 300 680, 550 950, 900 860" stroke="#FFFFFF" strokeWidth="2" />
-        <circle cx="650" cy="250" r="140" stroke="#FFFFFF" strokeWidth="1.5" strokeDasharray="6 6" />
-      </svg>
 
       {/* Brand Header */}
       <div style={{ position: 'relative', zIndex: 2 }}>
