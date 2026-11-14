@@ -27,6 +27,19 @@ export const managerService = {
   },
 
   /**
+   * Supervise all crop cycles, harvest records, and livestock groups across supervised farmers
+   */
+  async getProductions({ search = '', farmerId = '', status = '' } = {}) {
+    const params = new URLSearchParams();
+    if (search && search.trim()) params.append('search', search.trim());
+    if (farmerId && String(farmerId).trim() && farmerId !== 'ALL') params.append('farmerId', farmerId);
+    if (status && status.trim() && status !== 'ALL') params.append('status', status.trim());
+
+    const qs = params.toString();
+    return await apiClient.get(`/manager/productions${qs ? `?${qs}` : ''}`);
+  },
+
+  /**
    * Drill down into a specific farmer's farms, plots, cycles, harvests, incidents, and livestock (US-33)
    */
   async getFarmerDetail(farmerId) {

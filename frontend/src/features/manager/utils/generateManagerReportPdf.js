@@ -433,3 +433,4 @@ export function generateManagerReportPdf(report) {
     }
   }, 250);
 }
+

@@ -30,6 +30,7 @@ const ADMIN_NAV = [
 const MANAGER_NAV = [
   { id: 'manager-dashboard', label: 'Overview', icon: IconDashboard },
   { id: 'manager-farmers', label: 'Supervised Farmers', icon: IconUsers },
+  { id: 'manager-productions', label: 'Farmer Productions', icon: IconProduction },
   { id: 'manager-reports', label: 'Consolidated Reports', icon: IconReports },
 ];
 
