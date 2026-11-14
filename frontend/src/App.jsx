@@ -31,7 +31,9 @@ import { AdminActivityView } from './features/admin/AdminActivityView';
 import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
 import { ManageFarmsPlotsView } from './features/management/ManageFarmsPlotsView';
+import { ManageCropsView } from './features/management/ManageCropsView';
 import { ManageAnimalGroupsView } from './features/management/ManageAnimalGroupsView';
+import { ManageHarvestsInputsView } from './features/management/ManageHarvestsInputsView';
 import { ManageIncidentsView } from './features/management/ManageIncidentsView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
@@ -136,7 +138,9 @@ export function App() {
     'admin-users': { title: 'Users & Managers', subtitle: 'Create managers, manage accounts, suspend or activate users' },
     'admin-notifications': { title: 'Notify Users', subtitle: 'Broadcast platform alerts or send direct user messages' },
     'admin-farms': { title: 'Farms & Plots Management', subtitle: 'Create, update and manage all registered farms and plots' },
+    'admin-crops': { title: 'Crops Management', subtitle: 'Create, update and manage registered crops and varieties' },
     'admin-livestock': { title: 'Animal Groups Management', subtitle: 'Manage livestock herds, flocks and populations across farms' },
+    'admin-harvests-inputs': { title: 'Harvests & Farm Inputs', subtitle: 'Record and manage harvests and agricultural input inventories' },
     'admin-farmers': { title: 'Farmers', subtitle: 'Accounts, farms and production by farmer' },
     'admin-activity': { title: 'Activity Management', subtitle: 'Field work and account events across the platform' },
     'admin-production': { title: 'Production Management', subtitle: 'Cycles, harvests and input spending' },
@@ -146,7 +150,9 @@ export function App() {
     'manager-dashboard': { title: 'Supervision Dashboard', subtitle: `${todayLabel()} · Cooperative Network Production` },
     'manager-farmers': { title: 'Supervised Farmers', subtitle: 'Member directory, crop allocations and registration approvals' },
     'manager-farms': { title: 'Farms & Plots Management', subtitle: 'Manage farms and plots across supervised farmers' },
+    'manager-crops': { title: 'Crops Management', subtitle: 'Manage registered crops and varieties across supervised farmers' },
     'manager-livestock': { title: 'Animal Groups Management', subtitle: 'Manage livestock groups across supervised farms' },
+    'manager-harvests-inputs': { title: 'Harvests & Farm Inputs', subtitle: 'Manage harvest records and farm inputs across supervised farms' },
     'manager-productions': { title: 'Farmer Productions', subtitle: 'Real-time supervision of crop cycles, harvests and livestock' },
     'manager-incidents': { title: 'Incidents Management', subtitle: 'Review incidents, take action, and notify farmers' },
     'manager-reports': { title: 'Consolidated Production Reports', subtitle: 'Multi-farmer production aggregation and exports' },
@@ -288,7 +294,9 @@ export function App() {
           {isAdmin && currentRoute === 'admin-users' && <AdminUsersView currentUserId={currentUser?.id} />}
           {isAdmin && currentRoute === 'admin-notifications' && <AdminNotificationsView />}
           {isAdmin && currentRoute === 'admin-farms' && <ManageFarmsPlotsView />}
+          {isAdmin && currentRoute === 'admin-crops' && <ManageCropsView />}
           {isAdmin && currentRoute === 'admin-livestock' && <ManageAnimalGroupsView />}
+          {isAdmin && currentRoute === 'admin-harvests-inputs' && <ManageHarvestsInputsView />}
           {isAdmin && currentRoute === 'admin-farmers' && <AdminFarmersView />}
           {isAdmin && currentRoute === 'admin-activity' && <AdminActivityView />}
           {isAdmin && currentRoute === 'admin-production' && <AdminProductionView />}
@@ -304,8 +312,14 @@ export function App() {
           {currentRoute === 'manager-farms' && (
             <ManageFarmsPlotsView />
           )}
+          {currentRoute === 'manager-crops' && (
+            <ManageCropsView />
+          )}
           {currentRoute === 'manager-livestock' && (
             <ManageAnimalGroupsView />
+          )}
+          {currentRoute === 'manager-harvests-inputs' && (
+            <ManageHarvestsInputsView />
           )}
           {currentRoute === 'manager-incidents' && (
             <ManageIncidentsView />

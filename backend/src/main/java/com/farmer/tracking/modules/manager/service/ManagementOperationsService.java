@@ -11,12 +11,22 @@ import com.farmer.tracking.modules.animal.repository.AnimalIncidentRepository;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.Farmer;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
+import com.farmer.tracking.modules.crop.entity.Crop;
+import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleIncident;
+import com.farmer.tracking.modules.crop.entity.Harvest;
+import com.farmer.tracking.modules.crop.entity.HarvestUnit;
+import com.farmer.tracking.modules.crop.repository.CropRepository;
 import com.farmer.tracking.modules.crop.repository.CycleIncidentRepository;
+import com.farmer.tracking.modules.crop.repository.CycleRepository;
+import com.farmer.tracking.modules.crop.repository.HarvestRepository;
 import com.farmer.tracking.modules.farm.model.Farm;
 import com.farmer.tracking.modules.farm.model.FarmStatus;
 import com.farmer.tracking.modules.farm.model.SizeUnit;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
+import com.farmer.tracking.modules.input.entity.FarmInput;
+import com.farmer.tracking.modules.input.entity.InputType;
+import com.farmer.tracking.modules.input.repository.FarmInputRepository;
 import com.farmer.tracking.modules.manager.dto.ManagementOperationsDtos.*;
 import com.farmer.tracking.modules.notification.dto.NotificationDtos.SendNotificationRequest;
 import com.farmer.tracking.modules.notification.service.NotificationService;
@@ -39,6 +49,10 @@ public class ManagementOperationsService {
     private final AnimalGroupRepository animalGroupRepository;
     private final CycleIncidentRepository cycleIncidentRepository;
     private final AnimalIncidentRepository animalIncidentRepository;
+    private final CropRepository cropRepository;
+    private final CycleRepository cycleRepository;
+    private final HarvestRepository harvestRepository;
+    private final FarmInputRepository farmInputRepository;
     private final NotificationService notificationService;
 
     public ManagementOperationsService(
@@ -48,6 +62,10 @@ public class ManagementOperationsService {
             AnimalGroupRepository animalGroupRepository,
             CycleIncidentRepository cycleIncidentRepository,
             AnimalIncidentRepository animalIncidentRepository,
+            CropRepository cropRepository,
+            CycleRepository cycleRepository,
+            HarvestRepository harvestRepository,
+            FarmInputRepository farmInputRepository,
             NotificationService notificationService) {
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
@@ -55,6 +73,10 @@ public class ManagementOperationsService {
         this.animalGroupRepository = animalGroupRepository;
         this.cycleIncidentRepository = cycleIncidentRepository;
         this.animalIncidentRepository = animalIncidentRepository;
+        this.cropRepository = cropRepository;
+        this.cycleRepository = cycleRepository;
+        this.harvestRepository = harvestRepository;
+        this.farmInputRepository = farmInputRepository;
         this.notificationService = notificationService;
     }
 
@@ -484,6 +506,296 @@ public class ManagementOperationsService {
         }
 
         return updatedRow;
+    }
+
+    // ------------------------------------------------------------------ Crops
+
+    @Transactional(readOnly = true)
+    public List<ManagedCropRow> listCrops(String search) {
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+
+        return cropRepository.findAll().stream()
+                .map(c -> toCropRow(c, farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId())))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || (r.variety() != null && r.variety().toLowerCase().contains(q))
+                        || (r.category() != null && r.category().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedCropRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedCropRow createCrop(ManagedCropRequest req) {
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        Crop crop = new Crop();
+        crop.setFarmerId(farmer.getId());
+        applyCropFields(crop, req);
+        return toCropRow(cropRepository.save(crop), farmer.getFullName());
+    }
+
+    @Transactional
+    public ManagedCropRow updateCrop(Long id, ManagedCropRequest req) {
+        Crop crop = cropRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Crop not found."));
+        if (req.farmerId() != null) {
+            farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            crop.setFarmerId(req.farmerId());
+        }
+        applyCropFields(crop, req);
+        Crop saved = cropRepository.save(crop);
+        String farmerName = farmerRepository.findById(saved.getFarmerId()).map(Farmer::getFullName).orElse("Farmer");
+        return toCropRow(saved, farmerName);
+    }
+
+    @Transactional
+    public void deleteCrop(Long id) {
+        if (!cropRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Crop not found.");
+        }
+        cropRepository.deleteById(id);
+    }
+
+    private void applyCropFields(Crop c, ManagedCropRequest req) {
+        c.setName(req.name().trim());
+        c.setVariety(blankToNull(req.variety()));
+        c.setCategory(blankToNull(req.category()));
+        c.setGrowthDurationDays(req.growthDurationDays());
+        c.setExpectedYieldPerHectare(req.expectedYieldPerHectare());
+        c.setYieldUnit(blankToNull(req.yieldUnit()));
+        c.setPlantingSeason(blankToNull(req.plantingSeason()));
+        c.setWaterRequirement(blankToNull(req.waterRequirement()));
+        c.setSoilPreference(blankToNull(req.soilPreference()));
+        c.setDescription(blankToNull(req.description()));
+    }
+
+    private ManagedCropRow toCropRow(Crop c, String farmerName) {
+        return new ManagedCropRow(
+                c.getId(),
+                c.getFarmerId(),
+                farmerName,
+                c.getName(),
+                c.getVariety(),
+                c.getCategory(),
+                c.getGrowthDurationDays(),
+                c.getExpectedYieldPerHectare(),
+                c.getYieldUnit(),
+                c.getPlantingSeason(),
+                c.getWaterRequirement(),
+                c.getSoilPreference(),
+                c.getDescription(),
+                c.getCreatedAt()
+        );
+    }
+
+    // ------------------------------------------------------------------ Harvests
+
+    @Transactional(readOnly = true)
+    public List<SimpleCycleOption> listCycleOptions() {
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        return cycleRepository.findAll().stream()
+                .map(c -> new SimpleCycleOption(
+                        c.getId(),
+                        c.getName(),
+                        c.getCropName(),
+                        c.getFarmerId(),
+                        farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId())))
+                .sorted(Comparator.comparing(SimpleCycleOption::id).reversed())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ManagedHarvestRow> listHarvests(String search) {
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+
+        return harvestRepository.findAll().stream()
+                .map(h -> toHarvestRow(h, farmerNames))
+                .filter(r -> q.isEmpty()
+                        || (r.cropName() != null && r.cropName().toLowerCase().contains(q))
+                        || r.farmerName().toLowerCase().contains(q)
+                        || (r.cycleName() != null && r.cycleName().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedHarvestRow::harvestDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(ManagedHarvestRow::id, Comparator.reverseOrder()))
+                .toList();
+    }
+
+    @Transactional
+    public ManagedHarvestRow createHarvest(ManagedHarvestRequest req) {
+        Cycle cycle = cycleRepository.findById(req.cycleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Production cycle not found."));
+        Harvest h = new Harvest();
+        h.setCycle(cycle);
+        applyHarvestFields(h, cycle, req);
+        Harvest saved = harvestRepository.save(h);
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        return toHarvestRow(saved, farmerNames);
+    }
+
+    @Transactional
+    public ManagedHarvestRow updateHarvest(Long id, ManagedHarvestRequest req) {
+        Harvest h = harvestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Harvest not found."));
+        Cycle cycle = h.getCycle();
+        if (req.cycleId() != null && (cycle == null || !req.cycleId().equals(cycle.getId()))) {
+            cycle = cycleRepository.findById(req.cycleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Production cycle not found."));
+            h.setCycle(cycle);
+        }
+        applyHarvestFields(h, cycle, req);
+        Harvest saved = harvestRepository.save(h);
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        return toHarvestRow(saved, farmerNames);
+    }
+
+    @Transactional
+    public void deleteHarvest(Long id) {
+        if (!harvestRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Harvest not found.");
+        }
+        harvestRepository.deleteById(id);
+    }
+
+    private void applyHarvestFields(Harvest h, Cycle cycle, ManagedHarvestRequest req) {
+        h.setQuantity(req.quantity() != null ? req.quantity() : 0.0);
+        HarvestUnit unit = HarvestUnit.KG;
+        if (req.unit() != null && !req.unit().isBlank()) {
+            try {
+                unit = HarvestUnit.valueOf(req.unit().trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        h.setUnit(unit);
+        h.setHarvestDate(req.harvestDate() != null ? req.harvestDate() : java.time.LocalDate.now());
+        if (cycle != null && cycle.getAcreage() != null && cycle.getAcreage() > 0) {
+            h.setCalculatedYield(h.getQuantity() / cycle.getAcreage());
+        }
+        h.setQualityGrade(blankToNull(req.qualityGrade()));
+        h.setMarketDestination(blankToNull(req.marketDestination()));
+        h.setEstimatedRevenue(req.estimatedRevenue());
+        h.setNotes(blankToNull(req.notes()));
+    }
+
+    private ManagedHarvestRow toHarvestRow(Harvest h, Map<Long, String> farmerNames) {
+        Cycle c = h.getCycle();
+        Long fId = c != null ? c.getFarmerId() : null;
+        return new ManagedHarvestRow(
+                h.getId(),
+                c != null ? c.getId() : null,
+                c != null ? c.getName() : null,
+                c != null ? c.getCropName() : null,
+                fId,
+                fId != null ? farmerNames.getOrDefault(fId, "Farmer #" + fId) : "Farmer",
+                h.getQuantity(),
+                h.getUnit() != null ? h.getUnit().name() : "KG",
+                h.getHarvestDate(),
+                h.getCalculatedYield(),
+                h.getQualityGrade(),
+                h.getMarketDestination(),
+                h.getEstimatedRevenue(),
+                h.getNotes(),
+                h.getCreatedAt()
+        );
+    }
+
+    // ------------------------------------------------------------------ Farm Inputs
+
+    @Transactional(readOnly = true)
+    public List<ManagedInputRow> listInputs(String search) {
+        String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, String> farmerNames = farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+
+        return farmInputRepository.findAll().stream()
+                .map(i -> toInputRow(i, farmerNames.getOrDefault(i.getFarmerId(), "Farmer #" + i.getFarmerId())))
+                .filter(r -> q.isEmpty()
+                        || r.name().toLowerCase().contains(q)
+                        || r.farmerName().toLowerCase().contains(q)
+                        || r.type().toLowerCase().contains(q)
+                        || (r.supplier() != null && r.supplier().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(ManagedInputRow::id).reversed())
+                .toList();
+    }
+
+    @Transactional
+    public ManagedInputRow createInput(ManagedInputRequest req) {
+        Farmer farmer = farmerRepository.findById(req.farmerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+        FarmInput input = new FarmInput();
+        input.setFarmerId(farmer.getId());
+        applyInputFields(input, req);
+        return toInputRow(farmInputRepository.save(input), farmer.getFullName());
+    }
+
+    @Transactional
+    public ManagedInputRow updateInput(Long id, ManagedInputRequest req) {
+        FarmInput input = farmInputRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input not found."));
+        if (req.farmerId() != null) {
+            farmerRepository.findById(req.farmerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
+            input.setFarmerId(req.farmerId());
+        }
+        applyInputFields(input, req);
+        FarmInput saved = farmInputRepository.save(input);
+        String farmerName = farmerRepository.findById(saved.getFarmerId()).map(Farmer::getFullName).orElse("Farmer");
+        return toInputRow(saved, farmerName);
+    }
+
+    @Transactional
+    public void deleteInput(Long id) {
+        if (!farmInputRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Farm input not found.");
+        }
+        farmInputRepository.deleteById(id);
+    }
+
+    private void applyInputFields(FarmInput i, ManagedInputRequest req) {
+        i.setName(req.name().trim());
+        InputType t = InputType.OTHER;
+        if (req.type() != null && !req.type().isBlank()) {
+            try {
+                t = InputType.valueOf(req.type().trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        i.setType(t);
+        i.setQuantity(req.quantity() != null ? req.quantity() : 0.0);
+        i.setUnit(nonBlankOr(req.unit(), "kg"));
+        i.setPurchaseDate(req.purchaseDate() != null ? req.purchaseDate() : java.time.LocalDate.now());
+        i.setPurchasePrice(req.purchasePrice() != null ? req.purchasePrice() : 0.0);
+        double cumCost = req.cumulativeCost() != null ? req.cumulativeCost() : (i.getPurchasePrice() * Math.max(1.0, i.getQuantity()));
+        i.setCumulativeCost(cumCost);
+        i.setBrand(blankToNull(req.brand()));
+        i.setSupplier(blankToNull(req.supplier()));
+        i.setStorageLocation(blankToNull(req.storageLocation()));
+        i.setDescription(blankToNull(req.description()));
+    }
+
+    private ManagedInputRow toInputRow(FarmInput i, String farmerName) {
+        return new ManagedInputRow(
+                i.getId(),
+                i.getFarmerId(),
+                farmerName,
+                i.getName(),
+                i.getType() != null ? i.getType().name() : "OTHER",
+                i.getQuantity(),
+                i.getUnit(),
+                i.getPurchaseDate(),
+                i.getPurchasePrice(),
+                i.getCumulativeCost(),
+                i.getBrand(),
+                i.getSupplier(),
+                i.getStorageLocation(),
+                i.getDescription(),
+                i.getCreatedAt()
+        );
     }
 
     // ------------------------------------------------------------------ Helpers

@@ -135,5 +135,112 @@ public final class ManagementOperationsDtos {
             boolean notifyFarmer,
             String notificationMessage
     ) {}
+
+    // ── Crops Management ──
+
+    public record ManagedCropRow(
+            Long id,
+            Long farmerId,
+            String farmerName,
+            String name,
+            String variety,
+            String category,
+            Integer growthDurationDays,
+            Double expectedYieldPerHectare,
+            String yieldUnit,
+            String plantingSeason,
+            String waterRequirement,
+            String soilPreference,
+            String description,
+            LocalDateTime createdAt
+    ) {}
+
+    public record ManagedCropRequest(
+            @NotNull Long farmerId,
+            @NotBlank String name,
+            String variety,
+            String category,
+            Integer growthDurationDays,
+            Double expectedYieldPerHectare,
+            String yieldUnit,
+            String plantingSeason,
+            String waterRequirement,
+            String soilPreference,
+            String description
+    ) {}
+
+    // ── Harvests Management ──
+
+    public record ManagedHarvestRow(
+            Long id,
+            Long cycleId,
+            String cycleName,
+            String cropName,
+            Long farmerId,
+            String farmerName,
+            Double quantity,
+            String unit,
+            LocalDate harvestDate,
+            Double calculatedYield,
+            String qualityGrade,
+            String marketDestination,
+            Double estimatedRevenue,
+            String notes,
+            LocalDateTime createdAt
+    ) {}
+
+    public record ManagedHarvestRequest(
+            @NotNull Long cycleId,
+            @NotNull Double quantity,
+            String unit,
+            LocalDate harvestDate,
+            String qualityGrade,
+            String marketDestination,
+            Double estimatedRevenue,
+            String notes
+    ) {}
+
+    public record SimpleCycleOption(
+            Long id,
+            String name,
+            String cropName,
+            Long farmerId,
+            String farmerName
+    ) {}
+
+    // ── Inputs Management ──
+
+    public record ManagedInputRow(
+            Long id,
+            Long farmerId,
+            String farmerName,
+            String name,
+            String type,
+            Double quantity,
+            String unit,
+            LocalDate purchaseDate,
+            Double purchasePrice,
+            Double cumulativeCost,
+            String brand,
+            String supplier,
+            String storageLocation,
+            String description,
+            LocalDateTime createdAt
+    ) {}
+
+    public record ManagedInputRequest(
+            @NotNull Long farmerId,
+            @NotBlank String name,
+            String type,
+            @NotNull Double quantity,
+            @NotBlank String unit,
+            LocalDate purchaseDate,
+            @NotNull Double purchasePrice,
+            Double cumulativeCost,
+            String brand,
+            String supplier,
+            String storageLocation,
+            String description
+    ) {}
 }
 

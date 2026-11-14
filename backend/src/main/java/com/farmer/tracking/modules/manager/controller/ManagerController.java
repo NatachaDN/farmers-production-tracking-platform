@@ -203,4 +203,87 @@ public class ManagerController {
         Long actorId = principal != null ? principal.getId() : null;
         return ResponseEntity.ok(operationsService.takeIncidentAction(kind, id, request, actorName, actorId));
     }
+
+    // ── Shared Crop, Harvest & Input Management (Admin + Manager) ──
+
+    @GetMapping("/crops")
+    @Operation(summary = "List all registered crops across the platform")
+    public ResponseEntity<List<ManagedCropRow>> listCrops(@RequestParam(required = false) String search) {
+        return ResponseEntity.ok(operationsService.listCrops(search));
+    }
+
+    @PostMapping("/crops")
+    @Operation(summary = "Create a crop for a farmer")
+    public ResponseEntity<ManagedCropRow> createCrop(@Valid @RequestBody ManagedCropRequest request) {
+        return ResponseEntity.ok(operationsService.createCrop(request));
+    }
+
+    @PutMapping("/crops/{id}")
+    @Operation(summary = "Update a crop")
+    public ResponseEntity<ManagedCropRow> updateCrop(@PathVariable Long id, @Valid @RequestBody ManagedCropRequest request) {
+        return ResponseEntity.ok(operationsService.updateCrop(id, request));
+    }
+
+    @DeleteMapping("/crops/{id}")
+    @Operation(summary = "Delete a crop")
+    public ResponseEntity<Void> deleteCrop(@PathVariable Long id) {
+        operationsService.deleteCrop(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/cycles-summary")
+    @Operation(summary = "List cycle options for harvest assignment")
+    public ResponseEntity<List<SimpleCycleOption>> listCycleOptions() {
+        return ResponseEntity.ok(operationsService.listCycleOptions());
+    }
+
+    @GetMapping("/harvests")
+    @Operation(summary = "List all harvests across the platform")
+    public ResponseEntity<List<ManagedHarvestRow>> listHarvests(@RequestParam(required = false) String search) {
+        return ResponseEntity.ok(operationsService.listHarvests(search));
+    }
+
+    @PostMapping("/harvests")
+    @Operation(summary = "Record a harvest")
+    public ResponseEntity<ManagedHarvestRow> createHarvest(@Valid @RequestBody ManagedHarvestRequest request) {
+        return ResponseEntity.ok(operationsService.createHarvest(request));
+    }
+
+    @PutMapping("/harvests/{id}")
+    @Operation(summary = "Update a harvest")
+    public ResponseEntity<ManagedHarvestRow> updateHarvest(@PathVariable Long id, @Valid @RequestBody ManagedHarvestRequest request) {
+        return ResponseEntity.ok(operationsService.updateHarvest(id, request));
+    }
+
+    @DeleteMapping("/harvests/{id}")
+    @Operation(summary = "Delete a harvest")
+    public ResponseEntity<Void> deleteHarvest(@PathVariable Long id) {
+        operationsService.deleteHarvest(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/inputs")
+    @Operation(summary = "List all farm inputs across the platform")
+    public ResponseEntity<List<ManagedInputRow>> listInputs(@RequestParam(required = false) String search) {
+        return ResponseEntity.ok(operationsService.listInputs(search));
+    }
+
+    @PostMapping("/inputs")
+    @Operation(summary = "Create a farm input")
+    public ResponseEntity<ManagedInputRow> createInput(@Valid @RequestBody ManagedInputRequest request) {
+        return ResponseEntity.ok(operationsService.createInput(request));
+    }
+
+    @PutMapping("/inputs/{id}")
+    @Operation(summary = "Update a farm input")
+    public ResponseEntity<ManagedInputRow> updateInput(@PathVariable Long id, @Valid @RequestBody ManagedInputRequest request) {
+        return ResponseEntity.ok(operationsService.updateInput(id, request));
+    }
+
+    @DeleteMapping("/inputs/{id}")
+    @Operation(summary = "Delete a farm input")
+    public ResponseEntity<Void> deleteInput(@PathVariable Long id) {
+        operationsService.deleteInput(id);
+        return ResponseEntity.noContent().build();
+    }
 }

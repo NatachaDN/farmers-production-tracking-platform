@@ -163,5 +163,50 @@ export const managerService = {
   async takeIncidentAction(kind, id, payload) {
     return await apiClient.put(`/manager/incidents/${kind}/${id}/action`, payload);
   },
+
+  async listCrops(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/crops${qs}`);
+  },
+  async createCrop(payload) {
+    return await apiClient.post('/manager/crops', payload);
+  },
+  async updateCrop(id, payload) {
+    return await apiClient.put(`/manager/crops/${id}`, payload);
+  },
+  async deleteCrop(id) {
+    return await apiClient.delete(`/manager/crops/${id}`);
+  },
+
+  async listCycleOptions() {
+    return await apiClient.get('/manager/cycles-summary');
+  },
+  async listHarvests(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/harvests${qs}`);
+  },
+  async createHarvest(payload) {
+    return await apiClient.post('/manager/harvests', payload);
+  },
+  async updateHarvest(id, payload) {
+    return await apiClient.put(`/manager/harvests/${id}`, payload);
+  },
+  async deleteHarvest(id) {
+    return await apiClient.delete(`/manager/harvests/${id}`);
+  },
+
+  async listInputs(search = '') {
+    const qs = search && search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return await apiClient.get(`/manager/inputs${qs}`);
+  },
+  async createInput(payload) {
+    return await apiClient.post('/manager/inputs', payload);
+  },
+  async updateInput(id, payload) {
+    return await apiClient.put(`/manager/inputs/${id}`, payload);
+  },
+  async deleteInput(id) {
+    return await apiClient.delete(`/manager/inputs/${id}`);
+  },
 };
 
