@@ -64,6 +64,15 @@ public class Farmer {
     @Column(name = "password_reset_expires_at")
     private LocalDateTime passwordResetExpiresAt;
 
+    @Column(name = "password_reset_attempts")
+    private Integer passwordResetAttempts = 0;
+
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private RegistrationStatus status = RegistrationStatus.APPROVED;
@@ -259,5 +268,29 @@ public class Farmer {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public int getPasswordResetAttempts() {
+        return passwordResetAttempts == null ? 0 : passwordResetAttempts;
+    }
+
+    public void setPasswordResetAttempts(Integer passwordResetAttempts) {
+        this.passwordResetAttempts = passwordResetAttempts;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts == null ? 0 : failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public LocalDateTime getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public void setLockedUntil(LocalDateTime lockedUntil) {
+        this.lockedUntil = lockedUntil;
     }
 }

@@ -23,6 +23,7 @@ public class FarmInputResponse {
     private LocalDate expiryDate;
     private String storageLocation;
     private String description;
+    private Double unitCost;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -64,7 +65,16 @@ public class FarmInputResponse {
         response.setExpiryDate(input.getExpiryDate());
         response.setStorageLocation(input.getStorageLocation());
         response.setDescription(input.getDescription());
+        response.setUnitCost(Math.round(input.getUnitCost() * 100.0) / 100.0);
         return response;
+    }
+
+    public Double getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(Double unitCost) {
+        this.unitCost = unitCost;
     }
 
     public Long getId() {

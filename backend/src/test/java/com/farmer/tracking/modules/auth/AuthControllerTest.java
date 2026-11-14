@@ -75,8 +75,7 @@ class AuthControllerTest {
         ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
         ForgotPasswordResponse response = new ForgotPasswordResponse(
                 "A password reset code has been sent to your registered email or phone.",
-                "joyce@example.com",
-                "123456"
+                "joyce@example.com"
         );
 
         when(authService.forgotPassword(any(ForgotPasswordRequest.class))).thenReturn(response);
@@ -86,7 +85,8 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("A password reset code has been sent to your registered email or phone."))
-                .andExpect(jsonPath("$.resetCode").value("123456"));
+                // The reset code must never be sent back to the client.
+                .andExpect(jsonPath("$.resetCode").doesNotExist());
     }
 
     @Test

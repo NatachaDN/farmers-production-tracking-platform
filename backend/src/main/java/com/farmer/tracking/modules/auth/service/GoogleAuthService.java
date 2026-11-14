@@ -1,5 +1,6 @@
 package com.farmer.tracking.modules.auth.service;
 
+import com.farmer.tracking.common.security.AccountStatusPolicy;
 import com.farmer.tracking.common.security.AdminAccessPolicy;
 import com.farmer.tracking.common.security.JwtTokenProvider;
 import com.farmer.tracking.modules.auth.dto.AuthResponse;
@@ -58,7 +59,8 @@ public class GoogleAuthService {
         return signIn(identity);
     }
 
-    @Transactional
+    // A new account awaiting approval must stay saved even though sign-in is refused.
+    @Transactional(noRollbackFor = com.farmer.tracking.common.exception.ForbiddenException.class)
     public GoogleLoginResult signIn(GoogleIdentity identity) {
         Optional<Farmer> existing = farmerRepository.findByGoogleId(identity.subject());
         if (existing.isEmpty()) {
@@ -69,13 +71,8 @@ public class GoogleAuthService {
         Farmer farmer = existing.orElseGet(() -> newFarmer(identity));
 
         if (!created) {
-            if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.SUSPENDED) {
-                throw new com.farmer.tracking.common.exception.UnauthorizedException(
-                        "Your account has been suspended by an administrator. Please contact support.");
-            }
-            if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.REJECTED) {
-                throw new com.farmer.tracking.common.exception.UnauthorizedException(
-                        "Your registration was rejected. Please contact support.");
+            if (!AccountStatusPolicy.isActive(farmer)) {
+                AccountStatusPolicy.assertCanSignIn(farmer);
             }
             if (farmer.getGoogleId() == null) {
                 // First time this existing account signs in with Google. The password was set by
@@ -96,6 +93,17 @@ public class GoogleAuthService {
             log.info("Farmer account {} promoted to administrator (allow-listed Google email)", farmer.getId());
         }
 
+        if (AdminAccessPolicy.ROLE_ADMIN.equals(farmer.getRole())) {
+            // Allow-listed administrators never wait for approval.
+            farmer.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.APPROVED);
+        }
+
+        if (!AccountStatusPolicy.isActive(farmer)) {
+            // New Google farmers go through the same approval as email registrations.
+            farmerRepository.save(farmer);
+            AccountStatusPolicy.assertCanSignIn(farmer);
+        }
+
         farmer.setLastLoginAt(LocalDateTime.now());
         Farmer saved = farmerRepository.save(farmer);
 
@@ -113,6 +121,7 @@ public class GoogleAuthService {
         farmer.setFarmType(FarmType.MIXED);
         farmer.setPasswordHash(unusablePasswordHash());
         farmer.setRole(AdminAccessPolicy.ROLE_FARMER);
+        farmer.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.PENDING);
         farmer.setAgreedToTerms(true);
         farmer.setAuthProvider("GOOGLE");
         farmer.setGoogleId(identity.subject());

@@ -70,4 +70,38 @@ public class HarvestController {
         HarvestResponse response = harvestService.getHarvestByCycle(farmerId, cycleId);
         return ResponseEntity.ok(response);
     }
+
+    // ------------------------------------------------------------------ //
+    //  PUT /api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest            //
+    // ------------------------------------------------------------------ //
+    @PutMapping
+    @Operation(
+            summary = "Correct the harvest record of a cycle",
+            description = "Updates quantity, unit, date and details of the recorded harvest and recalculates the yield."
+    )
+    @ApiResponse(responseCode = "200", description = "Harvest corrected")
+    @ApiResponse(responseCode = "404", description = "Cycle or harvest not found")
+    public ResponseEntity<HarvestResponse> updateHarvest(
+            @Parameter(description = "Farmer ID — enforces ownership") @PathVariable Long farmerId,
+            @Parameter(description = "Cycle ID")                       @PathVariable Long cycleId,
+            @Valid @RequestBody HarvestRequest request) {
+        return ResponseEntity.ok(harvestService.updateHarvest(farmerId, cycleId, request));
+    }
+
+    // ------------------------------------------------------------------ //
+    //  DELETE /api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest         //
+    // ------------------------------------------------------------------ //
+    @DeleteMapping
+    @Operation(
+            summary = "Delete the harvest record of a cycle",
+            description = "Removes a harvest recorded by mistake; the cycle becomes ACTIVE again."
+    )
+    @ApiResponse(responseCode = "204", description = "Harvest deleted")
+    @ApiResponse(responseCode = "404", description = "Cycle or harvest not found")
+    public ResponseEntity<Void> deleteHarvest(
+            @Parameter(description = "Farmer ID — enforces ownership") @PathVariable Long farmerId,
+            @Parameter(description = "Cycle ID")                       @PathVariable Long cycleId) {
+        harvestService.deleteHarvest(farmerId, cycleId);
+        return ResponseEntity.noContent().build();
+    }
 }

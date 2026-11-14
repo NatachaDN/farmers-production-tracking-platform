@@ -59,6 +59,12 @@ public class FarmInput {
 
     @Column(length = 1000)
     private String description;
+    /**
+     * Weighted-average cost of one unit of the stock currently held.
+     * Recomputed on every restock; used to cost consumption on crop cycles.
+     */
+    @Column(name = "unit_cost")
+    private Double unitCost;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -77,6 +83,24 @@ public class FarmInput {
         this.purchaseDate = purchaseDate;
         this.purchasePrice = purchasePrice;
         this.cumulativeCost = cumulativeCost;
+        this.unitCost = (quantity != null && quantity > 0 && purchasePrice != null)
+                ? purchasePrice / quantity
+                : 0.0;
+    }
+
+    /**
+     * Adds a new purchase to the stock and updates the weighted-average unit cost.
+     *
+     * @param addedQuantity quantity purchased
+     * @param totalPrice    total amount paid for that quantity
+     */
+    public void addStock(double addedQuantity, double totalPrice) {
+        double currentQuantity = quantity != null ? quantity : 0.0;
+        double currentValue = currentQuantity * getUnitCost();
+        this.quantity = currentQuantity + addedQuantity;
+        this.unitCost = this.quantity > 0 ? (currentValue + totalPrice) / this.quantity : 0.0;
+        this.cumulativeCost = (cumulativeCost != null ? cumulativeCost : 0.0) + totalPrice;
+        this.purchasePrice = totalPrice;
     }
 
     @PrePersist
@@ -154,6 +178,21 @@ public class FarmInput {
 
     public void setPurchasePrice(Double purchasePrice) {
         this.purchasePrice = purchasePrice;
+    }
+
+    public Double getUnitCost() {
+        if (unitCost != null) {
+            return unitCost;
+        }
+        // Legacy rows created before unit_cost existed: best available estimate.
+        if (quantity != null && quantity > 0 && cumulativeCost != null) {
+            return cumulativeCost / quantity;
+        }
+        return 0.0;
+    }
+
+    public void setUnitCost(Double unitCost) {
+        this.unitCost = unitCost;
     }
 
     public Double getCumulativeCost() {

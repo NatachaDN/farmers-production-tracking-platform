@@ -77,7 +77,8 @@ class CycleInputUsageServiceTest {
         sampleInput.setType(InputType.FERTILIZER);
         sampleInput.setQuantity(200.0); // 200 kg available in stock
         sampleInput.setUnit("kg");
-        sampleInput.setPurchasePrice(160.0); // 160 per kg
+        sampleInput.setPurchasePrice(32000.0); // 32,000 paid in total
+        sampleInput.setUnitCost(160.0);        // = 160 per kg
         sampleInput.setCumulativeCost(32000.0);
     }
 
@@ -90,6 +91,25 @@ class CycleInputUsageServiceTest {
         UserPrincipal principal = new UserPrincipal(id, "farmer@example.com", "pass", List.of(new SimpleGrantedAuthority(role)));
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(token);
+    }
+
+    @Test
+    @DisplayName("Real cost uses unit cost, not the total purchase price (50 kg for 25,000 -> 10 kg = 5,000)")
+    void recordInputUsage_CostIsBasedOnUnitCostNotTotalPurchasePrice() {
+        FarmInput seeds = new FarmInput(farmerId, "Maize Seeds", InputType.SEEDS, 50.0, "kg",
+                LocalDate.now(), 25000.0, 25000.0);
+        seeds.setId(inputId);
+        CycleInputUsageRequest request = new CycleInputUsageRequest(inputId, 10.0, LocalDate.now(), null);
+
+        when(cycleRepository.findById(cycleId)).thenReturn(Optional.of(activeCycle));
+        when(farmInputRepository.findByIdAndFarmerId(inputId, farmerId)).thenReturn(Optional.of(seeds));
+        when(cycleInputUsageRepository.save(any(CycleInputUsage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CycleInputUsageResponse response = cycleInputUsageService.recordInputUsage(farmerId, cycleId, request);
+
+        assertThat(response.getUnitPrice()).isEqualTo(500.0);
+        assertThat(response.getTotalCost()).isEqualTo(5000.0);
+        assertThat(response.getRemainingStock()).isEqualTo(40.0);
     }
 
     @Test

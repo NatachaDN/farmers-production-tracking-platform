@@ -108,8 +108,8 @@ public class AdminManagementService {
         if (req.emailOrPhone() == null || req.emailOrPhone().isBlank()) {
             throw new BadRequestException("Email or phone is required.");
         }
-        if (req.password() == null || req.password().length() < 4) {
-            throw new BadRequestException("Password must be at least 4 characters.");
+        if (req.password() == null || req.password().length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters.");
         }
 
         String identifier = req.emailOrPhone().trim().toLowerCase(Locale.ROOT);
@@ -166,8 +166,8 @@ public class AdminManagementService {
             user.setStatus(RegistrationStatus.fromString(req.status()));
         }
         if (req.newPassword() != null && !req.newPassword().isBlank()) {
-            if (req.newPassword().length() < 4) {
-                throw new BadRequestException("Password must be at least 4 characters.");
+            if (req.newPassword().length() < 8) {
+                throw new BadRequestException("Password must be at least 8 characters.");
             }
             user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         }

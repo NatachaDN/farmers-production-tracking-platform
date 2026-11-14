@@ -54,8 +54,15 @@ public class NotificationController {
 
     @PutMapping("/{id}/read")
     @Operation(summary = "Mark a notification as read")
-    public ResponseEntity<NotificationResponse> markRead(@PathVariable Long id) {
-        return ResponseEntity.ok(notificationService.markRead(id));
+    public ResponseEntity<NotificationResponse> markRead(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id) {
+        if (principal == null) throw new UnauthorizedException("Authentication required.");
+        String role = principal.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .findFirst()
+                .orElse(AdminAccessPolicy.ROLE_FARMER);
+        return ResponseEntity.ok(notificationService.markRead(id, principal.getId(), role));
     }
 
     @PutMapping("/read-all")
@@ -76,7 +83,7 @@ public class NotificationController {
                 .anyMatch(a -> AdminAccessPolicy.ROLE_ADMIN.equals(a.getAuthority())
                         || AdminAccessPolicy.ROLE_MANAGER.equals(a.getAuthority()));
         if (!allowed) {
-            throw new UnauthorizedException("Administrator or manager role required.");
+            throw new com.farmer.tracking.common.exception.ForbiddenException("Administrator or manager role required.");
         }
     }
 }

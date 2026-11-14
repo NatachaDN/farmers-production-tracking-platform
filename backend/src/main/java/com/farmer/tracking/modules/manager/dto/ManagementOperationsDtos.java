@@ -244,7 +244,8 @@ public final class ManagementOperationsDtos {
             String supplier,
             String storageLocation,
             String description,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            Double unitCost
     ) {}
 
     public record ManagedInputRequest(

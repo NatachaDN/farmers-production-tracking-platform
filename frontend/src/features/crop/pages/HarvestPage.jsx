@@ -27,6 +27,7 @@ export function HarvestPage({ farmerId }) {
   const [isLoadingCycles, setIsLoadingCycles] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimerRef = useRef(null);
 
@@ -95,6 +96,7 @@ export function HarvestPage({ farmerId }) {
   };
 
   useEffect(() => {
+    setIsEditing(false);
     if (selectedCycleId) {
       loadHarvest(selectedCycleId);
     } else {
@@ -114,6 +116,42 @@ export function HarvestPage({ farmerId }) {
       showToast('Harvest recorded successfully! Cycle marked as Completed.');
     } catch (err) {
       showToast(err?.message || 'Failed to record harvest. Please check input values.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateHarvest = async (formData) => {
+    if (!selectedCycleId) return;
+    setIsSubmitting(true);
+    try {
+      const updated = await harvestService.updateHarvest(farmerId, selectedCycleId, formData);
+      setHarvest(updated);
+      setIsEditing(false);
+      showToast('Harvest corrected. Yield recalculated.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to correct harvest. Please check input values.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteHarvest = async () => {
+    if (!selectedCycleId) return;
+    if (!window.confirm('Delete this harvest record? The cycle will become ACTIVE again so you can record it anew.')) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await harvestService.deleteHarvest(farmerId, selectedCycleId);
+      setHarvest(null);
+      setIsEditing(false);
+      setCycles((prev) =>
+        prev.map((c) => (c.id === selectedCycleId ? { ...c, status: 'ACTIVE' } : c))
+      );
+      showToast('Harvest deleted. The cycle is active again.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to delete harvest.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -333,7 +371,34 @@ export function HarvestPage({ farmerId }) {
               padding: '32px',
               boxShadow: 'var(--shadow-card)'
             }}>
-              <HarvestResult harvest={harvest} />
+              {isEditing ? (
+                <HarvestForm
+                  key={`edit-${harvest.id}`}
+                  initialValues={harvest}
+                  onSubmit={handleUpdateHarvest}
+                  isSubmitting={isSubmitting}
+                  submitLabel="Save Corrected Harvest"
+                  onCancel={() => setIsEditing(false)}
+                />
+              ) : (
+                <>
+                  <HarvestResult harvest={harvest} />
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: '20px' }}>
+                    <button type="button" className="btn" onClick={() => setIsEditing(true)} disabled={isSubmitting}>
+                      Correct harvest
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={handleDeleteHarvest}
+                      disabled={isSubmitting}
+                      style={{ color: 'var(--color-accent-red)', borderColor: 'var(--color-accent-red-border)' }}
+                    >
+                      Delete harvest
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div style={{

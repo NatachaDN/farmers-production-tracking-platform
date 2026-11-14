@@ -41,9 +41,10 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
       });
 
       if (onRegisterSuccess) {
-        onRegisterSuccess(response.farmer);
+        // Without a token the account is awaiting approval: App sends the user back to sign-in.
+        onRegisterSuccess(response.farmer, response);
       } else if (onNavigate) {
-        onNavigate('dashboard');
+        onNavigate(response?.token ? 'dashboard' : 'login');
       }
     } catch (err) {
       setError(err.message || 'Registration failed. Please check your information and try again.');

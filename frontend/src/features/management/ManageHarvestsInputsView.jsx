@@ -219,7 +219,8 @@ export function ManageHarvestsInputsView() {
         quantity: String(i.quantity ?? 0),
         unit: i.unit || 'kg',
         purchaseDate: i.purchaseDate || new Date().toISOString().slice(0, 10),
-        purchasePrice: String(i.purchasePrice ?? 0),
+        // The form edits the UNIT price; purchasePrice holds the total paid.
+        purchasePrice: String(i.unitCost ?? i.purchasePrice ?? 0),
         brand: i.brand || '',
         supplier: i.supplier || '',
         storageLocation: i.storageLocation || '',

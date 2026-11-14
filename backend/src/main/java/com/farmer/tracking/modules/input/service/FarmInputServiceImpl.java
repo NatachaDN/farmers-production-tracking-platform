@@ -50,9 +50,7 @@ public class FarmInputServiceImpl implements FarmInputService {
         if (existingOpt.isPresent()) {
             // Update existing input (Acceptance Criterion 2: total stock and cumulative cost updated)
             inputToSave = existingOpt.get();
-            inputToSave.setQuantity(inputToSave.getQuantity() + request.getQuantity());
-            inputToSave.setCumulativeCost(inputToSave.getCumulativeCost() + request.getPurchasePrice());
-            inputToSave.setPurchasePrice(request.getPurchasePrice());
+            inputToSave.addStock(request.getQuantity(), request.getPurchasePrice());
             inputToSave.setPurchaseDate(request.getPurchaseDate());
             inputToSave.setUnit(request.getUnit().trim());
             if (request.getType() != null) {

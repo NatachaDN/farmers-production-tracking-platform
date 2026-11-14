@@ -25,4 +25,19 @@ export const harvestService = {
       `/farmers/${farmerId}/cycles/${cycleId}/harvest`
     );
   },
+
+  /** Corrects the recorded harvest; the yield is recalculated by the server. */
+  async updateHarvest(farmerId, cycleId, data) {
+    return await apiClient.put(
+      `/farmers/${farmerId}/cycles/${cycleId}/harvest`,
+      data
+    );
+  },
+
+  /** Deletes a harvest recorded by mistake; the cycle becomes ACTIVE again. */
+  async deleteHarvest(farmerId, cycleId) {
+    return await apiClient.delete(
+      `/farmers/${farmerId}/cycles/${cycleId}/harvest`
+    );
+  },
 };

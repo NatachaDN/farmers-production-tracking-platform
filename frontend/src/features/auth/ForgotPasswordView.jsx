@@ -37,13 +37,11 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
 
     try {
       const response = await authService.forgotPassword(emailOrPhone.trim());
-      setStep(2);
-      if (response?.resetCode) {
-        setResetCode(response.resetCode);
-        setNotice(`Verification code sent! (Dev code: ${response.resetCode})`);
-      } else {
-        setNotice('A reset code has been sent to your registered email or phone.');
+      // The code is only delivered by email: it is never returned to (or pre-filled by) the browser.
+      if (emailOrPhone.includes('@')) {
+        setStep(2);
       }
+      setNotice(response?.message || 'If an account exists for this email, a reset code has been sent to it.');
     } catch (err) {
       setError(err.message || 'Could not send reset code. Please verify your email or phone.');
     } finally {
@@ -85,13 +83,9 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
     setNotice('');
     setLoading(true);
     try {
-      const response = await authService.forgotPassword(emailOrPhone.trim());
-      if (response?.resetCode) {
-        setResetCode(response.resetCode);
-        setNotice(`A new code has been sent. (Dev code: ${response.resetCode})`);
-      } else {
-        setNotice('A new verification code has been sent.');
-      }
+      await authService.forgotPassword(emailOrPhone.trim());
+      setResetCode('');
+      setNotice('If an account exists for this email, a new verification code has been sent to it.');
     } catch (err) {
       setError(err.message || 'Could not resend code. Please try again.');
     } finally {

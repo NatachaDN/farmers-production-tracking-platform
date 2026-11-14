@@ -82,6 +82,24 @@ class HarvestServiceTest {
     // ------------------------------------------------------------------ //
 
     @Test
+    @DisplayName("Recording a harvest keeps the planned harvest date on the cycle (needed for US-17)")
+    void recordHarvest_KeepsPlannedHarvestDate() {
+        LocalDate planned = LocalDate.of(2026, 5, 15);
+        activeCycle.setEndDate(planned);
+        HarvestRequest request = new HarvestRequest(500.0, HarvestUnit.KG, LocalDate.of(2026, 6, 1), null);
+
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(activeCycle));
+        when(harvestRepository.existsByCycleId(cycleId)).thenReturn(false);
+        when(harvestRepository.save(any(Harvest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HarvestResponse response = harvestService.recordHarvest(farmerId, cycleId, request);
+
+        assertThat(activeCycle.getStatus()).isEqualTo(CycleStatus.COMPLETED);
+        assertThat(activeCycle.getEndDate()).isEqualTo(planned);
+        assertThat(response.getHarvestDate()).isEqualTo(LocalDate.of(2026, 6, 1));
+    }
+
+    @Test
     @DisplayName("Should record harvest, set cycle COMPLETED, and return response with yield")
     void shouldRecordHarvestSuccessfully() {
         HarvestRequest request = new HarvestRequest(
@@ -226,5 +244,48 @@ class HarvestServiceTest {
         assertThatThrownBy(() -> harvestService.getHarvestByCycle(farmerId, cycleId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("No harvest record found");
+    }
+
+    // ---------------------------------------------------------------- corrections
+
+    @Test
+    @DisplayName("updateHarvest recalculates the yield")
+    void updateHarvest_RecalculatesYield() {
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.of(savedHarvest));
+        when(harvestRepository.save(any(Harvest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HarvestRequest correction = new HarvestRequest(750.0, HarvestUnit.KG, LocalDate.of(2026, 6, 2), "corrected");
+        HarvestResponse response = harvestService.updateHarvest(farmerId, cycleId, correction);
+
+        assertThat(response.getQuantity()).isEqualTo(750.0);
+        assertThat(response.getCalculatedYield()).isEqualTo(300.0); // 750 kg / 2.5 ha
+        assertThat(completedCycle.getEndDate()).isEqualTo(LocalDate.of(2026, 6, 1)); // planned date kept
+    }
+
+    @Test
+    @DisplayName("deleteHarvest re-opens the cycle")
+    void deleteHarvest_ReopensCycle() {
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.of(savedHarvest));
+
+        harvestService.deleteHarvest(farmerId, cycleId);
+
+        verify(harvestRepository).delete(savedHarvest);
+        assertThat(completedCycle.getStatus()).isEqualTo(CycleStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("recordHarvest rejects a date before planting")
+    void recordHarvest_DateBeforePlanting_Rejected() {
+        when(cycleRepository.findByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(activeCycle));
+        when(harvestRepository.existsByCycleId(cycleId)).thenReturn(false);
+
+        HarvestRequest early = new HarvestRequest(100.0, HarvestUnit.KG, LocalDate.of(2025, 12, 1), null);
+
+        assertThatThrownBy(() -> harvestService.recordHarvest(farmerId, cycleId, early))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("planting date");
+        verify(harvestRepository, never()).save(any());
     }
 }

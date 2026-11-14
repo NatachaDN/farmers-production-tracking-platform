@@ -115,7 +115,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
 
       // Successfully recorded!
       showToast(
-        `Recorded ${formData.quantityUsed} used of ${result?.inputName || 'input'}. Real cost: KES ${Number(result?.totalCost || 0).toLocaleString()} (Remaining stock: ${result?.remainingStock ?? 'updated'})`
+        `Recorded ${formData.quantityUsed} used of ${result?.inputName || 'input'}. Real cost: XAF ${Number(result?.totalCost || 0).toLocaleString()} (Remaining stock: ${result?.remainingStock ?? 'updated'})`
       );
 
       setShowForm(false);
@@ -236,7 +236,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
       <div className="inputs-metrics-grid">
         <MetricCard
           label="Total Input Cost"
-          value={`KES ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`XAF ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Real financial expenditure on crop"
           icon={<IconInputs size={20} color="var(--color-brand-primary, #3E7B52)" />}
           loading={isLoading}

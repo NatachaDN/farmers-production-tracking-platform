@@ -115,7 +115,15 @@ export function App() {
     setCurrentRoute(homeRouteFor(farmer));
   };
 
-  const handleRegisterSuccess = (farmer) => {
+  const handleRegisterSuccess = (farmer, response) => {
+    if (!response?.token) {
+      // New registrations wait for manager/administrator approval before they can sign in.
+      setLoginError('');
+      setLoginPrefilledIdentifier(farmer?.emailOrPhone || '');
+      setLoginSuccessMessage(response?.message || 'Registration received. Your account is awaiting approval.');
+      setCurrentRoute('login');
+      return;
+    }
     setCurrentUser(farmer);
     setCurrentRoute(homeRouteFor(farmer));
   };

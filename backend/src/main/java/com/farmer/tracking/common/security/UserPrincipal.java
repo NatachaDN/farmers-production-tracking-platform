@@ -14,12 +14,19 @@ public class UserPrincipal implements UserDetails {
     private final String emailOrPhone;
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
+    private final boolean enabled;
 
     public UserPrincipal(Long id, String emailOrPhone, String password, Collection<? extends GrantedAuthority> authorities) {
+        this(id, emailOrPhone, password, authorities, true);
+    }
+
+    public UserPrincipal(Long id, String emailOrPhone, String password,
+                         Collection<? extends GrantedAuthority> authorities, boolean enabled) {
         this.id = id;
         this.emailOrPhone = emailOrPhone;
         this.password = password;
         this.authorities = authorities;
+        this.enabled = enabled;
     }
 
     public static UserPrincipal create(Farmer farmer) {
@@ -28,7 +35,8 @@ public class UserPrincipal implements UserDetails {
                 farmer.getId(),
                 farmer.getEmailOrPhone(),
                 farmer.getPasswordHash(),
-                authorities
+                authorities,
+                AccountStatusPolicy.isActive(farmer)
         );
     }
 
@@ -68,6 +76,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        // Suspended, rejected or pending accounts lose access immediately, even with a valid token.
+        return enabled;
     }
 }

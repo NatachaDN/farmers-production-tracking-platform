@@ -1097,8 +1097,13 @@ public class ManagementOperationsService {
         i.setQuantity(req.quantity() != null ? req.quantity() : 0.0);
         i.setUnit(nonBlankOr(req.unit(), "kg"));
         i.setPurchaseDate(req.purchaseDate() != null ? req.purchaseDate() : java.time.LocalDate.now());
-        i.setPurchasePrice(req.purchasePrice() != null ? req.purchasePrice() : 0.0);
-        double cumCost = req.cumulativeCost() != null ? req.cumulativeCost() : (i.getPurchasePrice() * Math.max(1.0, i.getQuantity()));
+        // The management form asks for a UNIT price. The entity stores the total paid in purchasePrice
+        // and the per-unit cost in unitCost (the value used to cost consumption on crop cycles).
+        double unitPrice = req.purchasePrice() != null ? req.purchasePrice() : 0.0;
+        double totalPrice = Math.round(unitPrice * i.getQuantity() * 100.0) / 100.0;
+        i.setUnitCost(unitPrice);
+        i.setPurchasePrice(totalPrice);
+        double cumCost = req.cumulativeCost() != null ? req.cumulativeCost() : totalPrice;
         i.setCumulativeCost(cumCost);
         i.setBrand(blankToNull(req.brand()));
         i.setSupplier(blankToNull(req.supplier()));
@@ -1122,7 +1127,8 @@ public class ManagementOperationsService {
                 i.getSupplier(),
                 i.getStorageLocation(),
                 i.getDescription(),
-                i.getCreatedAt()
+                i.getCreatedAt(),
+                Math.round(i.getUnitCost() * 100.0) / 100.0
         );
     }
 

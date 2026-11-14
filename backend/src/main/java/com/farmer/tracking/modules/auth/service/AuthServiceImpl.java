@@ -1,10 +1,13 @@
 package com.farmer.tracking.modules.auth.service;
 
 import com.farmer.tracking.common.email.EmailService;
+import com.farmer.tracking.common.exception.AccountLockedException;
 import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.exception.ForbiddenException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.exception.UnauthorizedException;
+import com.farmer.tracking.common.security.AccountStatusPolicy;
 import com.farmer.tracking.common.security.JwtTokenProvider;
 import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
@@ -48,6 +51,11 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final int LOCK_DURATION_MINUTES = 15;
+    private static final int MAX_RESET_CODE_ATTEMPTS = 5;
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid email/phone or password.";
+
     public AuthServiceImpl(
             FarmerRepository farmerRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
@@ -78,46 +86,68 @@ public class AuthServiceImpl implements AuthService {
         Farmer farmer = authMapper.toEntity(request, encodedPassword);
         farmer.setLastLoginAt(LocalDateTime.now());
         Farmer savedFarmer = farmerRepository.save(farmer);
-
-        String token = tokenProvider.generateToken(savedFarmer.getId(), savedFarmer.getEmailOrPhone());
         FarmerProfileResponse profileResponse = authMapper.toProfileResponse(savedFarmer);
 
+        if (!AccountStatusPolicy.isActive(savedFarmer)) {
+            // New farmers must be approved by a manager or administrator before they get a session.
+            return new AuthResponse(null, profileResponse,
+                    "Registration received. Your account is awaiting approval by a manager or administrator; "
+                            + "you will be able to sign in once it is approved.");
+        }
+
+        String token = tokenProvider.generateToken(savedFarmer.getId(), savedFarmer.getEmailOrPhone());
         return new AuthResponse(token, profileResponse, "Farmer account registered successfully.");
     }
 
     @Override
-    @Transactional
+    // Failed-attempt counters must be persisted even though the request ends with an error.
+    @Transactional(noRollbackFor = {UnauthorizedException.class, AccountLockedException.class, ForbiddenException.class})
     public AuthResponse login(LoginRequest request) {
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
 
         Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
-                .orElseThrow(() -> new UnauthorizedException("Invalid email/phone or password."));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (farmer.getLockedUntil() != null && farmer.getLockedUntil().isAfter(now)) {
+            throw new AccountLockedException(lockedMessage(farmer.getLockedUntil(), now));
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), farmer.getPasswordHash())) {
-            throw new UnauthorizedException("Invalid email/phone or password.");
+            int attempts = farmer.getFailedLoginAttempts() + 1;
+            if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+                farmer.setFailedLoginAttempts(0);
+                farmer.setLockedUntil(now.plusMinutes(LOCK_DURATION_MINUTES));
+                farmerRepository.save(farmer);
+                log.warn("Farmer [{}] locked for {} minutes after {} failed login attempts",
+                        farmer.getId(), LOCK_DURATION_MINUTES, MAX_FAILED_LOGIN_ATTEMPTS);
+                throw new AccountLockedException(lockedMessage(farmer.getLockedUntil(), now));
+            }
+            farmer.setFailedLoginAttempts(attempts);
+            farmerRepository.save(farmer);
+            throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
         }
 
-        if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.REJECTED) {
-            String explanation = (farmer.getRejectionReason() != null && !farmer.getRejectionReason().isBlank())
-                    ? "Your registration was rejected: " + farmer.getRejectionReason()
-                    : "Your farmer registration has been rejected by the platform manager. Please contact support.";
-            throw new UnauthorizedException(explanation);
-        }
+        // Correct password: the counter restarts, then the account status decides
+        // (PENDING / REJECTED / SUSPENDED -> 403 with an explanation).
+        farmer.setFailedLoginAttempts(0);
+        farmer.setLockedUntil(null);
+        farmerRepository.save(farmer);
+        AccountStatusPolicy.assertCanSignIn(farmer);
 
-        if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.SUSPENDED) {
-            String explanation = (farmer.getRejectionReason() != null && !farmer.getRejectionReason().isBlank())
-                    ? "Your account has been suspended: " + farmer.getRejectionReason()
-                    : "Your account has been suspended by an administrator. Please contact support.";
-            throw new UnauthorizedException(explanation);
-        }
-
-        farmer.setLastLoginAt(LocalDateTime.now());
+        farmer.setLastLoginAt(now);
         farmerRepository.save(farmer);
 
         String token = tokenProvider.generateToken(farmer.getId(), farmer.getEmailOrPhone());
         FarmerProfileResponse profileResponse = authMapper.toProfileResponse(farmer);
 
         return new AuthResponse(token, profileResponse, "Login successful.");
+    }
+
+    private static String lockedMessage(LocalDateTime lockedUntil, LocalDateTime now) {
+        long minutes = Math.max(1, (long) Math.ceil(java.time.Duration.between(now, lockedUntil).getSeconds() / 60.0));
+        return "Too many failed login attempts. Your account is temporarily locked; try again in "
+                + minutes + (minutes == 1 ? " minute" : " minutes") + " or reset your password.";
     }
 
     @Override
@@ -178,8 +208,24 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
-        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
-                .orElseThrow(() -> new ResourceNotFoundException("No account found with this email or phone number."));
+
+        // Codes are delivered by email only; phone-number accounts cannot receive them.
+        if (!normalizedIdentifier.contains("@")) {
+            return new ForgotPasswordResponse(
+                    "Password reset codes can only be sent to an email address. If your account uses a phone number, "
+                            + "please ask your manager or administrator to reset your password.",
+                    normalizedIdentifier);
+        }
+
+        // Same answer whether or not the account exists, so the endpoint cannot be used to discover accounts.
+        String genericMessage = "If an account exists for " + normalizedIdentifier
+                + ", a 6-digit password reset code has been sent to it. Check your inbox (valid for 15 minutes).";
+
+        Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier).orElse(null);
+        if (farmer == null) {
+            log.info("Password reset requested for unknown identifier [{}]", normalizedIdentifier);
+            return new ForgotPasswordResponse(genericMessage, normalizedIdentifier);
+        }
 
         String resetCode = String.format("%06d", secureRandom.nextInt(1_000_000));
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(15);
@@ -187,6 +233,7 @@ public class AuthServiceImpl implements AuthService {
         // Store reset code directly on Farmer entity
         farmer.setPasswordResetToken(resetCode);
         farmer.setPasswordResetExpiresAt(expiresAt);
+        farmer.setPasswordResetAttempts(0);
         farmerRepository.save(farmer);
 
         // Also track in PasswordResetToken table if repository available
@@ -210,15 +257,14 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Password reset code generated for farmer [{}] (valid for 15 minutes)", normalizedIdentifier);
 
-        return new ForgotPasswordResponse(
-                "A 6-digit password reset code has been sent to " + normalizedIdentifier + ". Check your inbox.",
-                normalizedIdentifier,
-                resetCode
-        );
+        // The code is never returned to the client: it only travels by email
+        // (or appears in the server log when SMTP is not configured, see EmailService).
+        return new ForgotPasswordResponse(genericMessage, normalizedIdentifier);
     }
 
     @Override
-    @Transactional
+    // Wrong-code counters must be persisted even though the request ends with an error.
+    @Transactional(noRollbackFor = BadRequestException.class)
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
         if (request == null || request.getEmailOrPhone() == null || request.getEmailOrPhone().trim().isEmpty()) {
             throw new IllegalArgumentException("Email or phone number is required.");
@@ -236,7 +282,7 @@ public class AuthServiceImpl implements AuthService {
 
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
         Farmer farmer = farmerRepository.findByEmailOrPhone(normalizedIdentifier)
-                .orElseThrow(() -> new ResourceNotFoundException("No account found with this email or phone number."));
+                .orElseThrow(() -> new BadRequestException("Invalid reset code. Please check the code or request a new one."));
 
         String resetCode = request.getResetCode().trim();
         boolean validCode = farmer.getPasswordResetToken() != null && farmer.getPasswordResetToken().trim().equals(resetCode);
@@ -251,6 +297,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!validCode) {
+            int attempts = farmer.getPasswordResetAttempts() + 1;
+            if (attempts >= MAX_RESET_CODE_ATTEMPTS) {
+                // Too many wrong guesses: the current code is burned, a new one must be requested.
+                invalidateResetCodes(farmer);
+                throw new BadRequestException("Too many incorrect codes. This code is no longer valid; please request a new one.");
+            }
+            farmer.setPasswordResetAttempts(attempts);
+            farmerRepository.save(farmer);
             throw new BadRequestException("Invalid reset code. Please check the code or request a new one.");
         }
 
@@ -266,6 +320,10 @@ public class AuthServiceImpl implements AuthService {
         farmer.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         farmer.setPasswordResetToken(null);
         farmer.setPasswordResetExpiresAt(null);
+        farmer.setPasswordResetAttempts(0);
+        // Proving ownership by email also lifts a temporary login lock.
+        farmer.setFailedLoginAttempts(0);
+        farmer.setLockedUntil(null);
         farmerRepository.save(farmer);
 
         if (dbToken != null) {
@@ -282,6 +340,18 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password successfully reset for farmer [{}]", normalizedIdentifier);
 
         return new ResetPasswordResponse("Password has been reset successfully. You can now log in with your new password.");
+    }
+
+    private void invalidateResetCodes(Farmer farmer) {
+        farmer.setPasswordResetToken(null);
+        farmer.setPasswordResetExpiresAt(null);
+        farmer.setPasswordResetAttempts(0);
+        farmerRepository.save(farmer);
+        if (passwordResetTokenRepository != null) {
+            List<PasswordResetToken> open = passwordResetTokenRepository.findByFarmerAndUsedFalse(farmer);
+            open.forEach(t -> t.setUsed(true));
+            passwordResetTokenRepository.saveAll(open);
+        }
     }
 
     @Override

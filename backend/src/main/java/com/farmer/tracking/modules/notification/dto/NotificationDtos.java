@@ -29,6 +29,11 @@ public final class NotificationDtos {
             LocalDateTime createdAt
     ) {
         public static NotificationResponse from(Notification n) {
+            return from(n, n.isRead());
+        }
+
+        /** @param read read state for the user this response is built for */
+        public static NotificationResponse from(Notification n, boolean read) {
             return new NotificationResponse(
                     n.getId(),
                     n.getRecipientId(),
@@ -38,7 +43,7 @@ public final class NotificationDtos {
                     n.getTitle(),
                     n.getMessage(),
                     n.getType(),
-                    n.isRead(),
+                    read,
                     n.getCreatedAt()
             );
         }

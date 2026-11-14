@@ -167,7 +167,9 @@ class AuthServiceTest {
         when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
         when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
 
-        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.login(request));
+        // Correct password but blocked account -> 403 with the explanation.
+        com.farmer.tracking.common.exception.ForbiddenException ex = assertThrows(
+                com.farmer.tracking.common.exception.ForbiddenException.class, () -> authService.login(request));
         assertTrue(ex.getMessage().contains("rejected"));
         assertTrue(ex.getMessage().contains("Documents could not be verified"));
         verify(tokenProvider, never()).generateToken(any(), anyString());
@@ -212,18 +214,50 @@ class AuthServiceTest {
         ForgotPasswordResponse response = authService.forgotPassword(request);
 
         assertNotNull(response);
-        assertNotNull(response.getResetCode());
-        assertEquals(6, response.getResetCode().length());
+        // The code is stored and emailed, never returned in the response.
+        assertNotNull(farmer.getPasswordResetToken());
+        assertEquals(6, farmer.getPasswordResetToken().length());
+        verify(emailService).sendPasswordResetCode("joyce@example.com", farmer.getPasswordResetToken());
         verify(farmerRepository, times(1)).save(farmer);
     }
 
     @Test
-    void forgotPassword_ThrowsNotFound_WhenFarmerDoesNotExist() {
+    void forgotPassword_PhoneIdentifier_ExplainsEmailOnly() {
+        ForgotPasswordResponse response = authService.forgotPassword(new ForgotPasswordRequest("+237690000000"));
+
+        assertTrue(response.getMessage().contains("email"));
+        verify(farmerRepository, never()).save(any());
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void resetPassword_TooManyWrongCodes_InvalidatesCode() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordResetToken("123456");
+        farmer.setPasswordResetExpiresAt(LocalDateTime.now().plusMinutes(10));
+        farmer.setPasswordResetAttempts(4);
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordResetTokenRepository.findByFarmerAndTokenAndUsedFalse(farmer, "000000")).thenReturn(Optional.empty());
+        when(passwordResetTokenRepository.findByFarmerAndUsedFalse(farmer)).thenReturn(Collections.emptyList());
+
+        ResetPasswordRequest wrong = new ResetPasswordRequest("joyce@example.com", "000000", "NewSecretPass999", "NewSecretPass999");
+
+        assertThrows(BadRequestException.class, () -> authService.resetPassword(wrong));
+        assertNull(farmer.getPasswordResetToken(), "the code is burned after the 5th wrong attempt");
+    }
+
+    @Test
+    void forgotPassword_UnknownAccount_SameGenericAnswer() {
         ForgotPasswordRequest request = new ForgotPasswordRequest("unknown@example.com");
 
         when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> authService.forgotPassword(request));
+        // No error: the answer must not reveal whether the account exists.
+        ForgotPasswordResponse response = authService.forgotPassword(request);
+        assertTrue(response.getMessage().startsWith("If an account exists"));
+        verifyNoInteractions(emailService);
     }
 
     @Test
@@ -386,5 +420,78 @@ class AuthServiceTest {
                 .thenReturn(true);
 
         assertThrows(ConflictException.class, () -> authService.requestPasswordChange("kara@example.com", req));
+    }
+
+    // ---------------------------------------------------------------- account status & lockout
+
+    @Test
+    void register_PendingAccount_GetsNoToken() {
+        RegisterRequest request = new RegisterRequest();
+        request.setFullName("New Farmer");
+        request.setEmailOrPhone("new@example.com");
+        request.setFarmType(FarmType.MIXED);
+        request.setPassword("SecurePass123");
+
+        Farmer saved = new Farmer();
+        saved.setId(5L);
+        saved.setEmailOrPhone("new@example.com");
+        saved.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.PENDING);
+
+        when(farmerRepository.existsByEmailOrPhone("new@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("SecurePass123")).thenReturn("hash");
+        when(farmerRepository.save(any(Farmer.class))).thenReturn(saved);
+
+        AuthResponse response = authService.register(request);
+
+        assertNull(response.getToken(), "a pending registration must not receive a session");
+        assertTrue(response.getMessage().contains("awaiting approval"));
+        verify(tokenProvider, never()).generateToken(any(), anyString());
+    }
+
+    @Test
+    void login_PendingAccount_IsRefused() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.PENDING);
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
+
+        com.farmer.tracking.common.exception.ForbiddenException ex = assertThrows(
+                com.farmer.tracking.common.exception.ForbiddenException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "SecurePass123")));
+        assertTrue(ex.getMessage().contains("awaiting approval"));
+        verify(tokenProvider, never()).generateToken(any(), anyString());
+    }
+
+    @Test
+    void login_FifthWrongPassword_LocksAccount() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setFailedLoginAttempts(4);
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("bad", "hashed_password")).thenReturn(false);
+
+        assertThrows(com.farmer.tracking.common.exception.AccountLockedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "bad")));
+        assertNotNull(farmer.getLockedUntil());
+        assertTrue(farmer.getLockedUntil().isAfter(LocalDateTime.now()));
+    }
+
+    @Test
+    void login_LockedAccount_RefusedEvenWithRightPassword() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setLockedUntil(LocalDateTime.now().plusMinutes(10));
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+
+        assertThrows(com.farmer.tracking.common.exception.AccountLockedException.class,
+                () -> authService.login(new LoginRequest("joyce@example.com", "SecurePass123")));
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 }

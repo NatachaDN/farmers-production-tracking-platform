@@ -1,6 +1,6 @@
 package com.farmer.tracking.modules.manager.service;
 
-import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.exception.ForbiddenException;
 import com.farmer.tracking.common.security.AdminAccessPolicy;
 import com.farmer.tracking.common.security.UserPrincipal;
 import com.farmer.tracking.modules.animal.model.AnimalGroup;
@@ -48,7 +48,8 @@ public class ManagerScopeHelper {
 
     public ManagerScope resolve(UserPrincipal principal) {
         if (principal == null) {
-            return ManagerScope.unrestricted();
+            // Fail closed: without a known user nothing is in scope.
+            return new ManagerScope(true, null, Set.of(), Set.of());
         }
         boolean isAdmin = principal.getAuthorities().stream()
                 .anyMatch(a -> AdminAccessPolicy.ROLE_ADMIN.equalsIgnoreCase(a.getAuthority()));
@@ -84,13 +85,13 @@ public class ManagerScopeHelper {
 
     public void requireFarmAccess(ManagerScope scope, Long farmId) {
         if (scope.restricted() && !scope.allowsFarm(farmId)) {
-            throw new BadRequestException("Access denied: you can only manage farms assigned to you.");
+            throw new ForbiddenException("Access denied: you can only manage farms assigned to you.");
         }
     }
 
     public void requireFarmerAccess(ManagerScope scope, Long farmerId) {
         if (scope.restricted() && !scope.allowsFarmer(farmerId)) {
-            throw new BadRequestException("Access denied: this farmer does not belong to any of your assigned farms.");
+            throw new ForbiddenException("Access denied: this farmer does not belong to any of your assigned farms.");
         }
     }
 }

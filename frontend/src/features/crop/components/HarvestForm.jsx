@@ -39,21 +39,26 @@ const MARKET_DESTINATIONS = [
  * Form for recording a harvest at the end of a crop cycle.
  * Validates: quantity > 0, unit required, harvest date required & not future.
  */
-export function HarvestForm({ onSubmit, isSubmitting }) {
+export function HarvestForm({ onSubmit, isSubmitting, initialValues = null, submitLabel = null, onCancel = null }) {
   const todayStr = new Date().toISOString().split('T')[0];
+  const initial = (key, fallback = '') =>
+    initialValues && initialValues[key] !== null && initialValues[key] !== undefined
+      ? String(initialValues[key])
+      : fallback;
 
+  // When initialValues is given the form corrects an existing harvest instead of recording a new one.
   const [formData, setFormData] = useState({
-    quantity: '',
-    unit: 'KG',
-    harvestDate: todayStr,
-    qualityGrade: '',
-    harvestMethod: '',
-    storageLocation: '',
-    marketDestination: '',
-    moistureContentPercent: '',
-    postHarvestLossQuantity: '',
-    estimatedRevenue: '',
-    notes: '',
+    quantity: initial('quantity'),
+    unit: initial('unit', 'KG'),
+    harvestDate: initial('harvestDate', todayStr),
+    qualityGrade: initial('qualityGrade'),
+    harvestMethod: initial('harvestMethod'),
+    storageLocation: initial('storageLocation'),
+    marketDestination: initial('marketDestination'),
+    moistureContentPercent: initial('moistureContentPercent'),
+    postHarvestLossQuantity: initial('postHarvestLossQuantity'),
+    estimatedRevenue: initial('estimatedRevenue'),
+    notes: initial('notes'),
   });
 
   const [errors, setErrors] = useState({});
@@ -334,14 +339,19 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
       </div>
 
       {/* Submit */}
-      <div className="form-actions">
+      <div className="form-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+        {onCancel && (
+          <button type="button" className="btn" onClick={onCancel} disabled={isSubmitting}>
+            Cancel
+          </button>
+        )}
         <button type="submit" className="btn btn-harvest" disabled={isSubmitting}>
           {isSubmitting ? (
-            <span className="btn-loading">Recording harvest...</span>
+            <span className="btn-loading">Saving harvest...</span>
           ) : (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
               <IconWheat size={18} color="currentColor" />
-              <span>Record Harvest &amp; Complete Cycle</span>
+              <span>{submitLabel || 'Record Harvest & Complete Cycle'}</span>
             </span>
           )}
         </button>
