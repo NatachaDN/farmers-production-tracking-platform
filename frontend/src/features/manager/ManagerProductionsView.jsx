@@ -9,6 +9,7 @@ import {
   IconRefresh
 } from '../../shared/components/Icons.jsx';
 import { Skeleton } from '../../shared/components/Skeleton.jsx';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar.jsx';
 import './manager.css';
 
 export function ManagerProductionsView() {
@@ -74,6 +75,10 @@ export function ManagerProductionsView() {
   const cycles = data?.cycles || [];
   const harvests = data?.harvests || [];
   const animalGroups = data?.animalGroups || [];
+
+  const cyclesPagination = usePagination(cycles, 10);
+  const harvestsPagination = usePagination(harvests, 10);
+  const animalsPagination = usePagination(animalGroups, 10);
 
   return (
     <div className="mgr-stack">
@@ -237,7 +242,7 @@ export function ManagerProductionsView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {cycles.map((c) => (
+                    {cyclesPagination.pagedItems.map((c) => (
                       <tr key={c.id}>
                         <td>
                           <div style={{ fontWeight: 600 }}>{c.farmerName}</div>
@@ -289,7 +294,7 @@ export function ManagerProductionsView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {harvests.map((h) => (
+                    {harvestsPagination.pagedItems.map((h) => (
                       <tr key={h.id}>
                         <td>
                           <div style={{ fontWeight: 600 }}>{h.farmerName}</div>
@@ -329,7 +334,7 @@ export function ManagerProductionsView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {animalGroups.map((a) => (
+                  {animalsPagination.pagedItems.map((a) => (
                     <tr key={a.id}>
                       <td>
                         <div style={{ fontWeight: 600 }}>{a.farmerName}</div>
@@ -355,6 +360,39 @@ export function ManagerProductionsView() {
             </div>
           )}
         </div>
+        {!loading && activeTab === 'cycles' && cycles.length > 0 && (
+          <PaginationBar
+            page={cyclesPagination.page}
+            totalPages={cyclesPagination.totalPages}
+            totalItems={cyclesPagination.totalItems}
+            pageSize={cyclesPagination.pageSize}
+            onPageChange={cyclesPagination.setPage}
+            onPageSizeChange={cyclesPagination.setPageSize}
+            itemLabel="cycles"
+          />
+        )}
+        {!loading && activeTab === 'harvests' && harvests.length > 0 && (
+          <PaginationBar
+            page={harvestsPagination.page}
+            totalPages={harvestsPagination.totalPages}
+            totalItems={harvestsPagination.totalItems}
+            pageSize={harvestsPagination.pageSize}
+            onPageChange={harvestsPagination.setPage}
+            onPageSizeChange={harvestsPagination.setPageSize}
+            itemLabel="harvests"
+          />
+        )}
+        {!loading && activeTab === 'animals' && animalGroups.length > 0 && (
+          <PaginationBar
+            page={animalsPagination.page}
+            totalPages={animalsPagination.totalPages}
+            totalItems={animalsPagination.totalItems}
+            pageSize={animalsPagination.pageSize}
+            onPageChange={animalsPagination.setPage}
+            onPageSizeChange={animalsPagination.setPageSize}
+            itemLabel="animal groups"
+          />
+        )}
       </div>
 
       {farmerDetail && !loadingDetail && (

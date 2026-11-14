@@ -4,6 +4,7 @@ import { managerService } from '../manager/services/managerService';
 import { notificationService } from '../../shared/services/notificationService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
 import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -60,6 +61,14 @@ const btnSecondary = {
   fontSize: '0.8125rem',
   fontWeight: 600,
   cursor: 'pointer',
+  whiteSpace: 'nowrap',
+};
+
+const actionBtn = {
+  ...btnSecondary,
+  padding: '5px 10px',
+  fontSize: '0.75rem',
+  gap: '4px',
 };
 
 const statusColors = (status) => {
@@ -91,6 +100,17 @@ export function AdminUsersView({ currentUserId }) {
   const [detailUser, setDetailUser] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    totalPages,
+    pagedItems: pagedUsers,
+    resetPage,
+  } = usePagination(users, 10);
+
   const flash = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3500);
@@ -102,6 +122,7 @@ export function AdminUsersView({ currentUserId }) {
     try {
       const list = await adminService.users({ role: roleFilter, status: statusFilter, q: search });
       setUsers(Array.isArray(list) ? list : []);
+      resetPage();
     } catch (err) {
       setError(err.message || 'Failed to load users.');
     } finally {
@@ -325,63 +346,82 @@ export function AdminUsersView({ currentUserId }) {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => {
+              {pagedUsers.map((u) => {
                 const isSelf = currentUserId && String(u.id) === String(currentUserId);
+                const farmNames = Array.isArray(u.managedFarmNames) ? u.managedFarmNames : [];
+                const visibleFarms = farmNames.slice(0, 2);
+                const extraCount = farmNames.length - visibleFarms.length;
                 return (
                   <tr key={u.id} style={{ borderBottom: '1px solid #F1EDE4' }}>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ fontWeight: 700, color: '#19201C' }}>{u.fullName}</div>
                       <div style={{ fontSize: '0.75rem', color: '#64716B' }}>{u.emailOrPhone}</div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                       <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#F4EFE6', color: '#164230' }}>
                         {roleLabel(u.role)}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                       <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, ...statusColors(u.status) }}>
                         {u.status}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', color: '#4B5752' }}>{u.location || '—'}</td>
-                    <td style={{ padding: '12px 16px', color: '#4B5752' }}>
+                    <td style={{ padding: '12px 16px', color: '#4B5752', maxWidth: '240px' }}>
                       {u.role === 'ROLE_MANAGER' ? (
-                        Array.isArray(u.managedFarmNames) && u.managedFarmNames.length > 0 ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {u.managedFarmNames.map((fn, idx) => (
+                        farmNames.length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }} title={farmNames.join(', ')}>
+                            {visibleFarms.map((fn, idx) => (
                               <span
                                 key={`${u.id}-farm-${idx}`}
                                 style={{
-                                  padding: '2px 8px',
+                                  padding: '3px 9px',
                                   borderRadius: '9999px',
-                                  fontSize: '0.7rem',
+                                  fontSize: '0.72rem',
                                   fontWeight: 600,
                                   backgroundColor: '#EAF4ED',
                                   color: '#164230',
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
                                 {fn}
                               </span>
                             ))}
+                            {extraCount > 0 && (
+                              <span
+                                style={{
+                                  padding: '3px 8px',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  backgroundColor: '#F4EFE6',
+                                  color: '#4B5752',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                +{extraCount} more
+                              </span>
+                            )}
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>None assigned</span>
+                          <span style={{ fontSize: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>None assigned</span>
                         )
                       ) : (
                         '—'
                       )}
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        <button type="button" style={btnSecondary} onClick={() => setDetailUser(u)}>
+                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px', flexWrap: 'nowrap', alignItems: 'center' }}>
+                        <button type="button" style={actionBtn} onClick={() => setDetailUser(u)}>
                           <IconEye size={12} /> View
                         </button>
-                        <button type="button" style={btnSecondary} onClick={() => openEdit(u)}>
+                        <button type="button" style={actionBtn} onClick={() => openEdit(u)}>
                           <IconEdit size={12} /> Edit
                         </button>
                         <button
                           type="button"
-                          style={btnSecondary}
+                          style={actionBtn}
                           onClick={() => setNotifyModal({ user: u, title: '', message: '', type: 'INFO' })}
                         >
                           Notify
@@ -390,14 +430,14 @@ export function AdminUsersView({ currentUserId }) {
                           <>
                             <button
                               type="button"
-                              style={{ ...btnSecondary, color: u.status === 'SUSPENDED' ? '#164230' : '#B45309', borderColor: u.status === 'SUSPENDED' ? '#B7DEC2' : '#FDE68A' }}
+                              style={{ ...actionBtn, color: u.status === 'SUSPENDED' ? '#164230' : '#B45309', borderColor: u.status === 'SUSPENDED' ? '#B7DEC2' : '#FDE68A' }}
                               onClick={() => toggleSuspend(u)}
                             >
                               {u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}
                             </button>
                             <button
                               type="button"
-                              style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }}
+                              style={{ ...actionBtn, color: '#B91C1C', borderColor: '#FECACA' }}
                               onClick={() => deleteUser(u)}
                             >
                               <IconTrash size={12} /> Delete
@@ -412,6 +452,15 @@ export function AdminUsersView({ currentUserId }) {
             </tbody>
           </table>
         )}
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          itemLabel="users"
+        />
       </div>
 
       {/* Create / Edit User Modal */}
@@ -577,7 +626,8 @@ export function AdminUsersView({ currentUserId }) {
                               <div style={{ fontWeight: 600, color: '#19201C' }}>{farm.name}</div>
                               <div style={{ fontSize: '0.7rem', color: '#64716B' }}>
                                 Owner: {farm.farmerName || '—'}
-                                {otherManager ? ` · Current Mgr: ${otherManager}` : ''}
+                                {farm.district || farm.region ? ` · ${farm.district || farm.region}` : ''}
+                                {otherManager ? ` · Mgr: ${otherManager}` : ''}
                               </div>
                             </div>
                           </label>
