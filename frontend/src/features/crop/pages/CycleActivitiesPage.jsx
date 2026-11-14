@@ -6,6 +6,7 @@ import { ActivityList } from '../components/ActivityList';
 import { CycleActivityKpiCards } from '../components/CycleActivityKpiCards';
 import { CycleActivityMap } from '../components/CycleActivityMap';
 import { ConfirmModal } from '../../../shared/components/ConfirmModal';
+import { Skeleton, SkeletonCard, SkeletonText } from '../../../shared/components/Skeleton';
 import {
   IconActivities,
   IconPlus,
@@ -17,6 +18,7 @@ export function CycleActivitiesPage({ farmerId }) {
   const [cycles, setCycles] = useState([]);
   const [selectedCycleId, setSelectedCycleId] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [isLoadingCycles, setIsLoadingCycles] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -28,7 +30,11 @@ export function CycleActivitiesPage({ farmerId }) {
   // Fetch cycles from database
   useEffect(() => {
     async function fetchCycles() {
-      if (!farmerId) return;
+      if (!farmerId) {
+        setIsLoadingCycles(false);
+        return;
+      }
+      setIsLoadingCycles(true);
       try {
         const data = await cropCycleService.getCycles(farmerId);
         const list = Array.isArray(data) ? data : [];
@@ -40,6 +46,8 @@ export function CycleActivitiesPage({ farmerId }) {
       } catch (err) {
         console.error('Failed to load cycles for activities:', err);
         setCycles([]);
+      } finally {
+        setIsLoadingCycles(false);
       }
     }
     fetchCycles();
@@ -171,34 +179,45 @@ export function CycleActivitiesPage({ farmerId }) {
         </div>
       )}
 
-      {/* Control Bar: Cycle Selector & Action Button */}
+      {/* Control Bar: Cycle Dropdown & Action Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        {/* Cycle Filter Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: '1 1 260px' }}>
+          <label
+            htmlFor="activities-cycle-select"
+            style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+          >
             SELECT CYCLE:
-          </span>
-          {cycles.length > 0 ? (
-            cycles.map((c) => {
-              const isSelected = selectedCycleId === c.id;
-              const displayName = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || 'Unnamed cycle';
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCycleId(c.id)}
-                  style={{
-                    padding: '8px 16px', borderRadius: 'var(--radius-pill)', fontSize: '0.8125rem',
-                    fontWeight: isSelected ? 700 : 500, cursor: 'pointer', transition: 'all var(--transition-fast)',
-                    backgroundColor: isSelected ? 'var(--color-brand-primary)' : '#FFFFFF',
-                    color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
-                    border: isSelected ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-card-border)',
-                    boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)'
-                  }}
-                >
-                  {displayName}
-                </button>
-              );
-            })
+          </label>
+          {isLoadingCycles ? (
+            <Skeleton width="240px" height="40px" borderRadius="10px" />
+          ) : cycles.length > 0 ? (
+            <select
+              id="activities-cycle-select"
+              value={selectedCycleId || ''}
+              onChange={(e) => setSelectedCycleId(Number(e.target.value))}
+              style={{
+                padding: '9px 14px',
+                borderRadius: '10px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                backgroundColor: '#FFFFFF',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border-input)',
+                boxShadow: 'var(--shadow-subtle)',
+                minWidth: '220px',
+                maxWidth: '100%',
+                cursor: 'pointer'
+              }}
+            >
+              {cycles.map((c) => {
+                const label = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || `Cycle #${c.id}`;
+                return (
+                  <option key={c.id} value={c.id}>
+                    {label} — [{c.status || 'ACTIVE'}]
+                  </option>
+                );
+              })}
+            </select>
           ) : (
             <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
               No crop cycles registered yet
@@ -251,7 +270,7 @@ export function CycleActivitiesPage({ farmerId }) {
         treatmentCount={treatmentCount}
         lastIntervention={lastIntervention}
         cycleName={selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}
-        isLoading={isLoading}
+        isLoading={isLoadingCycles || isLoading}
       />
 
       {/* Interactive Field Interventions Map */}
@@ -278,7 +297,16 @@ export function CycleActivitiesPage({ farmerId }) {
           </div>
         </div>
 
-        {cycles.length === 0 ? (
+        {isLoadingCycles ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <SkeletonCard height="96px">
+              <SkeletonText lines={2} />
+            </SkeletonCard>
+            <SkeletonCard height="96px">
+              <SkeletonText lines={2} />
+            </SkeletonCard>
+          </div>
+        ) : cycles.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: '48px 20px',

@@ -277,7 +277,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           {/* Manage Personal Crops Catalog */}
           <button
             onClick={() => onNavigate && onNavigate('crops-catalog')}
@@ -338,6 +338,37 @@ export function CropProductionView({ farmerId, onNavigate }) {
           >
             <IconInputs size={16} color="var(--color-brand-primary)" />
             <span>Cycle Inputs & Costs</span>
+          </button>
+
+          {/* Record Harvest Action */}
+          <button
+            id="record-harvest-view-btn"
+            onClick={() => onNavigate && onNavigate('production')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid var(--color-border-input)',
+              padding: '10px 16px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-brand-primary)';
+              e.currentTarget.style.backgroundColor = 'var(--color-brand-tint)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-border-input)';
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+            }}
+          >
+            <IconWheat size={16} color="var(--color-brand-primary)" />
+            <span>Record Harvest</span>
           </button>
 
           {/* New Production Cycle Action */}

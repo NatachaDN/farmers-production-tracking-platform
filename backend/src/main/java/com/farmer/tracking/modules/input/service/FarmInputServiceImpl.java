@@ -72,6 +72,25 @@ public class FarmInputServiceImpl implements FarmInputService {
             );
         }
 
+        if (request.getBrand() != null && !request.getBrand().trim().isEmpty()) {
+            inputToSave.setBrand(request.getBrand().trim());
+        }
+        if (request.getSupplier() != null && !request.getSupplier().trim().isEmpty()) {
+            inputToSave.setSupplier(request.getSupplier().trim());
+        }
+        if (request.getBatchNumber() != null && !request.getBatchNumber().trim().isEmpty()) {
+            inputToSave.setBatchNumber(request.getBatchNumber().trim());
+        }
+        if (request.getExpiryDate() != null) {
+            inputToSave.setExpiryDate(request.getExpiryDate());
+        }
+        if (request.getStorageLocation() != null && !request.getStorageLocation().trim().isEmpty()) {
+            inputToSave.setStorageLocation(request.getStorageLocation().trim());
+        }
+        if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
+            inputToSave.setDescription(request.getDescription().trim());
+        }
+
         FarmInput saved = farmInputRepository.save(inputToSave);
         return FarmInputResponse.fromEntity(saved);
     }

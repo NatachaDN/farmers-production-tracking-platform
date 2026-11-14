@@ -4,6 +4,7 @@ import { HarvestResult } from '../components/HarvestResult';
 import { harvestService } from '../services/harvestService';
 import { cropCycleService } from '../../crops/services/cropCycleService';
 import { MetricCard } from '../../../shared/components/MetricCard';
+import { Skeleton, SkeletonCard, SkeletonText } from '../../../shared/components/Skeleton';
 import {
   IconCrop,
   IconSprout,
@@ -17,6 +18,7 @@ export function HarvestPage({ farmerId }) {
   const [cycles, setCycles] = useState([]);
   const [selectedCycleId, setSelectedCycleId] = useState(null);
   const [harvest, setHarvest] = useState(null);
+  const [isLoadingCycles, setIsLoadingCycles] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -25,7 +27,11 @@ export function HarvestPage({ farmerId }) {
   // Load real cycles from DB
   useEffect(() => {
     async function fetchCycles() {
-      if (!farmerId) return;
+      if (!farmerId) {
+        setIsLoadingCycles(false);
+        return;
+      }
+      setIsLoadingCycles(true);
       try {
         const data = await cropCycleService.getCycles(farmerId);
         const list = Array.isArray(data) ? data : [];
@@ -38,6 +44,8 @@ export function HarvestPage({ farmerId }) {
       } catch (err) {
         console.error('Failed to load cycles for harvest:', err);
         setCycles([]);
+      } finally {
+        setIsLoadingCycles(false);
       }
     }
     fetchCycles();
@@ -128,38 +136,45 @@ export function HarvestPage({ farmerId }) {
         </div>
       )}
 
-      {/* Control Bar: Cycle Selector */}
+      {/* Control Bar: Cycle Dropdown */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: '1 1 260px' }}>
+          <label
+            htmlFor="harvest-cycle-select"
+            style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+          >
             SELECT CROP CYCLE:
-          </span>
-          {cycles.length > 0 ? (
-            cycles.map((c) => {
-              const isSelected = selectedCycleId === c.id;
-              const displayName = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || 'Unnamed cycle';
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setSelectedCycleId(c.id)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-pill)',
-                    fontSize: '0.8125rem',
-                    fontWeight: isSelected ? 700 : 500,
-                    backgroundColor: isSelected ? 'var(--color-brand-primary)' : '#FFFFFF',
-                    color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
-                    border: isSelected ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-card-border)',
-                    boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)',
-                    cursor: 'pointer',
-                    transition: 'all var(--transition-fast)'
-                  }}
-                >
-                  {displayName}
-                </button>
-              );
-            })
+          </label>
+          {isLoadingCycles ? (
+            <Skeleton width="240px" height="40px" borderRadius="10px" />
+          ) : cycles.length > 0 ? (
+            <select
+              id="harvest-cycle-select"
+              value={selectedCycleId || ''}
+              onChange={(e) => setSelectedCycleId(Number(e.target.value))}
+              style={{
+                padding: '9px 14px',
+                borderRadius: '10px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                backgroundColor: '#FFFFFF',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border-input)',
+                boxShadow: 'var(--shadow-subtle)',
+                minWidth: '220px',
+                maxWidth: '100%',
+                cursor: 'pointer'
+              }}
+            >
+              {cycles.map((c) => {
+                const label = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || `Cycle #${c.id}`;
+                return (
+                  <option key={c.id} value={c.id}>
+                    {label} — [{c.status || 'ACTIVE'}]
+                  </option>
+                );
+              })}
+            </select>
           ) : (
             <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
               No crop cycles registered yet
@@ -168,7 +183,24 @@ export function HarvestPage({ farmerId }) {
         </div>
       </div>
 
-      {cycles.length === 0 ? (
+      {isLoadingCycles ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
+            gap: '20px'
+          }}>
+            {[1, 2, 3, 4].map((n) => (
+              <SkeletonCard key={n} height="120px">
+                <SkeletonText lines={2} />
+              </SkeletonCard>
+            ))}
+          </div>
+          <SkeletonCard height="260px">
+            <SkeletonText lines={4} />
+          </SkeletonCard>
+        </div>
+      ) : cycles.length === 0 ? (
         <div style={{
           textAlign: 'center',
           padding: '48px 20px',

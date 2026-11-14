@@ -13,7 +13,9 @@ import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
 import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
+import { CreateIncidentPage } from './features/crop/pages/CreateIncidentPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
+import { CreateFarmInputPage } from './features/inputs/CreateFarmInputPage';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { ForgotPasswordView } from './features/auth/ForgotPasswordView';
@@ -55,6 +57,7 @@ export function App() {
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [selectedFarmId, setSelectedFarmId] = useState(null);
   const [selectedPlotId, setSelectedPlotId] = useState(null);
+  const [incidentDraft, setIncidentDraft] = useState({ cycleId: null, incident: null });
   const [createPlotFarmId, setCreatePlotFarmId] = useState(null);
 
   useEffect(() => {
@@ -385,11 +388,44 @@ export function App() {
           {currentRoute === 'inputs' && (
             <FarmInputsView farmerId={currentUser?.id} onNavigate={(r) => setCurrentRoute(r)} />
           )}
+          {currentRoute === 'create-farm-input' && (
+            <CreateFarmInputPage
+              farmerId={currentUser?.id}
+              onBack={() => setCurrentRoute('inputs')}
+              onCreated={() => setCurrentRoute('inputs')}
+            />
+          )}
           {currentRoute === 'cycle-inputs' && (
             <CycleInputsPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'incidents' && (
-            <CycleIncidentsPage farmerId={currentUser?.id} />
+            <CycleIncidentsPage
+              farmerId={currentUser?.id}
+              initialCycleId={incidentDraft.cycleId}
+              onCreateIncident={(cycleId) => {
+                setIncidentDraft({ cycleId, incident: null });
+                setCurrentRoute('create-incident');
+              }}
+              onEditIncident={(cycleId, incident) => {
+                setIncidentDraft({ cycleId, incident });
+                setCurrentRoute('create-incident');
+              }}
+            />
+          )}
+          {currentRoute === 'create-incident' && (
+            <CreateIncidentPage
+              farmerId={currentUser?.id}
+              initialCycleId={incidentDraft.cycleId}
+              initialIncident={incidentDraft.incident}
+              onBack={(cycleId) => {
+                setIncidentDraft({ cycleId: cycleId || incidentDraft.cycleId, incident: null });
+                setCurrentRoute('incidents');
+              }}
+              onSaved={(cycleId) => {
+                setIncidentDraft({ cycleId: cycleId || incidentDraft.cycleId, incident: null });
+                setCurrentRoute('incidents');
+              }}
+            />
           )}
           {currentRoute === 'settings' && (
             <FarmerProfileSettingsView

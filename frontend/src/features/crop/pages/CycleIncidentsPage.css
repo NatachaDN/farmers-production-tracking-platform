@@ -1,6 +1,6 @@
 /* CycleIncidentsPage.css */
 
-.incidents-page {
+.cycle-incidents-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -45,99 +45,133 @@
   padding: 0 4px;
 }
 
-/* ---- Control bar ---- */
-.control-bar {
+/* ---- Cycle Selector Card ---- */
+.incident-selector-card {
+  background: #FFFFFF;
+  border: 1px solid #ECE7DC;
+  border-radius: 18px;
+  padding: 18px 22px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+  box-shadow: 0 2px 8px rgba(22, 66, 48, 0.04);
 }
 
-.cycle-pills {
+.incident-selector-group {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 12px;
+  flex: 1 1 280px;
 }
 
-.cycle-pills-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  margin-right: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.cycle-pill {
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--color-card-border);
-  background: #FFFFFF;
-  color: var(--color-text-primary);
-  font-family: inherit;
-  transition: all var(--transition-fast);
-  box-shadow: var(--shadow-subtle);
-}
-
-.cycle-pill.selected {
-  background: var(--color-brand-primary);
-  color: #FFFFFF;
-  border-color: var(--color-brand-primary);
+.incident-selector-label {
+  font-size: 0.75rem;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(62, 123, 82, 0.25);
+  color: #788680;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
-/* Record button */
-.record-btn {
+.incident-cycle-select {
+  flex: 1 1 220px;
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #DFD8CA;
+  background-color: #FAF8F4;
+  color: #19201C;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.incident-cycle-select:focus {
+  border-color: #3E7B52;
+  background-color: #FFFFFF;
+}
+
+.record-incident-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   border: none;
+  background-color: #DC2626;
   color: #FFFFFF;
   font-family: inherit;
-  transition: background-color var(--transition-fast);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+  transition: background-color 150ms ease;
+}
+
+.record-incident-btn:hover {
+  background-color: #B91C1C;
+}
+
+/* ---- Incident Occurrence Indicator Banner ---- */
+.incident-status-banner {
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.incident-status-banner.has-incidents {
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+}
+
+.incident-status-banner.no-incidents {
+  background-color: #EAF4ED;
+  border: 1px solid #C8E2D0;
 }
 
 /* ---- KPI Grid ---- */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 900px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 560px) {
-  .kpi-grid { grid-template-columns: 1fr; }
-}
-
-/* ---- Form container ---- */
-.form-container {
-  background: #FFFFFF;
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-card-border);
-  padding: 32px;
-  box-shadow: var(--shadow-card);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 18px;
 }
 
 /* ---- List container ---- */
-.list-container {
+.incident-list-container {
   background: #FFFFFF;
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-card-border);
-  padding: 24px 32px;
-  box-shadow: var(--shadow-card);
+  border-radius: 20px;
+  border: 1px solid #ECE7DC;
+  padding: clamp(18px, 3vw, 28px);
+  box-shadow: 0 2px 8px rgba(22, 66, 48, 0.04);
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.list-header h3 {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #19201C;
+  margin: 0;
+}
+
+.list-header p {
+  font-size: 0.8125rem;
+  color: #788680;
+  margin: 3px 0 0 0;
 }

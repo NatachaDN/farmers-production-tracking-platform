@@ -14,6 +14,27 @@ const UNIT_OPTIONS = [
   { value: 'TONS', label: 'Tons',            icon: IconTruck },
 ];
 
+const QUALITY_GRADES = [
+  'Grade A (Premium)',
+  'Grade B (Standard)',
+  'Grade C (Processing)'
+];
+
+const HARVEST_METHODS = [
+  'Manual / Hand-picked',
+  'Mechanical / Combine',
+  'Mixed'
+];
+
+const MARKET_DESTINATIONS = [
+  'Local Market',
+  'Cooperative',
+  'Direct Buyer',
+  'Processing / Mill',
+  'Home Consumption',
+  'Seed Reserve'
+];
+
 /**
  * Form for recording a harvest at the end of a crop cycle.
  * Validates: quantity > 0, unit required, harvest date required & not future.
@@ -25,6 +46,13 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
     quantity: '',
     unit: 'KG',
     harvestDate: todayStr,
+    qualityGrade: '',
+    harvestMethod: '',
+    storageLocation: '',
+    marketDestination: '',
+    moistureContentPercent: '',
+    postHarvestLossQuantity: '',
+    estimatedRevenue: '',
     notes: '',
   });
 
@@ -80,7 +108,14 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
       quantity: parseFloat(formData.quantity),
       unit: formData.unit,
       harvestDate: formData.harvestDate,
-      notes: formData.notes || null,
+      qualityGrade: formData.qualityGrade || null,
+      harvestMethod: formData.harvestMethod || null,
+      storageLocation: formData.storageLocation.trim() || null,
+      marketDestination: formData.marketDestination || null,
+      moistureContentPercent: formData.moistureContentPercent !== '' ? parseFloat(formData.moistureContentPercent) : null,
+      postHarvestLossQuantity: formData.postHarvestLossQuantity !== '' ? parseFloat(formData.postHarvestLossQuantity) : null,
+      estimatedRevenue: formData.estimatedRevenue !== '' ? parseFloat(formData.estimatedRevenue) : null,
+      notes: formData.notes.trim() || null,
     });
   };
 
@@ -156,11 +191,125 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
         {errors.harvestDate && <span className="field-error">{errors.harvestDate}</span>}
       </div>
 
+      {/* Detailed Harvest Information */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+        gap: '16px'
+      }}>
+        <div className="form-group">
+          <label htmlFor="qualityGrade" className="form-label">Quality Grade</label>
+          <select
+            id="qualityGrade"
+            name="qualityGrade"
+            className="form-input"
+            value={formData.qualityGrade}
+            onChange={handleChange}
+          >
+            <option value="">Select quality grade...</option>
+            {QUALITY_GRADES.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="harvestMethod" className="form-label">Harvest Method</label>
+          <select
+            id="harvestMethod"
+            name="harvestMethod"
+            className="form-input"
+            value={formData.harvestMethod}
+            onChange={handleChange}
+          >
+            <option value="">Select harvest method...</option>
+            {HARVEST_METHODS.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="storageLocation" className="form-label">Storage Location</label>
+          <input
+            type="text"
+            id="storageLocation"
+            name="storageLocation"
+            className="form-input"
+            placeholder="e.g. Main Granary, Cold Store B"
+            value={formData.storageLocation}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="marketDestination" className="form-label">Market / Destination</label>
+          <select
+            id="marketDestination"
+            name="marketDestination"
+            className="form-input"
+            value={formData.marketDestination}
+            onChange={handleChange}
+          >
+            <option value="">Select destination...</option>
+            {MARKET_DESTINATIONS.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="moistureContentPercent" className="form-label">Moisture Content (%)</label>
+          <input
+            type="number"
+            id="moistureContentPercent"
+            name="moistureContentPercent"
+            min="0"
+            max="100"
+            step="0.1"
+            className="form-input"
+            placeholder="e.g. 13.5"
+            value={formData.moistureContentPercent}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="postHarvestLossQuantity" className="form-label">Post-Harvest Loss ({formData.unit.toLowerCase()})</label>
+          <input
+            type="number"
+            id="postHarvestLossQuantity"
+            name="postHarvestLossQuantity"
+            min="0"
+            step="0.01"
+            className="form-input"
+            placeholder="e.g. 12"
+            value={formData.postHarvestLossQuantity}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="estimatedRevenue" className="form-label">Estimated Revenue</label>
+          <input
+            type="number"
+            id="estimatedRevenue"
+            name="estimatedRevenue"
+            min="0"
+            step="0.01"
+            className="form-input"
+            placeholder="e.g. 45000"
+            value={formData.estimatedRevenue}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
+
       {/* Notes */}
       <div className="form-group">
         <div className="label-with-count">
           <label htmlFor="notes" className="form-label">
-            Harvest Notes &amp; Observations
+            Harvest Description &amp; Observations
           </label>
           <span className="char-count">{formData.notes.length}/1000</span>
         </div>
@@ -169,7 +318,7 @@ export function HarvestForm({ onSubmit, isSubmitting }) {
           name="notes"
           rows={3}
           className={`form-textarea ${errors.notes ? 'input-error' : ''}`}
-          placeholder="e.g. Excellente récolte, 45 sacs de 50kg ensachés et stockés au magasin de Bandjoun..."
+          placeholder="Describe harvest conditions, bagging count, grain quality, buyer notes, or weather observations..."
           value={formData.notes}
           onChange={handleChange}
         />

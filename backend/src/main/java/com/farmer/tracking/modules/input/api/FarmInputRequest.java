@@ -29,6 +29,13 @@ public class FarmInputRequest {
     @Positive(message = "Purchase price must be a positive number")
     private Double purchasePrice;
 
+    private String brand;
+    private String supplier;
+    private String batchNumber;
+    private LocalDate expiryDate;
+    private String storageLocation;
+    private String description;
+
     public FarmInputRequest() {}
 
     public FarmInputRequest(String name, InputType type, Double quantity, String unit, LocalDate purchaseDate, Double purchasePrice) {
@@ -86,5 +93,53 @@ public class FarmInputRequest {
 
     public void setPurchasePrice(Double purchasePrice) {
         this.purchasePrice = purchasePrice;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public String getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(String supplier) {
+        this.supplier = supplier;
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
+    }
+
+    public LocalDate getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(LocalDate expiryDate) {
+        this.expiryDate = expiryDate;
+    }
+
+    public String getStorageLocation() {
+        return storageLocation;
+    }
+
+    public void setStorageLocation(String storageLocation) {
+        this.storageLocation = storageLocation;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

@@ -64,6 +64,13 @@ public class HarvestService {
         harvest.setHarvestDate(request.getHarvestDate());
         harvest.setCalculatedYield(calculatedYield);
         harvest.setNotes(request.getNotes());
+        harvest.setQualityGrade(trimOrNull(request.getQualityGrade()));
+        harvest.setHarvestMethod(trimOrNull(request.getHarvestMethod()));
+        harvest.setStorageLocation(trimOrNull(request.getStorageLocation()));
+        harvest.setMoistureContentPercent(request.getMoistureContentPercent());
+        harvest.setPostHarvestLossQuantity(request.getPostHarvestLossQuantity());
+        harvest.setMarketDestination(trimOrNull(request.getMarketDestination()));
+        harvest.setEstimatedRevenue(request.getEstimatedRevenue());
         Harvest savedHarvest = harvestRepository.save(harvest);
 
         // Update cycle status to COMPLETED and set end date
@@ -108,8 +115,21 @@ public class HarvestService {
         response.setCalculatedYield(harvest.getCalculatedYield());
         response.setYieldDisplay(yieldDisplay);
         response.setNotes(harvest.getNotes());
+        response.setQualityGrade(harvest.getQualityGrade());
+        response.setHarvestMethod(harvest.getHarvestMethod());
+        response.setStorageLocation(harvest.getStorageLocation());
+        response.setMoistureContentPercent(harvest.getMoistureContentPercent());
+        response.setPostHarvestLossQuantity(harvest.getPostHarvestLossQuantity());
+        response.setMarketDestination(harvest.getMarketDestination());
+        response.setEstimatedRevenue(harvest.getEstimatedRevenue());
         response.setCreatedAt(harvest.getCreatedAt());
         response.setUpdatedAt(harvest.getUpdatedAt());
         return response;
+    }
+
+    private String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
