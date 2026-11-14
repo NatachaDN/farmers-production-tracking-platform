@@ -47,5 +47,16 @@ export const cropService = {
    */
   async deleteCrop(farmerId, cropId) {
     return await apiClient.delete(`/farmers/${farmerId}/crops/${cropId}`);
+  },
+
+  /**
+   * Upload a crop photo from the farmer's device or camera.
+   * @param {File} file
+   * @returns {Promise<{ url: string }>}
+   */
+  async uploadCropPhoto(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.upload('/farms/upload-image', formData);
   }
 };

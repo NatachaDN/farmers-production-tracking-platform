@@ -3,7 +3,6 @@ import '../../shared/components/Skeleton.css';
 import { CropCycleCard } from '../../shared/components/CropCycleCard';
 import { NewCropCycleModal } from './NewCropCycleModal';
 import { PlotDetailsModal } from './components/PlotDetailsModal';
-import { ManageCropsModal } from './components/ManageCropsModal';
 import { cropCycleService } from './services/cropCycleService';
 import { plotService } from '../farms/services/plotService';
 import {
@@ -281,7 +280,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* Manage Personal Crops Catalog */}
           <button
-            onClick={() => setIsManageCropsOpen(true)}
+            onClick={() => onNavigate && onNavigate('crops-catalog')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -539,13 +538,6 @@ export function CropProductionView({ farmerId, onNavigate }) {
         onGoToActivities={(plotItem) => {
           if (onNavigate) onNavigate('activities');
         }}
-      />
-
-      {/* Manage Personal Crops Modal */}
-      <ManageCropsModal
-        isOpen={isManageCropsOpen}
-        onClose={() => setIsManageCropsOpen(false)}
-        farmerId={farmerId}
       />
     </div>
   );

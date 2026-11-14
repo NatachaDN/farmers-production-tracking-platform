@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,6 +53,7 @@ public class CropServiceImpl implements CropService {
         }
 
         Crop crop = new Crop(farmerId, trimmedName, trimmedVariety);
+        applyDetails(crop, request);
         Crop saved = cropRepository.save(crop);
         return CropResponse.fromEntity(saved);
     }
@@ -93,9 +95,34 @@ public class CropServiceImpl implements CropService {
 
         crop.setName(trimmedName);
         crop.setVariety(trimmedVariety);
+        applyDetails(crop, request);
 
         Crop saved = cropRepository.save(crop);
         return CropResponse.fromEntity(saved);
+    }
+
+    private void applyDetails(Crop crop, CropRequest request) {
+        crop.setCategory(trimOrNull(request.getCategory()));
+        crop.setDescription(trimOrNull(request.getDescription()));
+        crop.setGrowthDurationDays(request.getGrowthDurationDays());
+        crop.setExpectedYieldPerHectare(request.getExpectedYieldPerHectare());
+        crop.setYieldUnit(trimOrNull(request.getYieldUnit()));
+        crop.setPlantingSeason(trimOrNull(request.getPlantingSeason()));
+        crop.setWaterRequirement(trimOrNull(request.getWaterRequirement()));
+        crop.setSoilPreference(trimOrNull(request.getSoilPreference()));
+        if (request.getImageUrls() != null) {
+            List<String> cleaned = request.getImageUrls().stream()
+                    .filter(url -> url != null && !url.trim().isEmpty())
+                    .map(String::trim)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            crop.setImageUrls(cleaned);
+        }
+    }
+
+    private String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Override
