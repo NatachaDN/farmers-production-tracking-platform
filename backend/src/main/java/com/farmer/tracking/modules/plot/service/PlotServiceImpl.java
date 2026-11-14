@@ -81,6 +81,12 @@ public class PlotServiceImpl implements PlotService {
         if (request.getNotes() != null) {
             plot.setNotes(request.getNotes().trim().isEmpty() ? null : request.getNotes().trim());
         }
+        plot.setAnimalGroupId(request.getAnimalGroupId());
+        if (request.getAnimalGroupName() != null) {
+            plot.setAnimalGroupName(request.getAnimalGroupName().trim().isEmpty() ? null : request.getAnimalGroupName().trim());
+        } else if (request.getAnimalGroupId() == null) {
+            plot.setAnimalGroupName(null);
+        }
         if (request.getImageUrls() != null) {
             List<String> cleaned = request.getImageUrls().stream()
                     .filter(u -> u != null && !u.trim().isEmpty())

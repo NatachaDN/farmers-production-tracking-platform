@@ -54,6 +54,12 @@ public class Plot {
     @Column(length = 1000)
     private String notes;
 
+    @Column(name = "animal_group_id")
+    private Long animalGroupId;
+
+    @Column(name = "animal_group_name", length = 150)
+    private String animalGroupName;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "plot_images", joinColumns = @JoinColumn(name = "plot_id"))
     @OrderColumn(name = "image_order")
@@ -218,5 +224,21 @@ public class Plot {
 
     public void setImageUrls(List<String> imageUrls) {
         this.imageUrls = imageUrls != null ? new ArrayList<>(imageUrls) : new ArrayList<>();
+    }
+
+    public Long getAnimalGroupId() {
+        return animalGroupId;
+    }
+
+    public void setAnimalGroupId(Long animalGroupId) {
+        this.animalGroupId = animalGroupId;
+    }
+
+    public String getAnimalGroupName() {
+        return animalGroupName;
+    }
+
+    public void setAnimalGroupName(String animalGroupName) {
+        this.animalGroupName = animalGroupName;
     }
 }
