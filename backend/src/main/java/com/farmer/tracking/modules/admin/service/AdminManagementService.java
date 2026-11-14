@@ -259,14 +259,10 @@ public class AdminManagementService {
             }
         }
         if (req.stage() != null && !req.stage().isBlank()) {
-            try {
-                cycle.setGrowthStage(GrowthStage.valueOf(req.stage().trim().toUpperCase(Locale.ROOT)));
-            } catch (IllegalArgumentException ignored) {
-                // keep existing stage if unrecognized
-            }
+            cycle.setStage(req.stage().trim());
         }
         if (req.progress() != null) {
-            cycle.setProgressPercentage(Math.max(0, Math.min(100, req.progress())));
+            cycle.setProgress(Math.max(0, Math.min(100, req.progress())));
         }
         cycleRepository.save(cycle);
     }
@@ -363,8 +359,8 @@ public class AdminManagementService {
                 .toList();
 
         Map<String, List<Harvest>> harvestsByCrop = harvests.stream()
-                .collect(Collectors.groupingBy(h -> h.getCycle() != null && h.getCycle().getCrop() != null
-                        ? h.getCycle().getCrop().getDisplayName() : "Other"));
+                .collect(Collectors.groupingBy(h -> h.getCycle() != null && h.getCycle().getCropName() != null
+                        ? h.getCycle().getCropName() : "Other"));
         List<CropOutput> harvestByCrop = harvestsByCrop.entrySet().stream()
                 .map(e -> new CropOutput(
                         e.getKey(),
@@ -437,8 +433,8 @@ public class AdminManagementService {
                 a.getNotes(),
                 toInstant(a.getCreatedAt()),
                 c != null ? c.getId() : null,
-                c != null ? c.getCycleName() : null,
-                c != null && c.getCrop() != null ? c.getCrop().getDisplayName() : null,
+                c != null ? c.getName() : null,
+                c != null ? c.getCropName() : null,
                 c != null && c.getPlot() != null ? c.getPlot().getName() : null,
                 c != null ? c.getFarmerId() : null,
                 f != null ? f.getFullName() : "Farmer"
@@ -465,11 +461,11 @@ public class AdminManagementService {
     }
 
     private static ActivityType parseActivityType(String value) {
-        if (value == null || value.isBlank()) return ActivityType.OTHER;
+        if (value == null || value.isBlank()) return ActivityType.WATERING;
         try {
             return ActivityType.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            return ActivityType.OTHER;
+            return ActivityType.WATERING;
         }
     }
 
@@ -479,16 +475,15 @@ public class AdminManagementService {
 
     private static double kg(Harvest h) {
         if (h.getQuantity() == null) return 0.0;
-        String u = h.getUnit() != null ? h.getUnit().toLowerCase(Locale.ROOT) : "kg";
-        if (u.contains("ton")) return h.getQuantity() * 1000.0;
-        if (u.contains("bag")) return h.getQuantity() * 50.0;
+        HarvestUnit u = h.getUnit();
+        if (u == HarvestUnit.TONS) return h.getQuantity() * 1000.0;
+        if (u == HarvestUnit.BAGS) return h.getQuantity() * 50.0;
         return h.getQuantity();
     }
 
     private static double bags(Harvest h) {
         if (h.getQuantity() == null) return 0.0;
-        String u = h.getUnit() != null ? h.getUnit().toLowerCase(Locale.ROOT) : "kg";
-        if (u.contains("bag")) return h.getQuantity();
+        if (h.getUnit() == HarvestUnit.BAGS) return h.getQuantity();
         return kg(h) / 50.0;
     }
 }

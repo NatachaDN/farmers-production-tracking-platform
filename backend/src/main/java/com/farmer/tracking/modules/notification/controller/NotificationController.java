@@ -49,7 +49,7 @@ public class NotificationController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody SendNotificationRequest request) {
         requireAdminOrManager(principal);
-        return ResponseEntity.ok(notificationService.send(principal.getId(), principal.getFullName(), request));
+        return ResponseEntity.ok(notificationService.send(principal.getId(), principal.getUsername(), request));
     }
 
     @PutMapping("/{id}/read")

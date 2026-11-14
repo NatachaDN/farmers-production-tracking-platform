@@ -64,8 +64,8 @@ public class ManagementOperationsService {
     public List<ManagedFarmRow> listFarms(String search) {
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, Long> plotCounts = plotRepository.findAll().stream()
-                .filter(p -> p.getFarmId() != null)
-                .collect(Collectors.groupingBy(Plot::getFarmId, Collectors.counting()));
+                .filter(p -> p.getFarm() != null)
+                .collect(Collectors.groupingBy(p -> p.getFarm().getId(), Collectors.counting()));
 
         return farmRepository.findAll().stream()
                 .map(f -> toFarmRow(f, plotCounts.getOrDefault(f.getId(), 0L).intValue()))
@@ -100,7 +100,8 @@ public class ManagementOperationsService {
         }
         applyFarmFields(farm, req);
         Farm saved = farmRepository.save(farm);
-        int plots = (int) plotRepository.findAll().stream().filter(p -> id.equals(p.getFarmId())).count();
+        int plots = (int) plotRepository.findAll().stream()
+                .filter(p -> p.getFarm() != null && id.equals(p.getFarm().getId())).count();
         return toFarmRow(saved, plots);
     }
 
@@ -154,8 +155,8 @@ public class ManagementOperationsService {
                 .collect(Collectors.toMap(Farm::getId, Function.identity(), (a, b) -> a));
 
         return plotRepository.findAll().stream()
-                .filter(p -> farmId == null || farmId.equals(p.getFarmId()))
-                .map(p -> toPlotRow(p, farmers.get(p.getFarmerId()), p.getFarmId() != null ? farms.get(p.getFarmId()) : null))
+                .filter(p -> farmId == null || (p.getFarm() != null && farmId.equals(p.getFarm().getId())))
+                .map(p -> toPlotRow(p, farmers.get(p.getFarmerId()), p.getFarm()))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
                         || r.farmerName().toLowerCase().contains(q)
@@ -173,8 +174,7 @@ public class ManagementOperationsService {
         plot.setFarmerId(farmer.getId());
         applyPlotFields(plot, req);
         Plot saved = plotRepository.save(plot);
-        Farm farm = saved.getFarmId() != null ? farmRepository.findById(saved.getFarmId()).orElse(null) : null;
-        return toPlotRow(saved, farmer, farm);
+        return toPlotRow(saved, farmer, saved.getFarm());
     }
 
     @Transactional
@@ -189,8 +189,7 @@ public class ManagementOperationsService {
         applyPlotFields(plot, req);
         Plot saved = plotRepository.save(plot);
         Farmer farmer = farmerRepository.findById(saved.getFarmerId()).orElse(null);
-        Farm farm = saved.getFarmId() != null ? farmRepository.findById(saved.getFarmId()).orElse(null) : null;
-        return toPlotRow(saved, farmer, farm);
+        return toPlotRow(saved, farmer, saved.getFarm());
     }
 
     @Transactional
@@ -202,7 +201,12 @@ public class ManagementOperationsService {
     }
 
     private void applyPlotFields(Plot plot, ManagedPlotRequest req) {
-        plot.setFarmId(req.farmId());
+        if (req.farmId() != null) {
+            Farm farm = farmRepository.findById(req.farmId()).orElse(null);
+            plot.setFarm(farm);
+        } else {
+            plot.setFarm(null);
+        }
         plot.setName(req.name().trim());
         plot.setArea(req.area() != null && req.area() > 0 ? req.area() : 1.0);
         plot.setLocation(req.location().trim());
@@ -230,7 +234,7 @@ public class ManagementOperationsService {
                 p.getId(),
                 p.getFarmerId(),
                 farmer != null ? farmer.getFullName() : "Farmer #" + p.getFarmerId(),
-                p.getFarmId(),
+                p.getFarm() != null ? p.getFarm().getId() : null,
                 farm != null ? farm.getName() : null,
                 p.getName(),
                 p.getArea(),
@@ -354,8 +358,8 @@ public class ManagementOperationsService {
 
         if (k.isEmpty() || "CROP".equals(k)) {
             for (CycleIncident ci : cycleIncidentRepository.findAll()) {
-                String targetName = ci.getCycle() != null && ci.getCycle().getCrop() != null
-                        ? ci.getCycle().getCrop().getDisplayName()
+                String targetName = ci.getCycle() != null && ci.getCycle().getCropName() != null
+                        ? ci.getCycle().getCropName()
                         : "Crop Cycle #" + (ci.getCycle() != null ? ci.getCycle().getId() : "?");
                 all.add(new ManagedIncidentRow(
                         ci.getId(),
@@ -436,8 +440,8 @@ public class ManagementOperationsService {
                     ? LocalDateTime.now() : null);
             CycleIncident saved = cycleIncidentRepository.save(ci);
             farmerId = saved.getFarmerId();
-            targetName = saved.getCycle() != null && saved.getCycle().getCrop() != null
-                    ? saved.getCycle().getCrop().getDisplayName() : "Crop Cycle";
+            targetName = saved.getCycle() != null && saved.getCycle().getCropName() != null
+                    ? saved.getCycle().getCropName() : "Crop Cycle";
             String farmerName = farmerRepository.findById(farmerId).map(Farmer::getFullName).orElse("Farmer #" + farmerId);
             updatedRow = new ManagedIncidentRow(
                     saved.getId(), "CROP", farmerId, farmerName, targetName,

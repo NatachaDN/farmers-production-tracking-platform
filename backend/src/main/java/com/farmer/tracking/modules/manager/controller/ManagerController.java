@@ -199,7 +199,7 @@ public class ManagerController {
             @PathVariable Long id,
             @Valid @RequestBody IncidentActionRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        String actorName = principal != null ? principal.getFullName() : "Platform Supervisor";
+        String actorName = principal != null ? principal.getUsername() : "Platform Supervisor";
         Long actorId = principal != null ? principal.getId() : null;
         return ResponseEntity.ok(operationsService.takeIncidentAction(kind, id, request, actorName, actorId));
     }
