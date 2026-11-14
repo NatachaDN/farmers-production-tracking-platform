@@ -30,6 +30,7 @@ import { AdminSystemView } from './features/admin/AdminSystemView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
 import { LivestockView } from './features/livestock/LivestockView';
+import { ReportsAnalyticsView } from './features/reports/ReportsAnalyticsView';
 import { ManagerDashboardView } from './features/manager/ManagerDashboardView';
 import { ManagerFarmersView } from './features/manager/ManagerFarmersView';
 import { ManagerReportsView } from './features/manager/ManagerReportsView';
@@ -441,20 +442,7 @@ export function App() {
             <LivestockView user={currentUser} />
           )}
           {currentRoute === 'reports' && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--color-card-border)',
-              padding: '40px',
-              textAlign: 'center'
-            }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
-                {currentHeader.title}
-              </h2>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                This module follows the Acrea Design System standards.
-              </p>
-            </div>
+            <ReportsAnalyticsView farmerId={currentUser?.id} />
           )}
 
           {/* Quick Edit Profile Modal */}

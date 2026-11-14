@@ -217,6 +217,17 @@ public class AnimalGroup {
 
     public void setCurrentPopulation(Integer currentPopulation) {
         this.currentPopulation = currentPopulation;
+        if (currentPopulation != null) {
+            this.numberOfAnimals = currentPopulation;
+        }
+    }
+
+    public Integer getNumberOfAnimals() {
+        return numberOfAnimals;
+    }
+
+    public void setNumberOfAnimals(Integer numberOfAnimals) {
+        this.numberOfAnimals = numberOfAnimals;
     }
 
     public String getLocation() {

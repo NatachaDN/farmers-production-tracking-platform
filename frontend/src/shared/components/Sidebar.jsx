@@ -161,9 +161,9 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
         </nav>
       </div>
 
-      {/* Season Card & Footer */}
-      <div>
-        {/* Current Season / Mode Widget */}
+      {/* Footer (Admin / Manager mode controls only) */}
+      {(adminMode || managerMode || isManager || isAdmin) && (
+      <div style={{ padding: '12px 16px 20px' }}>
         {adminMode ? (
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -194,56 +194,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
               Cooperative network overview, member approvals, and consolidated reports.
             </div>
           </div>
-        ) : (
-        <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '14px',
-          padding: '14px 16px',
-          marginBottom: '20px'
-        }}>
-          <div style={{
-            fontSize: '0.6875rem',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            color: 'rgba(255, 255, 255, 0.6)',
-            marginBottom: '4px'
-          }}>
-            CURRENT SEASON
-          </div>
-          <div style={{
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            color: '#FFFFFF',
-            marginBottom: '6px'
-          }}>
-            {`${new Date().getFullYear()} Season`}
-          </div>
-          {loadingCycles ? (
-            <div className="acrea-skeleton-dark" style={{ width: '120px', height: '14px', borderRadius: '4px' }} />
-          ) : (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.75rem',
-              color: 'rgba(255, 255, 255, 0.75)'
-            }}>
-              <span style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: activeCyclesCount > 0 ? '#E5A638' : 'rgba(255, 255, 255, 0.35)'
-              }} />
-              <span>
-                {activeCyclesCount > 0
-                  ? `${activeCyclesCount} ${activeCyclesCount === 1 ? 'cycle' : 'cycles'} in progress`
-                  : 'No active cycles'}
-              </span>
-            </div>
-          )}
-        </div>
-        )}
+        ) : null}
 
         {(isManager || isAdmin) && (
           <button
@@ -276,28 +227,8 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             {adminMode ? 'Open farmer workspace' : 'Open admin console'}
           </button>
         )}
-
-        {/* Help & Support */}
-        <button
-          onClick={() => onNavigate && onNavigate('help')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '8px 12px',
-            color: 'var(--color-sidebar-text)',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            width: '100%',
-            transition: 'color var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-sidebar-text)'}
-        >
-          <IconHelp size={17} />
-          <span>Help & support</span>
-        </button>
       </div>
+      )}
     </aside>
   );
 }
