@@ -33,7 +33,7 @@ const MANAGER_NAV = [
   { id: 'manager-reports', label: 'Consolidated Reports', icon: IconReports },
 ];
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false, user = null }) {
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false, user = null, mobileOpen = false, onCloseMobile }) {
   const adminMode = isAdmin && activeRoute.startsWith('admin-');
   const managerMode = (isManager || isAdmin) && activeRoute.startsWith('manager-');
 
@@ -81,7 +81,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
   else if (managerMode) navItems = MANAGER_NAV;
 
   return (
-    <aside className="acrea-sidebar" style={{
+    <aside className={`acrea-sidebar${mobileOpen ? ' open' : ''}`} style={{
       color: '#FFFFFF',
       display: 'flex',
       flexDirection: 'column',
@@ -107,12 +107,18 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeRoute === item.id || (item.id === 'farms' && (activeRoute === 'create-farm' || activeRoute === 'farm-details'));
+            const isActive =
+              activeRoute === item.id ||
+              (item.id === 'farms' &&
+                ['create-farm', 'farm-details', 'create-plot', 'plot-details'].includes(activeRoute));
 
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate && onNavigate(item.id)}
+                onClick={() => {
+                  if (onNavigate) onNavigate(item.id);
+                  if (onCloseMobile) onCloseMobile();
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

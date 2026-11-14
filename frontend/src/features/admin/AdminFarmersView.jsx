@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { adminService } from './services/adminService';
-import { Avatar, Card, DataGate, EmptyState, Pill, RefreshButton, useAdminData } from './components/AdminUi';
+import { Avatar, Card, DataGate, EmptyState, Pill, RefreshButton, Tabs, useAdminData } from './components/AdminUi';
 import { FarmerDetailDrawer } from './components/FarmerDetailDrawer';
+import { PasswordRequestsPanel } from './components/PasswordRequestsPanel';
 import { fmtDate, fmtKg, fmtNumber, fmtXaf, label, timeAgo } from './adminFormat';
 
 const SORTS = {
@@ -19,11 +20,19 @@ const FILTERS = [
 ];
 
 export function AdminFarmersView() {
+  const [section, setSection] = useState('directory');
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [sort, setSort] = useState('newest');
   const [filter, setFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
+
+  useEffect(() => {
+    adminService.passwordRequests('PENDING')
+      .then((list) => setPendingRequestsCount(Array.isArray(list) ? list.length : 0))
+      .catch(() => { });
+  }, []);
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query.trim()), 300);
@@ -40,66 +49,82 @@ export function AdminFarmersView() {
 
   return (
     <div className="adm-stack fade-in">
-      <div className="adm-toolbar">
-        <div className="adm-toolbar-group">
-          <input className="adm-input" type="search" placeholder="Rechercher nom (Kamga, Mbida), localité (Bafoussam, Bassa, Beti)..." aria-label="Search farmers"
-            value={query} onChange={(e) => setQuery(e.target.value)} />
-          <select className="adm-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort farmers">
-            {Object.entries(SORTS).map(([id, s]) => <option key={id} value={id}>{s.label}</option>)}
-          </select>
-        </div>
-        <RefreshButton onClick={state.reload} loading={state.loading} />
-      </div>
+      <Tabs
+        label="Farmers management"
+        value={section}
+        onChange={setSection}
+        tabs={[
+          { id: 'directory', label: 'Farmer directory', count: state.data?.length },
+          { id: 'password-requests', label: 'Password requests', count: pendingRequestsCount },
+        ]}
+      />
 
-      <div className="adm-toolbar-group">
-        {FILTERS.map((f) => (
-          <button key={f.id} className="adm-chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>
-        ))}
-      </div>
-
-      <DataGate state={state}>{() => (
-        <Card flush title={`${rows.length} ${rows.length === 1 ? 'farmer' : 'farmers'}`} subtitle="Select a farmer to see their farms, cycles, activity and sign-ins">
-          {rows.length === 0 ? <EmptyState>No farmer matches these filters.</EmptyState> : (
-            <div className="adm-table-wrap">
-              <table className="adm-table">
-                <thead>
-                  <tr>
-                    <th>Farmer</th><th>Farm type</th><th>Sign-in</th>
-                    <th className="num">Cycles</th><th className="num">Activities</th><th className="num">Harvested</th><th className="num">Inputs</th>
-                    <th>Last seen</th><th>Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((f) => (
-                    <tr key={f.id} className="clickable" onClick={() => setSelectedId(f.id)}>
-                      <td>
-                        <div className="adm-person">
-                          <Avatar name={f.fullName} url={f.avatarUrl} />
-                          <div style={{ minWidth: 0 }}>
-                            <button className="adm-row-btn strong" onClick={(e) => { e.stopPropagation(); setSelectedId(f.id); }}>{f.fullName}</button>
-                            <div className="muted">{f.emailOrPhone}</div>
-                          </div>
-                          {f.role === 'ROLE_ADMIN' && <Pill value="ROLE_ADMIN" />}
-                        </div>
-                      </td>
-                      <td>{label(f.farmType)}</td>
-                      <td><Pill value={f.authProvider} /></td>
-                      <td className="num">{f.activeCycles}<span className="muted"> / {f.cycles}</span></td>
-                      <td className="num">{fmtNumber(f.activities)}</td>
-                      <td className="num">{fmtKg(f.harvestedKg)}</td>
-                      <td className="num">{f.inputSpend > 0 ? fmtXaf(f.inputSpend) : '—'}</td>
-                      <td>{timeAgo(f.lastLoginAt)}</td>
-                      <td>{fmtDate(f.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {section === 'password-requests' ? (
+        <PasswordRequestsPanel onCountChange={setPendingRequestsCount} />
+      ) : (
+        <>
+          <div className="adm-toolbar">
+            <div className="adm-toolbar-group">
+              <input className="adm-input" type="search" placeholder="Rechercher nom (Kamga, Mbida), localité (Bafoussam, Bassa, Beti)..." aria-label="Search farmers"
+                value={query} onChange={(e) => setQuery(e.target.value)} />
+              <select className="adm-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort farmers">
+                {Object.entries(SORTS).map(([id, s]) => <option key={id} value={id}>{s.label}</option>)}
+              </select>
             </div>
-          )}
-        </Card>
-      )}</DataGate>
+            <RefreshButton onClick={state.reload} loading={state.loading} />
+          </div>
 
-      {selectedId && <FarmerDetailDrawer farmerId={selectedId} onClose={() => setSelectedId(null)} />}
+          <div className="adm-toolbar-group">
+            {FILTERS.map((f) => (
+              <button key={f.id} className="adm-chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>
+            ))}
+          </div>
+
+          <DataGate state={state}>{() => (
+            <Card flush title={`${rows.length} ${rows.length === 1 ? 'farmer' : 'farmers'}`} subtitle="Select a farmer to see their farms, cycles, activity and sign-ins">
+              {rows.length === 0 ? <EmptyState>No farmer matches these filters.</EmptyState> : (
+                <div className="adm-table-wrap">
+                  <table className="adm-table">
+                    <thead>
+                      <tr>
+                        <th>Farmer</th><th>Farm type</th><th>Sign-in</th>
+                        <th className="num">Cycles</th><th className="num">Activities</th><th className="num">Harvested</th><th className="num">Inputs</th>
+                        <th>Last seen</th><th>Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((f) => (
+                        <tr key={f.id} className="clickable" onClick={() => setSelectedId(f.id)}>
+                          <td>
+                            <div className="adm-person">
+                              <Avatar name={f.fullName} url={f.avatarUrl} />
+                              <div style={{ minWidth: 0 }}>
+                                <button className="adm-row-btn strong" onClick={(e) => { e.stopPropagation(); setSelectedId(f.id); }}>{f.fullName}</button>
+                                <div className="muted">{f.emailOrPhone}</div>
+                              </div>
+                              {f.role === 'ROLE_ADMIN' && <Pill value="ROLE_ADMIN" />}
+                            </div>
+                          </td>
+                          <td>{label(f.farmType)}</td>
+                          <td><Pill value={f.authProvider} /></td>
+                          <td className="num">{f.activeCycles}<span className="muted"> / {f.cycles}</span></td>
+                          <td className="num">{fmtNumber(f.activities)}</td>
+                          <td className="num">{fmtKg(f.harvestedKg)}</td>
+                          <td className="num">{f.inputSpend > 0 ? fmtXaf(f.inputSpend) : '—'}</td>
+                          <td>{timeAgo(f.lastLoginAt)}</td>
+                          <td>{fmtDate(f.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          )}</DataGate>
+
+          {selectedId && <FarmerDetailDrawer farmerId={selectedId} onClose={() => setSelectedId(null)} />}
+        </>
+      )}
     </div>
   );
 }

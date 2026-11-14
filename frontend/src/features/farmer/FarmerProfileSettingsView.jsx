@@ -9,14 +9,44 @@ import {
   IconSprout
 } from '../../shared/components/Icons';
 import { authService } from '../auth/services/authService';
+import { PasswordChangeRequestCard } from './components/PasswordChangeRequestCard';
+
+const svgAvatar = (bg, fg, inner) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="${bg}"/><g fill="none" stroke="${fg}" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">${inner}</g></svg>`
+  )}`;
 
 const PRESET_AVATARS = [
-  { id: 'av1', label: 'Farmer Joyce', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=256&q=80' },
-  { id: 'av2', label: 'Farmer Peter', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80' },
-  { id: 'av3', label: 'Farmer Maria', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80' },
-  { id: 'av4', label: 'Farmer David', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80' },
-  { id: 'av5', label: 'Field Hat', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80' },
-  { id: 'av6', label: 'Agricultural Lead', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&q=80' }
+  {
+    id: 'av1',
+    label: 'Farmer',
+    url: svgAvatar('#EAF4ED', '#164230', '<circle cx="32" cy="24" r="8"/><path d="M18 48c0-7.7 6.3-13 14-13s14 5.3 14 13"/>')
+  },
+  {
+    id: 'av2',
+    label: 'Sprout',
+    url: svgAvatar('#E8F5E9', '#2E7D32', '<path d="M32 48V28"/><path d="M32 32c-8 0-12-5-12-12 8 0 12 4 12 12z"/><path d="M32 28c0-8 4-12 12-12 0 7-4 12-12 12z"/>')
+  },
+  {
+    id: 'av3',
+    label: 'Harvest',
+    url: svgAvatar('#FEF3C7', '#B45309', '<path d="M32 48V18"/><path d="M32 28l-7-6"/><path d="M32 28l7-6"/><path d="M32 36l-7-6"/><path d="M32 36l7-6"/>')
+  },
+  {
+    id: 'av4',
+    label: 'Horizon',
+    url: svgAvatar('#E6F6F4', '#0F766E', '<circle cx="32" cy="27" r="7"/><path d="M16 42h32"/><path d="M21 48h22"/>')
+  },
+  {
+    id: 'av5',
+    label: 'Leaf',
+    url: svgAvatar('#EAF4ED', '#3E7B52', '<path d="M20 44c0-14 10-24 24-24 0 14-10 24-24 24z"/><path d="M20 44l14-14"/>')
+  },
+  {
+    id: 'av6',
+    label: 'Homestead',
+    url: svgAvatar('#F4EFE6', '#5C4430', '<path d="M18 31l14-12 14 12"/><path d="M22 29v17h20V29"/><path d="M29 46V36h6v10"/>')
+  }
 ];
 
 const SUGGESTED_CROPS = ['Banane Plantain', 'Maïs Jaune', 'Tomate de Foumbot', 'Manioc', 'Haricot', 'Macabo', 'Café Arabica', 'Poivre de Penja'];
@@ -794,7 +824,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0 16px' }}>
                 <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-card-border, #ECE7DC)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>or choose an avatar portrait</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>or choose an avatar icon</span>
                 <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--color-card-border, #ECE7DC)' }} />
               </div>
 
@@ -885,6 +915,9 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
           </button>
         </div>
       </form>
+
+      {/* Password & Security — Admin-Approved Password Change Request */}
+      <PasswordChangeRequestCard user={user} />
     </div>
   );
 }

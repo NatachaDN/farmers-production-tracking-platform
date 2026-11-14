@@ -35,6 +35,7 @@ export function mapPlotData(p) {
     stage: p.stage || 'Planting',
     farmId: p.farmId,
     location: p.location,
+    imageUrls: p.imageUrls || [],
     progress: stageProgress(p.stage),
     icon: getCropIcon(p.cropType || p.name)
   };

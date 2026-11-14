@@ -86,8 +86,8 @@ export function DashboardView({ onNavigate, user }) {
       {/* 4 Stat Cards Row - 100% Real Database Values */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '20px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
+        gap: '16px'
       }}>
         <MetricCard
           label="Active crop cycles"

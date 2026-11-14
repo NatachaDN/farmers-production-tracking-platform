@@ -4,6 +4,8 @@ import com.farmer.tracking.modules.auth.dto.*;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface AuthService {
 
     AuthResponse register(RegisterRequest request);
@@ -21,4 +23,10 @@ public interface AuthService {
     FarmerProfileResponse uploadAvatar(String emailOrPhone, MultipartFile file);
 
     Resource loadAvatar(String fileName);
+
+    PasswordChangeRequestResponse requestPasswordChange(String emailOrPhone, ChangePasswordRequest request);
+
+    List<PasswordChangeRequestResponse> getMyPasswordChangeRequests(String emailOrPhone);
+
+    PasswordChangeRequestResponse cancelPasswordChangeRequest(String emailOrPhone, Long requestId);
 }

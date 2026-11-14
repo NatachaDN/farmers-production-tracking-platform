@@ -41,7 +41,7 @@ const primaryBtnStyle = {
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onBack }) {
+export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onSelectPlot, onCreatePlot, onBack }) {
   const [farm, setFarm] = useState(null);
   const [plots, setPlots] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,8 +86,8 @@ export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onBack }) 
           const fetchedPlots = await plotService.getPlots(effectiveFarmerId);
           if (isMounted && Array.isArray(fetchedPlots)) {
             const farmPlots = currentFarm?.id
-              ? fetchedPlots.filter((p) => p.farmId == null || String(p.farmId) === String(currentFarm.id))
-              : fetchedPlots;
+              ? fetchedPlots.filter((p) => p.farmId != null && String(p.farmId) === String(currentFarm.id))
+              : [];
             setPlots(farmPlots);
           }
         } catch { /* plots are non-critical */ }
@@ -228,7 +228,10 @@ export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onBack }) 
             </div>
             <button
               type="button"
-              onClick={() => setIsAddPlotModalOpen(true)}
+              onClick={() => {
+                if (onCreatePlot) onCreatePlot(farm.id);
+                else setIsAddPlotModalOpen(true);
+              }}
               style={{
                 ...primaryBtnStyle,
                 padding: '12px 22px',
@@ -253,8 +256,14 @@ export function FarmDetailsView({ farmId, farmerId, user, onNavigate, onBack }) 
       <FarmPlotsSection
         farmName={farm.name}
         plots={plots}
-        onAddPlot={() => setIsAddPlotModalOpen(true)}
-        onViewPlot={(plot) => { setSelectedPlot(plot); setIsPlotDetailsOpen(true); }}
+        onAddPlot={() => {
+          if (onCreatePlot) onCreatePlot(farm.id);
+          else setIsAddPlotModalOpen(true);
+        }}
+        onViewPlot={(plot) => {
+          if (onSelectPlot) onSelectPlot(plot.id);
+          else { setSelectedPlot(plot); setIsPlotDetailsOpen(true); }
+        }}
       />
 
       {/* ── Modals ───────────────────────────────────────────────────────── */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../shared/components/Skeleton.css';
 import { PlotCard } from '../../shared/components/PlotCard';
+import { ConfirmModal } from '../../shared/components/ConfirmModal';
 import { FarmCard } from './components/FarmCard';
 import { AddPlotModal } from './components/AddPlotModal';
 import { NewFarmModal } from './components/NewFarmModal';
@@ -17,7 +18,7 @@ const panelStyle = {
   backgroundColor: '#FFFFFF',
   border: '1px solid var(--color-card-border)',
   borderRadius: 'var(--radius-xl)',
-  padding: '24px 28px',
+  padding: 'clamp(16px, 3vw, 24px) clamp(16px, 3.5vw, 28px)',
   boxShadow: 'var(--shadow-card)'
 };
 
@@ -31,7 +32,7 @@ const primaryBtn = {
 };
 
 // ─── Main view ────────────────────────────────────────────────────────────────
-export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
+export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm, onSelectPlot, onCreatePlot }) {
   const [farms, setFarms] = useState([]);
   const [plots, setPlots] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,9 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   const [isAddPlotModalOpen, setIsAddPlotModalOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [forceDeleteWarning, setForceDeleteWarning] = useState('');
+  const [deletingPlot, setDeletingPlot] = useState(false);
 
   const showNotification = (msg) => {
     setToast(msg);
@@ -112,14 +116,31 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
     }
   };
 
-  const handleDeletePlot = async (plot) => {
-    if (!window.confirm(`Delete plot "${plot.title}"?`)) return;
+  const handleDeletePlot = (plot) => {
+    setForceDeleteWarning('');
+    setDeleteTarget(plot);
+  };
+
+  const confirmDeletePlot = async () => {
+    if (!deleteTarget) return;
+    setDeletingPlot(true);
     try {
-      await plotService.deletePlot(farmerId, plot.id);
-      setPlots((prev) => prev.filter((p) => p.id !== plot.id));
-      showNotification(`Plot "${plot.title}" deleted.`);
+      const force = Boolean(forceDeleteWarning);
+      await plotService.deletePlot(farmerId, deleteTarget.id, force);
+      setPlots((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      showNotification(`Plot "${deleteTarget.title}" deleted.`);
+      setDeleteTarget(null);
+      setForceDeleteWarning('');
     } catch (err) {
-      showNotification(err.message || 'Failed to delete plot.');
+      if (err.status === 409 && !forceDeleteWarning) {
+        setForceDeleteWarning(err.message || 'This plot is linked to an active production cycle. Force-delete it anyway?');
+      } else {
+        showNotification(err.message || 'Failed to delete plot.');
+        setDeleteTarget(null);
+        setForceDeleteWarning('');
+      }
+    } finally {
+      setDeletingPlot(false);
     }
   };
 
@@ -169,6 +190,24 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
         onClose={() => { setIsDetailsModalOpen(false); setSelectedPlot(null); }}
         plot={selectedPlot}
       />
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title={forceDeleteWarning ? 'Force delete plot?' : 'Delete plot?'}
+        message={
+          forceDeleteWarning ||
+          `Are you sure you want to delete "${deleteTarget?.title || 'this plot'}"? This action cannot be undone.`
+        }
+        confirmLabel={forceDeleteWarning ? 'Force Delete' : 'Delete Plot'}
+        tone={forceDeleteWarning ? 'warning' : 'danger'}
+        loading={deletingPlot}
+        onConfirm={confirmDeletePlot}
+        onCancel={() => {
+          if (!deletingPlot) {
+            setDeleteTarget(null);
+            setForceDeleteWarning('');
+          }
+        }}
+      />
 
       {/* ── My Farms panel ─────────────────────────────────────────────────── */}
       <div style={panelStyle}>
@@ -210,10 +249,10 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
             {farms.map((farm) => {
               const farmPlotsCount = plots.filter(
-                (p) => p.farmId == null || String(p.farmId) === String(farm.id)
+                (p) => p.farmId != null && String(p.farmId) === String(farm.id)
               ).length;
               return (
                 <FarmCard
@@ -233,18 +272,26 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
       <div style={panelStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>Plots</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid var(--color-card-border)', borderRadius: '9999px', padding: '8px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: '1 1 260px', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid var(--color-card-border)', borderRadius: '9999px', padding: '8px 14px', flex: '1 1 180px', maxWidth: '300px', minWidth: 0 }}>
               <IconSearch size={16} color="var(--color-text-muted)" />
               <input
                 type="text"
                 placeholder="Search plots..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.875rem' }}
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.875rem', width: '100%', minWidth: 0 }}
               />
             </div>
-            <button type="button" style={primaryBtn} onClick={() => setIsAddPlotModalOpen(true)}>
+            <button
+              type="button"
+              style={primaryBtn}
+              onClick={() => {
+                if (onCreatePlot) onCreatePlot(null);
+                else if (onNavigate) onNavigate('create-plot');
+                else setIsAddPlotModalOpen(true);
+              }}
+            >
               <IconPlus size={16} color="#FFFFFF" /> Add Plot
             </button>
           </div>
@@ -265,22 +312,33 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
           </div>
         ) : filteredPlots.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '24px' }}>
-            {plots.length === 0 ? 'No plots registered yet.' : 'No plot matches your search.'}
+            {plots.length === 0 ? 'No data yet.' : 'No plot matches your search.'}
           </p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-            {filteredPlots.map((plot) => (
-              <PlotCard
-                key={plot.id}
-                icon={plot.icon}
-                title={plot.title}
-                area={plot.area}
-                stage={plot.stage}
-                progress={plot.progress}
-                onViewDetails={() => { setSelectedPlot(plot); setIsDetailsModalOpen(true); }}
-                onDeletePlot={() => handleDeletePlot(plot)}
-              />
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '20px' }}>
+            {filteredPlots.map((plot) => {
+              const resolvedFarmName =
+                plot.farmName ||
+                (plot.farmId != null ? farms.find((f) => String(f.id) === String(plot.farmId))?.name : null) ||
+                'Unassigned';
+              return (
+                <PlotCard
+                  key={plot.id}
+                  icon={plot.icon}
+                  title={plot.title}
+                  farmName={resolvedFarmName}
+                  area={plot.area}
+                  stage={plot.stage}
+                  progress={plot.progress}
+                  imageUrls={plot.imageUrls}
+                  onViewDetails={() => {
+                    if (onSelectPlot) onSelectPlot(plot.id);
+                    else { setSelectedPlot(plot); setIsDetailsModalOpen(true); }
+                  }}
+                  onDeletePlot={() => handleDeletePlot(plot)}
+                />
+              );
+            })}
           </div>
         )}
       </div>

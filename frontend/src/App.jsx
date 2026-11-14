@@ -4,6 +4,8 @@ import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CreateFarmPage } from './features/farms/CreateFarmPage';
 import { FarmDetailsView } from './features/farms/FarmDetailsView';
+import { CreatePlotPage } from './features/farms/CreatePlotPage';
+import { PlotDetailsView } from './features/farms/PlotDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
@@ -50,6 +52,8 @@ export function App() {
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [selectedFarmId, setSelectedFarmId] = useState(null);
+  const [selectedPlotId, setSelectedPlotId] = useState(null);
+  const [createPlotFarmId, setCreatePlotFarmId] = useState(null);
 
   useEffect(() => {
     if (currentRoute !== 'google-callback') return;
@@ -138,6 +142,14 @@ export function App() {
     'create-farm': {
       title: 'New Farm Registration',
       subtitle: 'Configure your farm structure, acreage, and location step-by-step'
+    },
+    'create-plot': {
+      title: 'New Plot Registration',
+      subtitle: 'Assign a cultivated plot to your farm and record its crop details'
+    },
+    'plot-details': {
+      title: 'Plot Overview & Cycles',
+      subtitle: 'Cultivated parcel details, farm assignment, and production cycles'
     },
     crops: {
       title: 'Crop Production Cycles',
@@ -259,6 +271,14 @@ export function App() {
                 setSelectedFarmId(farmId);
                 setCurrentRoute('farm-details');
               }}
+              onSelectPlot={(plotId) => {
+                setSelectedPlotId(plotId);
+                setCurrentRoute('plot-details');
+              }}
+              onCreatePlot={(farmId) => {
+                setCreatePlotFarmId(farmId || null);
+                setCurrentRoute('create-plot');
+              }}
             />
           )}
           {currentRoute === 'farm-details' && (
@@ -270,7 +290,51 @@ export function App() {
                 if (extraId) setSelectedFarmId(extraId);
                 setCurrentRoute(r);
               }}
+              onSelectPlot={(plotId) => {
+                setSelectedPlotId(plotId);
+                setCurrentRoute('plot-details');
+              }}
+              onCreatePlot={(farmId) => {
+                setCreatePlotFarmId(farmId || selectedFarmId || null);
+                setCurrentRoute('create-plot');
+              }}
               onBack={() => setCurrentRoute('farms')}
+            />
+          )}
+          {currentRoute === 'create-plot' && (
+            <CreatePlotPage
+              farmerId={currentUser?.id}
+              initialFarmId={createPlotFarmId}
+              onBack={() => setCurrentRoute(createPlotFarmId ? 'farm-details' : 'farms')}
+              onNavigate={(r, extraId) => {
+                if (r === 'farm-details' && extraId) setSelectedFarmId(extraId);
+                if (r === 'plot-details' && extraId) setSelectedPlotId(extraId);
+                setCurrentRoute(r);
+              }}
+              onPlotCreated={(newPlot) => {
+                setSelectedPlotId(newPlot.id);
+                if (newPlot.farmId) setSelectedFarmId(newPlot.farmId);
+                setCurrentRoute('plot-details');
+              }}
+            />
+          )}
+          {currentRoute === 'plot-details' && (
+            <PlotDetailsView
+              plotId={selectedPlotId}
+              farmerId={currentUser?.id}
+              onSelectFarm={(farmId) => {
+                setSelectedFarmId(farmId);
+                setCurrentRoute('farm-details');
+              }}
+              onNavigate={(r) => setCurrentRoute(r)}
+              onBack={(farmId) => {
+                if (farmId) {
+                  setSelectedFarmId(farmId);
+                  setCurrentRoute('farm-details');
+                } else {
+                  setCurrentRoute('farms');
+                }
+              }}
             />
           )}
           {currentRoute === 'create-farm' && (

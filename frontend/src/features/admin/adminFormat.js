@@ -47,6 +47,11 @@ const LABELS = {
   KG: 'kg', TONS: 't', BAGS: 'bags',
   REGISTER: 'Signed up', LOGIN: 'Signed in', LOGIN_FAILED: 'Failed sign-in',
   GOOGLE_REGISTER: 'Signed up with Google', GOOGLE_LOGIN: 'Signed in with Google', GOOGLE_LOGIN_FAILED: 'Google sign-in failed',
+  PASSWORD_CHANGE_REQUESTED: 'Password change requested',
+  PASSWORD_CHANGE_APPROVED: 'Password change approved',
+  PASSWORD_CHANGE_REJECTED: 'Password change rejected',
+  PASSWORD_CHANGE_CANCELLED: 'Password change cancelled',
+  PENDING: 'Pending', APPROVED: 'Approved', REJECTED: 'Rejected',
 };
 export const label = (key) => LABELS[key] || key || '—';
 

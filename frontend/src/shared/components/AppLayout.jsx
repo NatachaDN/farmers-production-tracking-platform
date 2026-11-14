@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
@@ -26,9 +26,16 @@ export function AppLayout({
 
   const isUserAdmin = user?.role === 'ROLE_ADMIN';
   const isUserManager = user?.role === 'ROLE_MANAGER' || isUserAdmin;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-canvas-bg)' }}>
+      {/* Mobile Drawer Backdrop */}
+      <div
+        className={`acrea-sidebar-backdrop${mobileMenuOpen ? ' open' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
       {/* Sidebar */}
       <Sidebar
         activeRoute={activeRoute}
@@ -36,6 +43,8 @@ export function AppLayout({
         isAdmin={isUserAdmin}
         isManager={isUserManager}
         user={user}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
       {/* Main Workspace */}
@@ -50,8 +59,9 @@ export function AppLayout({
           onLogout={onLogout}
           onEditProfile={onEditProfile}
           onUserUpdate={onUserUpdate}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
-        <main style={{ padding: '0 36px 36px 36px', flex: 1 }}>
+        <main className="acrea-main">
           {children}
         </main>
       </div>

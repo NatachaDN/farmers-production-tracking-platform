@@ -86,6 +86,7 @@ export function FarmPlotsSection({ farmName, plots, onAddPlot, onViewPlot }) {
               area={`${plot.area} ha cultivated area`}
               stage={plot.stage || 'Planting'}
               progress={stageProgress(plot.stage)}
+              imageUrls={plot.imageUrls}
               onViewDetails={() => onViewPlot(plot)}
             />
           ))}

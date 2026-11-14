@@ -9,8 +9,11 @@ import com.farmer.tracking.common.security.JwtTokenProvider;
 import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
 import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.model.PasswordChangeRequest;
+import com.farmer.tracking.modules.auth.model.PasswordChangeRequestStatus;
 import com.farmer.tracking.modules.auth.model.PasswordResetToken;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
+import com.farmer.tracking.modules.auth.repository.PasswordChangeRequestRepository;
 import com.farmer.tracking.modules.auth.repository.PasswordResetTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final FarmerRepository farmerRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordChangeRequestRepository passwordChangeRequestRepository;
     private final AuthMapper authMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
@@ -47,12 +51,14 @@ public class AuthServiceImpl implements AuthService {
     public AuthServiceImpl(
             FarmerRepository farmerRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
+            PasswordChangeRequestRepository passwordChangeRequestRepository,
             AuthMapper authMapper,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider tokenProvider,
             EmailService emailService) {
         this.farmerRepository = farmerRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.passwordChangeRequestRepository = passwordChangeRequestRepository;
         this.authMapper = authMapper;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
@@ -343,5 +349,76 @@ public class AuthServiceImpl implements AuthService {
         } catch (MalformedURLException e) {
             throw new BadRequestException("Invalid file url.");
         }
+    }
+
+    @Override
+    @Transactional
+    public PasswordChangeRequestResponse requestPasswordChange(String emailOrPhone, ChangePasswordRequest request) {
+        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
+
+        if ("GOOGLE".equalsIgnoreCase(farmer.getAuthProvider())) {
+            throw new BadRequestException("Accounts signed in with Google manage their password through Google.");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), farmer.getPasswordHash())) {
+            throw new BadRequestException("Your current password is incorrect.");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("New password and confirmation do not match.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), farmer.getPasswordHash())) {
+            throw new BadRequestException("New password must be different from your current password.");
+        }
+
+        if (passwordChangeRequestRepository.existsByFarmerIdAndStatus(farmer.getId(), PasswordChangeRequestStatus.PENDING)) {
+            throw new ConflictException("You already have a pending password change request awaiting administrator review.");
+        }
+
+        PasswordChangeRequest entity = new PasswordChangeRequest();
+        entity.setFarmer(farmer);
+        entity.setNewPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        entity.setReason(request.getReason() != null && !request.getReason().isBlank() ? request.getReason().trim() : null);
+        entity.setStatus(PasswordChangeRequestStatus.PENDING);
+
+        PasswordChangeRequest saved = passwordChangeRequestRepository.save(entity);
+        return PasswordChangeRequestResponse.from(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PasswordChangeRequestResponse> getMyPasswordChangeRequests(String emailOrPhone) {
+        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
+
+        return passwordChangeRequestRepository.findByFarmerIdOrderByCreatedAtDesc(farmer.getId())
+                .stream()
+                .map(PasswordChangeRequestResponse::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public PasswordChangeRequestResponse cancelPasswordChangeRequest(String emailOrPhone, Long requestId) {
+        Farmer farmer = farmerRepository.findByEmailOrPhone(emailOrPhone.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Farmer account not found."));
+
+        PasswordChangeRequest entity = passwordChangeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Password change request not found."));
+
+        if (!entity.getFarmer().getId().equals(farmer.getId())) {
+            throw new UnauthorizedException("You can only cancel your own password change requests.");
+        }
+
+        if (entity.getStatus() != PasswordChangeRequestStatus.PENDING) {
+            throw new BadRequestException("Only pending password change requests can be cancelled.");
+        }
+
+        entity.setStatus(PasswordChangeRequestStatus.CANCELLED);
+        entity.setReviewedAt(LocalDateTime.now());
+        PasswordChangeRequest saved = passwordChangeRequestRepository.save(entity);
+        return PasswordChangeRequestResponse.from(saved);
     }
 }

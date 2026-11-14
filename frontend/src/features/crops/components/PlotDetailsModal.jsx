@@ -48,8 +48,8 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
   if (!isOpen || !plot) return null;
 
   const cropName = plot.cropName || plot.crop || plot.title || 'Crop Cycle';
-  const plotName = plot.plotName || plot.title || 'Plot';
-  const farmName = plot.farmName || plot.farm?.name || 'Farm';
+  const plotName = plot.plotName || plot.title || null;
+  const farmName = plot.farmName || plot.farm?.name || null;
   const areaVal = plot.acreage || plot.areaVal || (parseFloat(plot.area) || 0);
   const stage = plot.stage || 'In progress';
   const progress = plot.progress ?? 0;
@@ -115,7 +115,7 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FFFFFF', margin: 0, letterSpacing: '-0.01em' }}>
-                  {cropName} · {plotName}
+                  {plotName ? `${cropName} · ${plotName}` : cropName}
                 </h2>
                 <StatusBadge status={status} size="sm" />
               </div>

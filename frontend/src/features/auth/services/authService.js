@@ -124,6 +124,23 @@ export const authService = {
     return await apiClient.post('/auth/reset-password', payload);
   },
 
+  async requestPasswordChange({ currentPassword, newPassword, confirmPassword, reason }) {
+    return await apiClient.post('/auth/me/password-change-requests', {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+      reason: reason || null,
+    });
+  },
+
+  async getMyPasswordChangeRequests() {
+    return await apiClient.get('/auth/me/password-change-requests');
+  },
+
+  async cancelPasswordChangeRequest(requestId) {
+    return await apiClient.post(`/auth/me/password-change-requests/${requestId}/cancel`);
+  },
+
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

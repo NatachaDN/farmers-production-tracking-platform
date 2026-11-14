@@ -28,6 +28,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
   const [cropType, setCropType] = useState('Maize');
   const [stage, setStage] = useState('Planting');
   const [farmId, setFarmId] = useState('');
+  const [soilType, setSoilType] = useState('');
+  const [irrigationType, setIrrigationType] = useState('');
+  const [slope, setSlope] = useState('');
+  const [notes, setNotes] = useState('');
   const [validationError, setValidationError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,6 +44,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
       setCropType(plot.crop || plot.cropType || 'Maize');
       setStage(plot.stage || 'Planting');
       setFarmId(plot.farmId ? String(plot.farmId) : (farms[0]?.id ? String(farms[0].id) : ''));
+      setSoilType(plot.soilType || '');
+      setIrrigationType(plot.irrigationType || '');
+      setSlope(plot.slope || '');
+      setNotes(plot.notes || '');
       setValidationError('');
     }
   }, [plot, farms]);
@@ -78,7 +86,12 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
         location: trimmedLocation,
         cropType,
         stage,
-        farmId: farmId ? Number(farmId) : undefined
+        farmId: farmId ? Number(farmId) : undefined,
+        soilType: soilType.trim() || null,
+        irrigationType: irrigationType.trim() || null,
+        slope: slope.trim() || null,
+        notes: notes.trim() || null,
+        imageUrls: plot.imageUrls || [],
       });
       onClose();
     } catch (err) {
@@ -276,6 +289,52 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
                 </select>
               </div>
             )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '12px' }}>
+            <div>
+              <label style={labelStyle}>Soil Type</label>
+              <select value={soilType} onChange={(e) => setSoilType(e.target.value)} style={inputStyle}>
+                <option value="">Not specified</option>
+                <option value="Loamy">Loamy</option>
+                <option value="Clay">Clay</option>
+                <option value="Sandy">Sandy</option>
+                <option value="Silty">Silty</option>
+                <option value="Volcanic">Volcanic</option>
+                <option value="Lateritic">Lateritic</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Irrigation Method</label>
+              <select value={irrigationType} onChange={(e) => setIrrigationType(e.target.value)} style={inputStyle}>
+                <option value="">Not specified</option>
+                <option value="Rain-fed">Rain-fed</option>
+                <option value="Drip">Drip Irrigation</option>
+                <option value="Sprinkler">Sprinkler</option>
+                <option value="Manual / Gravity">Manual / Gravity</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Terrain / Slope</label>
+              <select value={slope} onChange={(e) => setSlope(e.target.value)} style={inputStyle}>
+                <option value="">Not specified</option>
+                <option value="Flat">Flat</option>
+                <option value="Gentle Slope">Gentle Slope</option>
+                <option value="Steep / Terraced">Steep / Terraced</option>
+                <option value="Valley / Lowland">Valley / Lowland</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Field Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Optional notes on drainage, sun exposure, boundaries, or past treatments..."
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            />
           </div>
 
           {/* Form Actions */}

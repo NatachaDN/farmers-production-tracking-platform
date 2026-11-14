@@ -5,6 +5,7 @@ import { NewCropCycleModal } from './NewCropCycleModal';
 import { PlotDetailsModal } from './components/PlotDetailsModal';
 import { ManageCropsModal } from './components/ManageCropsModal';
 import { cropCycleService } from './services/cropCycleService';
+import { plotService } from '../farms/services/plotService';
 import {
   IconPlus,
   IconSprout,
@@ -42,6 +43,7 @@ function formatDateDisplay(dateStr) {
 export function CropProductionView({ farmerId, onNavigate }) {
   const [activeTab, setActiveTab] = useState('Active');
   const [cycles, setCycles] = useState([]);
+  const [plots, setPlots] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManageCropsOpen, setIsManageCropsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -70,11 +72,16 @@ export function CropProductionView({ farmerId, onNavigate }) {
     if (!farmerId) return;
     setLoading(true);
     try {
-      const data = await cropCycleService.getCycles(farmerId);
-      setCycles(Array.isArray(data) ? data : []);
+      const [cyclesData, plotsData] = await Promise.all([
+        cropCycleService.getCycles(farmerId),
+        plotService.getPlots(farmerId).catch(() => []),
+      ]);
+      setCycles(Array.isArray(cyclesData) ? cyclesData : []);
+      setPlots(Array.isArray(plotsData) ? plotsData : []);
     } catch (err) {
       console.warn('Could not fetch cycles from API:', err);
       setCycles([]);
+      setPlots([]);
     } finally {
       setLoading(false);
     }
@@ -116,11 +123,20 @@ export function CropProductionView({ farmerId, onNavigate }) {
     return true;
   });
 
+  const plotsById = plots.reduce((acc, p) => {
+    if (p && p.id != null) acc[String(p.id)] = p;
+    return acc;
+  }, {});
+
   // Calculate dynamic metrics
   const activeCyclesCount = cycles.filter(c => (c.status || '').toUpperCase() === 'ACTIVE').length;
   const totalCultivatedArea = cycles
     .filter(c => (c.status || '').toUpperCase() === 'ACTIVE')
-    .reduce((sum, c) => sum + (c.acreage || 0), 0);
+    .reduce((sum, c) => {
+      const linkedPlot = c.plotId != null ? plotsById[String(c.plotId)] : null;
+      const areaVal = (c.acreage != null && c.acreage > 0) ? c.acreage : (linkedPlot?.area || 0);
+      return sum + areaVal;
+    }, 0);
 
   const totalExpectedTons = cycles
     .filter(c => (c.status || '').toUpperCase() === 'ACTIVE')
@@ -351,10 +367,10 @@ export function CropProductionView({ farmerId, onNavigate }) {
         </div>
       </div>
 
-      {/* Summary Metrics Row (3 Columns) */}
+      {/* Summary Metrics Row (Responsive) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
         gap: '20px'
       }}>
         <div style={{
@@ -403,9 +419,9 @@ export function CropProductionView({ farmerId, onNavigate }) {
         </div>
       </div>
 
-      {/* 2-Column Crop Cycles Grid */}
+      {/* Crop Cycles Grid */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {[1, 2].map((n) => (
             <div key={n} style={{ border: '1px solid var(--color-card-border)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', backgroundColor: '#FFFFFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -466,28 +482,39 @@ export function CropProductionView({ farmerId, onNavigate }) {
       ) : (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
           gap: '20px'
         }}>
-          {filteredCycles.map((cycle) => (
-            <CropCycleCard
-              key={cycle.id}
-              icon={getCropIcon(cycle.cropName)}
-              cropName={cycle.cropName}
-              plotName={cycle.plotName || (cycle.plot ? cycle.plot.name : 'Plot')}
-              area={`${cycle.acreage || 0} ha cultivated`}
-              status={(cycle.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'Active' : 'Completed'}
-              plantingDate={formatDateDisplay(cycle.plantingDate || cycle.startDate)}
-              expectedHarvest={formatDateDisplay(cycle.plannedHarvestDate || cycle.endDate)}
-              expectedQuantity={cycle.expectedQuantity}
-              expectedQuantityUnit={cycle.expectedQuantityUnit || 'kg'}
-              stage={cycle.stage || 'Planting'}
-              progress={cycle.progress ?? 0}
-              subStatus={cycle.subStatus || ((cycle.status || '').toUpperCase() === 'ACTIVE' ? 'On track' : 'Completed')}
-              onViewDetails={() => handleViewDetails(cycle)}
-              onDelete={() => handleDeleteClick(cycle)}
-            />
-          ))}
+          {filteredCycles.map((cycle) => {
+            const linkedPlot = cycle.plotId != null ? plotsById[String(cycle.plotId)] : null;
+            const resolvedPlotName = cycle.plotName || linkedPlot?.name || (cycle.plot ? cycle.plot.name : null);
+            const resolvedAcreage = (cycle.acreage != null && cycle.acreage > 0) ? cycle.acreage : (linkedPlot?.area || 0);
+            const enrichedCycle = {
+              ...cycle,
+              plotName: resolvedPlotName,
+              acreage: resolvedAcreage,
+              location: linkedPlot?.location || cycle.location,
+            };
+            return (
+              <CropCycleCard
+                key={cycle.id}
+                icon={getCropIcon(cycle.cropName)}
+                cropName={cycle.cropName}
+                plotName={resolvedPlotName}
+                area={resolvedAcreage > 0 ? `${resolvedAcreage} ha cultivated` : 'No plot area set'}
+                status={(cycle.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'Active' : 'Completed'}
+                plantingDate={formatDateDisplay(cycle.plantingDate || cycle.startDate)}
+                expectedHarvest={formatDateDisplay(cycle.plannedHarvestDate || cycle.endDate)}
+                expectedQuantity={cycle.expectedQuantity}
+                expectedQuantityUnit={cycle.expectedQuantityUnit || 'kg'}
+                stage={cycle.stage || 'Planting'}
+                progress={cycle.progress ?? 0}
+                subStatus={cycle.subStatus || ((cycle.status || '').toUpperCase() === 'ACTIVE' ? 'On track' : 'Completed')}
+                onViewDetails={() => handleViewDetails(enrichedCycle)}
+                onDelete={() => handleDeleteClick(enrichedCycle)}
+              />
+            );
+          })}
         </div>
       )}
 

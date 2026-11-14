@@ -13,7 +13,8 @@ export function TopBar({
   onNotificationClick,
   onLogout,
   onUserUpdate,
-  onEditProfile
+  onEditProfile,
+  onOpenMobileMenu
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -40,33 +41,45 @@ export function TopBar({
   };
 
   return (
-    <header style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '24px 36px 16px 36px',
-      backgroundColor: 'transparent'
-    }}>
+    <header className="acrea-topbar">
       {/* Title & Date Metadata */}
-      <div>
-        <h1 style={{
-          fontSize: '1.75rem',
-          fontWeight: 700,
-          color: 'var(--color-text-primary)',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.2
-        }}>
-          {title}
-        </h1>
-        {subtitle && (
-          <p style={{
-            fontSize: '0.8125rem',
-            color: 'var(--color-text-muted)',
-            marginTop: '4px'
-          }}>
-            {subtitle}
-          </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+        {onOpenMobileMenu && (
+          <button
+            type="button"
+            className="acrea-mobile-menu-btn"
+            onClick={onOpenMobileMenu}
+            aria-label="Open navigation menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
         )}
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{
+            fontSize: '1.75rem',
+            fontWeight: 700,
+            color: 'var(--color-text-primary)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.2,
+            margin: 0
+          }}>
+            {title}
+          </h1>
+          {subtitle && (
+            <p style={{
+              fontSize: '0.8125rem',
+              color: 'var(--color-text-muted)',
+              marginTop: '4px',
+              marginBottom: 0
+            }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Right Controls: Search, Notification, Profile */}
@@ -81,7 +94,7 @@ export function TopBar({
         />
 
         {/* Global Search */}
-        <div style={{
+        <div className="acrea-topbar-search" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
@@ -194,7 +207,7 @@ export function TopBar({
               )}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <div className="acrea-profile-meta" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
               <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                 {userName}
               </span>
