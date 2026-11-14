@@ -3,6 +3,8 @@ import { HarvestForm } from '../components/HarvestForm';
 import { HarvestResult } from '../components/HarvestResult';
 import { harvestService } from '../services/harvestService';
 import { cropCycleService } from '../../crops/services/cropCycleService';
+import { animalGroupService } from '../../livestock/services/animalGroupService';
+import { AnimalProductionPanel } from '../../livestock/components/AnimalProductionPanel';
 import { MetricCard } from '../../../shared/components/MetricCard';
 import { Skeleton, SkeletonCard, SkeletonText } from '../../../shared/components/Skeleton';
 import {
@@ -11,11 +13,15 @@ import {
   IconProduction,
   IconCheck,
   IconClose,
-  IconWheat
+  IconWheat,
+  IconLivestock
 } from '../../../shared/components/Icons';
 
 export function HarvestPage({ farmerId }) {
+  const [mode, setMode] = useState('crop');
   const [cycles, setCycles] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
   const [selectedCycleId, setSelectedCycleId] = useState(null);
   const [harvest, setHarvest] = useState(null);
   const [isLoadingCycles, setIsLoadingCycles] = useState(true);
@@ -32,10 +38,16 @@ export function HarvestPage({ farmerId }) {
         return;
       }
       setIsLoadingCycles(true);
+      setGroupsLoading(true);
       try {
-        const data = await cropCycleService.getCycles(farmerId);
-        const list = Array.isArray(data) ? data : [];
+        const [cycleRes, groupRes] = await Promise.allSettled([
+          cropCycleService.getCycles(farmerId),
+          animalGroupService.getGroups()
+        ]);
+        const list = cycleRes.status === 'fulfilled' && Array.isArray(cycleRes.value) ? cycleRes.value : [];
+        const groupList = groupRes.status === 'fulfilled' && Array.isArray(groupRes.value) ? groupRes.value : [];
         setCycles(list);
+        setGroups(groupList);
         if (list.length > 0) {
           // Default to first active cycle, or first cycle
           const first = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
@@ -46,6 +58,7 @@ export function HarvestPage({ farmerId }) {
         setCycles([]);
       } finally {
         setIsLoadingCycles(false);
+        setGroupsLoading(false);
       }
     }
     fetchCycles();
@@ -136,6 +149,44 @@ export function HarvestPage({ farmerId }) {
         </div>
       )}
 
+      {/* Mode Switcher: Crop Harvest vs Animal Production */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'inline-flex', backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => setMode('crop')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'crop' ? '#164230' : 'transparent',
+              color: mode === 'crop' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconCrop size={15} color={mode === 'crop' ? '#FFFFFF' : '#4B5752'} />
+            <span>Crop Harvest ({cycles.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('animal')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'animal' ? '#164230' : 'transparent',
+              color: mode === 'animal' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconLivestock size={15} color={mode === 'animal' ? '#FFFFFF' : '#4B5752'} />
+            <span>Animal Production ({groups.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {mode === 'animal' ? (
+        <AnimalProductionPanel groups={groups} groupsLoading={groupsLoading} onToast={showToast} />
+      ) : (
+        <>
       {/* Control Bar: Cycle Dropdown */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: '1 1 260px' }}>
@@ -295,6 +346,8 @@ export function HarvestPage({ farmerId }) {
               <HarvestForm onSubmit={handleRecordHarvest} isSubmitting={isSubmitting} />
             </div>
           )}
+        </>
+      )}
         </>
       )}
     </div>

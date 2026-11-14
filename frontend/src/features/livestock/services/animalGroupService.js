@@ -48,5 +48,44 @@ export const animalGroupService = {
     const formData = new FormData();
     formData.append('file', file);
     return await apiClient.upload('/farms/upload-image', formData);
+  },
+
+  // ---- Animal Production Records ----
+  async getProductions(groupId) {
+    return await apiClient.get(`/animals/groups/${groupId}/productions`);
+  },
+  async createProduction(groupId, data) {
+    return await apiClient.post(`/animals/groups/${groupId}/productions`, data);
+  },
+  async deleteProduction(groupId, recordId) {
+    return await apiClient.delete(`/animals/groups/${groupId}/productions/${recordId}`);
+  },
+
+  // ---- Animal Activities ----
+  async getActivities(groupId) {
+    return await apiClient.get(`/animals/groups/${groupId}/activities`);
+  },
+  async createActivity(groupId, data) {
+    return await apiClient.post(`/animals/groups/${groupId}/activities`, data);
+  },
+  async updateActivity(groupId, activityId, data) {
+    return await apiClient.put(`/animals/groups/${groupId}/activities/${activityId}`, data);
+  },
+  async deleteActivity(groupId, activityId) {
+    return await apiClient.delete(`/animals/groups/${groupId}/activities/${activityId}`);
+  },
+
+  // ---- Animal Incidents ----
+  async getIncidents(groupId) {
+    return await apiClient.get(`/animals/groups/${groupId}/incidents`);
+  },
+  async createIncident(groupId, data) {
+    return await apiClient.post(`/animals/groups/${groupId}/incidents`, data);
+  },
+  async updateIncident(groupId, incidentId, data) {
+    return await apiClient.put(`/animals/groups/${groupId}/incidents/${incidentId}`, data);
+  },
+  async deleteIncident(groupId, incidentId) {
+    return await apiClient.delete(`/animals/groups/${groupId}/incidents/${incidentId}`);
   }
 };

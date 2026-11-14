@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { cropCycleService } from '../../crops/services/cropCycleService';
 import { cycleIncidentService } from '../services/cycleIncidentService';
+import { animalGroupService } from '../../livestock/services/animalGroupService';
 import {
   IconArrowLeft,
   IconShieldAlert,
@@ -10,10 +11,12 @@ import {
   IconClipboard,
   IconCheck,
   IconCalendar,
-  IconWarning
+  IconWarning,
+  IconCrop,
+  IconLivestock
 } from '../../../shared/components/Icons';
 
-const INCIDENT_CATEGORIES = [
+const CROP_INCIDENT_CATEGORIES = [
   {
     value: 'DISEASE',
     label: 'Disease',
@@ -61,6 +64,72 @@ const INCIDENT_CATEGORIES = [
   }
 ];
 
+const ANIMAL_INCIDENT_CATEGORIES = [
+  {
+    value: 'DISEASE',
+    label: 'Disease / Illness',
+    description: 'Infectious, respiratory, or digestive illness',
+    icon: IconShieldAlert,
+    bg: '#EDE9FE',
+    text: '#5B21B6',
+    border: '#DDD6FE'
+  },
+  {
+    value: 'INJURY',
+    label: 'Injury / Trauma',
+    description: 'Lameness, wounds, or housing accidents',
+    icon: IconWarning,
+    bg: '#FFEDD5',
+    text: '#C2410C',
+    border: '#FED7AA'
+  },
+  {
+    value: 'MORTALITY',
+    label: 'Mortality / Loss',
+    description: 'Unexpected animal death or loss',
+    icon: IconWarning,
+    bg: '#FEE2E2',
+    text: '#991B1B',
+    border: '#FECACA'
+  },
+  {
+    value: 'PARASITE',
+    label: 'Parasites',
+    description: 'Ticks, worms, mites, or external parasites',
+    icon: IconBug,
+    bg: '#FEF3C7',
+    text: '#92400E',
+    border: '#FDE68A'
+  },
+  {
+    value: 'PREDATOR',
+    label: 'Predator Attack',
+    description: 'Wildlife, stray dog, or theft intrusion',
+    icon: IconZap,
+    bg: '#FEE2E2',
+    text: '#991B1B',
+    border: '#FECACA'
+  },
+  {
+    value: 'HEAT_STRESS',
+    label: 'Heat / Weather Stress',
+    description: 'Extreme heat, cold snap, or ventilation issue',
+    icon: IconCloudRain,
+    bg: '#DBEAFE',
+    text: '#1E40AF',
+    border: '#BFDBFE'
+  },
+  {
+    value: 'OTHER',
+    label: 'Other',
+    description: 'Feed contamination or other herd event',
+    icon: IconClipboard,
+    bg: '#F4EFE6',
+    text: '#4B5752',
+    border: '#DFD8CA'
+  }
+];
+
 const SEVERITY_OPTIONS = [
   { level: 1, label: '1 — Low', bg: '#EAF4ED', text: '#2A6740', border: '#C8E2D0' },
   { level: 2, label: '2 — Minor', bg: '#F0FDF4', text: '#166534', border: '#BBF7D0' },
@@ -97,15 +166,25 @@ const cardStyle = {
   boxShadow: '0 2px 8px rgba(22, 66, 48, 0.04)'
 };
 
-export function CreateIncidentPage({ farmerId, initialCycleId = null, initialIncident = null, onBack, onSaved }) {
+export function CreateIncidentPage({
+  farmerId,
+  initialMode = 'crop',
+  initialCycleId = null,
+  initialIncident = null,
+  onBack,
+  onSaved
+}) {
   const isEditing = Boolean(initialIncident?.id);
   const today = new Date().toISOString().split('T')[0];
 
+  const [mode, setMode] = useState(initialMode || 'crop');
   const [cycles, setCycles] = useState([]);
-  const [cyclesLoading, setCyclesLoading] = useState(true);
-  const [selectedCycleId, setSelectedCycleId] = useState(initialCycleId || '');
+  const [groups, setGroups] = useState([]);
+  const [targetsLoading, setTargetsLoading] = useState(true);
+  const [selectedTargetId, setSelectedTargetId] = useState(initialCycleId ? String(initialCycleId) : '');
   const [incidentType, setIncidentType] = useState(initialIncident?.incidentType || 'DISEASE');
   const [incidentDate, setIncidentDate] = useState(initialIncident?.incidentDate || today);
+  const [affectedCount, setAffectedCount] = useState(initialIncident?.affectedCount ?? '');
   const [severityLevel, setSeverityLevel] = useState(initialIncident?.severityLevel || 3);
   const [description, setDescription] = useState(initialIncident?.description || '');
   const [actionTaken, setActionTaken] = useState(initialIncident?.actionTaken || '');
@@ -113,35 +192,56 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function loadCycles() {
+    async function loadTargets() {
       if (!farmerId) return;
-      setCyclesLoading(true);
+      setTargetsLoading(true);
       try {
-        const data = await cropCycleService.getCycles(farmerId);
-        const list = Array.isArray(data) ? data : [];
-        setCycles(list);
-        if (!initialCycleId && list.length > 0) {
-          const active = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
-          setSelectedCycleId(String(active.id));
-        } else if (initialCycleId) {
-          setSelectedCycleId(String(initialCycleId));
+        const [cycleRes, groupRes] = await Promise.allSettled([
+          cropCycleService.getCycles(farmerId),
+          animalGroupService.getGroups()
+        ]);
+        const cycleList = cycleRes.status === 'fulfilled' && Array.isArray(cycleRes.value) ? cycleRes.value : [];
+        const groupList = groupRes.status === 'fulfilled' && Array.isArray(groupRes.value) ? groupRes.value : [];
+        setCycles(cycleList);
+        setGroups(groupList);
+
+        if (initialCycleId) {
+          setSelectedTargetId(String(initialCycleId));
+        } else if ((initialMode || 'crop') === 'animal' && groupList.length > 0) {
+          setSelectedTargetId(String(groupList[0].id));
+        } else if (cycleList.length > 0) {
+          const active = cycleList.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || cycleList[0];
+          setSelectedTargetId(String(active.id));
         }
-      } catch (err) {
-        console.error('Failed to load crop cycles:', err);
-        setCycles([]);
       } finally {
-        setCyclesLoading(false);
+        setTargetsLoading(false);
       }
     }
-    loadCycles();
-  }, [farmerId, initialCycleId]);
+    loadTargets();
+  }, [farmerId, initialCycleId, initialMode]);
+
+  const handleModeSwitch = (nextMode) => {
+    if (isEditing) return;
+    setMode(nextMode);
+    setError(null);
+    setIncidentType('DISEASE');
+    if (nextMode === 'animal') {
+      setSelectedTargetId(groups.length > 0 ? String(groups[0].id) : '');
+    } else {
+      const active = cycles.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || cycles[0];
+      setSelectedTargetId(active ? String(active.id) : '');
+    }
+  };
+
+  const categories = mode === 'animal' ? ANIMAL_INCIDENT_CATEGORIES : CROP_INCIDENT_CATEGORIES;
+  const targetList = mode === 'animal' ? groups : cycles;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    if (!selectedCycleId) {
-      setError('Please select a crop cycle.');
+    if (!selectedTargetId) {
+      setError(`Please select ${mode === 'animal' ? 'an animal group' : 'a crop cycle'}.`);
       return;
     }
     if (!incidentDate) {
@@ -158,30 +258,27 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
       incidentDate,
       severityLevel: Number(severityLevel) || null,
       description: description.trim(),
-      actionTaken: actionTaken.trim() || null
+      actionTaken: actionTaken.trim() || null,
+      ...(mode === 'animal' && affectedCount !== '' ? { affectedCount: Number(affectedCount) } : {})
     };
 
     setSubmitting(true);
     try {
+      const targetId = Number(selectedTargetId);
       let saved;
-      if (isEditing) {
-        saved = await cycleIncidentService.updateIncident(
-          farmerId,
-          Number(selectedCycleId),
-          initialIncident.id,
-          payload
-        );
+      if (mode === 'animal') {
+        saved = isEditing
+          ? await animalGroupService.updateIncident(targetId, initialIncident.id, payload)
+          : await animalGroupService.createIncident(targetId, payload);
       } else {
-        saved = await cycleIncidentService.createIncident(
-          farmerId,
-          Number(selectedCycleId),
-          payload
-        );
+        saved = isEditing
+          ? await cycleIncidentService.updateIncident(farmerId, targetId, initialIncident.id, payload)
+          : await cycleIncidentService.createIncident(farmerId, targetId, payload);
       }
       if (onSaved) {
-        onSaved(Number(selectedCycleId), saved);
+        onSaved(mode, targetId, saved);
       } else if (onBack) {
-        onBack(Number(selectedCycleId));
+        onBack(mode, targetId);
       }
     } catch (err) {
       console.error('Failed to save incident:', err);
@@ -197,7 +294,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <button
           type="button"
-          onClick={() => onBack?.(selectedCycleId ? Number(selectedCycleId) : null)}
+          onClick={() => onBack?.(mode, selectedTargetId ? Number(selectedTargetId) : null)}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -217,13 +314,50 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
           <span>Back to Incidents</span>
         </button>
 
-        <div>
-          <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 700, color: '#19201C', letterSpacing: '-0.02em', margin: 0 }}>
-            {isEditing ? 'Edit Incident Report' : 'Report Crop Incident'}
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: '#788680', marginTop: '4px', marginBottom: 0 }}>
-            Log pests, diseases, weather impacts, or field damage on a crop production cycle.
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 700, color: '#19201C', letterSpacing: '-0.02em', margin: 0 }}>
+              {isEditing ? 'Edit Incident Report' : mode === 'animal' ? 'Report Livestock Incident' : 'Report Crop Incident'}
+            </h1>
+            <p style={{ fontSize: '0.875rem', color: '#788680', marginTop: '4px', marginBottom: 0 }}>
+              {mode === 'animal'
+                ? 'Log diseases, injuries, mortalities, parasites, or predator events for an animal group.'
+                : 'Log pests, diseases, weather impacts, or field damage on a crop production cycle.'}
+            </p>
+          </div>
+
+          {!isEditing && (
+            <div style={{ display: 'inline-flex', backgroundColor: '#FFFFFF', border: '1px solid #DFD8CA', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('crop')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                  fontSize: '0.8125rem', fontWeight: 600,
+                  backgroundColor: mode === 'crop' ? '#164230' : 'transparent',
+                  color: mode === 'crop' ? '#FFFFFF' : '#4B5752'
+                }}
+              >
+                <IconCrop size={15} color={mode === 'crop' ? '#FFFFFF' : '#4B5752'} />
+                <span>Crop Cycle</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('animal')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                  fontSize: '0.8125rem', fontWeight: 600,
+                  backgroundColor: mode === 'animal' ? '#164230' : 'transparent',
+                  color: mode === 'animal' ? '#FFFFFF' : '#4B5752'
+                }}
+              >
+                <IconLivestock size={15} color={mode === 'animal' ? '#FFFFFF' : '#4B5752'} />
+                <span>Animal Group</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -247,34 +381,42 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Section 1: Target Crop Cycle */}
+        {/* Section 1: Target */}
         <section style={cardStyle}>
           <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, color: '#19201C', margin: '0 0 4px 0' }}>
-            1. Affected Crop Cycle
+            {mode === 'animal' ? '1. Affected Animal Group' : '1. Affected Crop Cycle'}
           </h2>
           <p style={{ fontSize: '0.8125rem', color: '#788680', margin: '0 0 16px 0' }}>
-            Select the production cycle where the incident occurred.
+            {mode === 'animal'
+              ? 'Select the herd, flock, or pen where the incident occurred.'
+              : 'Select the crop production cycle where the incident occurred.'}
           </p>
 
-          <label htmlFor="incident-cycle-select" style={labelStyle}>Crop Cycle *</label>
+          <label htmlFor="incident-cycle-select" style={labelStyle}>
+            {mode === 'animal' ? 'Animal Group *' : 'Crop Cycle *'}
+          </label>
           <select
             id="incident-cycle-select"
-            value={selectedCycleId}
-            onChange={(e) => setSelectedCycleId(e.target.value)}
-            disabled={cyclesLoading || isEditing}
+            value={selectedTargetId}
+            onChange={(e) => setSelectedTargetId(e.target.value)}
+            disabled={targetsLoading || isEditing}
             required
             style={inputStyle}
           >
-            {cyclesLoading ? (
-              <option value="">Loading crop cycles...</option>
-            ) : cycles.length === 0 ? (
-              <option value="">No crop cycles available</option>
+            {targetsLoading ? (
+              <option value="">Loading...</option>
+            ) : targetList.length === 0 ? (
+              <option value="">
+                {mode === 'animal' ? 'No animal groups available' : 'No crop cycles available'}
+              </option>
             ) : (
-              cycles.map((c) => {
-                const label = c.name || `${c.cropName || 'Crop'}${c.plotName ? ` (${c.plotName})` : ''}`;
+              targetList.map((item) => {
+                const label = mode === 'animal'
+                  ? `${item.name} — ${item.animalType} (${item.currentPopulation ?? item.initialPopulation ?? 0} head)`
+                  : item.name || `${item.cropName || 'Crop'}${item.plotName ? ` (${item.plotName})` : ''}`;
                 return (
-                  <option key={c.id} value={String(c.id)}>
-                    {label} — [{(c.status || 'ACTIVE').toUpperCase()}]
+                  <option key={item.id} value={String(item.id)}>
+                    {label} — [{(item.status || 'ACTIVE').toUpperCase()}]
                   </option>
                 );
               })
@@ -288,7 +430,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
             2. Incident Type
           </h2>
           <p style={{ fontSize: '0.8125rem', color: '#788680', margin: '0 0 16px 0' }}>
-            Choose the category that best describes what affected the crop.
+            Choose the category that best describes what happened.
           </p>
 
           <div style={{
@@ -296,7 +438,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
             gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))',
             gap: '12px'
           }}>
-            {INCIDENT_CATEGORIES.map((cat) => {
+            {categories.map((cat) => {
               const IconComp = cat.icon;
               const isSelected = incidentType === cat.value;
               return (
@@ -352,7 +494,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
           </div>
         </section>
 
-        {/* Section 3: Date & Severity */}
+        {/* Section 3: Date, Affected Count & Severity */}
         <section style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div style={{
@@ -378,7 +520,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
             gap: '16px',
             marginBottom: '16px'
           }}>
@@ -393,6 +535,21 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
                 style={inputStyle}
               />
             </div>
+
+            {mode === 'animal' && (
+              <div>
+                <label htmlFor="incident-affected" style={labelStyle}>Affected Animals (headcount)</label>
+                <input
+                  id="incident-affected"
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 5"
+                  value={affectedCount}
+                  onChange={(e) => setAffectedCount(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -430,7 +587,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
             4. Observations & Remedial Action
           </h2>
           <p style={{ fontSize: '0.8125rem', color: '#788680', margin: '0 0 16px 0' }}>
-            Provide clear field details and any immediate treatment or containment steps taken.
+            Provide clear details and any immediate treatment or containment steps taken.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -440,7 +597,11 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
                 id="incident-description"
                 rows={4}
                 required
-                placeholder="e.g. Yellow rust spots observed on lower leaves across ~20% of Plot A after heavy rainfall."
+                placeholder={
+                  mode === 'animal'
+                    ? 'e.g. 4 birds showing respiratory symptoms and reduced feed intake in Pen B.'
+                    : 'e.g. Yellow rust spots observed on lower leaves across ~20% of Plot A after heavy rainfall.'
+                }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
@@ -452,7 +613,11 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
               <textarea
                 id="incident-action"
                 rows={3}
-                placeholder="e.g. Removed infected leaves and applied copper-based fungicide at recommended dosage."
+                placeholder={
+                  mode === 'animal'
+                    ? 'e.g. Isolated affected animals and contacted veterinarian for antibiotic treatment.'
+                    : 'e.g. Removed infected leaves and applied copper-based fungicide at recommended dosage.'
+                }
                 value={actionTaken}
                 onChange={(e) => setActionTaken(e.target.value)}
                 style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
@@ -465,7 +630,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => onBack?.(selectedCycleId ? Number(selectedCycleId) : null)}
+            onClick={() => onBack?.(mode, selectedTargetId ? Number(selectedTargetId) : null)}
             disabled={submitting}
             style={{
               padding: '11px 20px',
@@ -483,7 +648,7 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
           <button
             id="submit-create-incident"
             type="submit"
-            disabled={submitting || cycles.length === 0}
+            disabled={submitting || targetList.length === 0}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -491,11 +656,11 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
               padding: '11px 24px',
               borderRadius: '10px',
               border: 'none',
-              backgroundColor: submitting || cycles.length === 0 ? '#788680' : '#DC2626',
+              backgroundColor: submitting || targetList.length === 0 ? '#788680' : '#DC2626',
               color: '#FFFFFF',
               fontSize: '0.875rem',
               fontWeight: 600,
-              cursor: submitting || cycles.length === 0 ? 'not-allowed' : 'pointer',
+              cursor: submitting || targetList.length === 0 ? 'not-allowed' : 'pointer',
               boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)'
             }}
           >
@@ -507,4 +672,3 @@ export function CreateIncidentPage({ farmerId, initialCycleId = null, initialInc
     </div>
   );
 }
-

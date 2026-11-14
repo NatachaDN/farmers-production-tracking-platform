@@ -13,3 +13,4 @@ public interface AnimalActivityRepository extends JpaRepository<AnimalActivity, 
     Optional<AnimalActivity> findByIdAndAnimalGroupIdAndFarmerId(Long id, Long animalGroupId, Long farmerId);
     void deleteByAnimalGroupId(Long animalGroupId);
 }
+

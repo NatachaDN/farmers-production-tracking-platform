@@ -57,7 +57,7 @@ export function App() {
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [selectedFarmId, setSelectedFarmId] = useState(null);
   const [selectedPlotId, setSelectedPlotId] = useState(null);
-  const [incidentDraft, setIncidentDraft] = useState({ cycleId: null, incident: null });
+  const [incidentDraft, setIncidentDraft] = useState({ mode: 'crop', cycleId: null, incident: null });
   const [createPlotFarmId, setCreatePlotFarmId] = useState(null);
 
   useEffect(() => {
@@ -401,13 +401,14 @@ export function App() {
           {currentRoute === 'incidents' && (
             <CycleIncidentsPage
               farmerId={currentUser?.id}
+              initialMode={incidentDraft.mode}
               initialCycleId={incidentDraft.cycleId}
-              onCreateIncident={(cycleId) => {
-                setIncidentDraft({ cycleId, incident: null });
+              onCreateIncident={(mode, cycleId) => {
+                setIncidentDraft({ mode, cycleId, incident: null });
                 setCurrentRoute('create-incident');
               }}
-              onEditIncident={(cycleId, incident) => {
-                setIncidentDraft({ cycleId, incident });
+              onEditIncident={(mode, cycleId, incident) => {
+                setIncidentDraft({ mode, cycleId, incident });
                 setCurrentRoute('create-incident');
               }}
             />
@@ -415,14 +416,15 @@ export function App() {
           {currentRoute === 'create-incident' && (
             <CreateIncidentPage
               farmerId={currentUser?.id}
+              initialMode={incidentDraft.mode}
               initialCycleId={incidentDraft.cycleId}
               initialIncident={incidentDraft.incident}
-              onBack={(cycleId) => {
-                setIncidentDraft({ cycleId: cycleId || incidentDraft.cycleId, incident: null });
+              onBack={(mode, cycleId) => {
+                setIncidentDraft({ mode: mode || incidentDraft.mode, cycleId: cycleId || incidentDraft.cycleId, incident: null });
                 setCurrentRoute('incidents');
               }}
-              onSaved={(cycleId) => {
-                setIncidentDraft({ cycleId: cycleId || incidentDraft.cycleId, incident: null });
+              onSaved={(mode, cycleId) => {
+                setIncidentDraft({ mode: mode || incidentDraft.mode, cycleId: cycleId || incidentDraft.cycleId, incident: null });
                 setCurrentRoute('incidents');
               }}
             />

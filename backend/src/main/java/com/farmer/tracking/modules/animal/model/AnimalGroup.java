@@ -48,6 +48,9 @@ public class AnimalGroup {
     @Column(name = "current_population", nullable = false)
     private Integer currentPopulation;
 
+    @Column(name = "number_of_animals", nullable = false)
+    private Integer numberOfAnimals = 0;
+
     @Column(name = "location", length = 150)
     private String location;
 
@@ -125,6 +128,9 @@ public class AnimalGroup {
         if (this.currentPopulation == null) {
             this.currentPopulation = this.initialPopulation;
         }
+        this.numberOfAnimals = this.currentPopulation != null
+                ? this.currentPopulation
+                : (this.initialPopulation != null ? this.initialPopulation : 0);
         if (this.status == null) {
             this.status = AnimalGroupStatus.ACTIVE;
         }
@@ -136,6 +142,9 @@ public class AnimalGroup {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        this.numberOfAnimals = this.currentPopulation != null
+                ? this.currentPopulation
+                : (this.initialPopulation != null ? this.initialPopulation : 0);
     }
 
     public Long getId() {

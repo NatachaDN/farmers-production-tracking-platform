@@ -13,3 +13,4 @@ public interface AnimalIncidentRepository extends JpaRepository<AnimalIncident, 
     Optional<AnimalIncident> findByIdAndAnimalGroupIdAndFarmerId(Long id, Long animalGroupId, Long farmerId);
     void deleteByAnimalGroupId(Long animalGroupId);
 }
+
