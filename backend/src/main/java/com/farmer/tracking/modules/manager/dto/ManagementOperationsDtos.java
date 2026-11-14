@@ -20,6 +20,8 @@ public final class ManagementOperationsDtos {
             Long id,
             Long farmerId,
             String farmerName,
+            Long managerId,
+            String managerName,
             String name,
             String type,
             Double size,
@@ -40,6 +42,7 @@ public final class ManagementOperationsDtos {
 
     public record ManagedFarmRequest(
             @NotNull Long farmerId,
+            Long managerId,
             @NotBlank String name,
             String type,
             @NotNull Double size,

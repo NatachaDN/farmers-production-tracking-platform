@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
+import { adminService } from '../admin/services/adminService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
 import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
 
@@ -71,6 +72,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
   const [farms, setFarms] = useState([]);
   const [plots, setPlots] = useState([]);
   const [farmers, setFarmers] = useState([]);
+  const [managers, setManagers] = useState([]);
   const [animalGroups, setAnimalGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -90,16 +92,18 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
     setLoading(true);
     setError('');
     try {
-      const [fList, pList, farmerList, groupList] = await Promise.all([
+      const [fList, pList, farmerList, groupList, managerList] = await Promise.all([
         managerService.listFarms(search),
         managerService.listPlots({ search }),
         managerService.getFarmers({}),
         managerService.listAnimalGroups(''),
+        adminService.users({ role: 'ROLE_MANAGER' }).catch(() => []),
       ]);
       setFarms(Array.isArray(fList) ? fList : []);
       setPlots(Array.isArray(pList) ? pList : []);
       setFarmers(Array.isArray(farmerList) ? farmerList : []);
       setAnimalGroups(Array.isArray(groupList) ? groupList : []);
+      setManagers(Array.isArray(managerList) ? managerList : []);
     } catch (err) {
       setError(err.message || 'Failed to load farms and plots.');
     } finally {
@@ -121,6 +125,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
       mode: 'create',
       data: {
         farmerId: farmers[0]?.id ? String(farmers[0].id) : '',
+        managerId: '',
         name: '',
         type: 'MIXED',
         size: '5',
@@ -140,6 +145,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
       id: farm.id,
       data: {
         farmerId: String(farm.farmerId),
+        managerId: farm.managerId ? String(farm.managerId) : '',
         name: farm.name || '',
         type: farm.type || 'MIXED',
         size: String(farm.size ?? 1),
@@ -161,6 +167,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
       const d = farmModal.data;
       const payload = {
         farmerId: Number(d.farmerId),
+        managerId: d.managerId ? Number(d.managerId) : null,
         name: d.name.trim(),
         type: d.type,
         size: Number(d.size) || 1,
@@ -370,6 +377,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
                 </span>
               </div>
               <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                <span>Assigned Manager: <strong>{farm.managerName || 'Unassigned'}</strong></span>
                 <span>Type: <strong>{farm.type}</strong> · Size: <strong>{farm.size} {farm.sizeUnit?.toLowerCase()}</strong></span>
                 <span>Location: {[farm.district, farm.region, farm.country].filter(Boolean).join(', ')}</span>
                 <span>Registered Plots: <strong>{farm.plotCount}</strong></span>
@@ -443,6 +451,15 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
                   {farmers.map((f) => <option key={f.id} value={f.id}>{f.fullName}</option>)}
                 </select>
               </div>
+              {managers.length > 0 && (
+                <div>
+                  <label style={labelStyle}>Assigned Manager</label>
+                  <select value={farmModal.data.managerId} onChange={(e) => setFarmModal({ ...farmModal, data: { ...farmModal.data, managerId: e.target.value } })} style={inputStyle}>
+                    <option value="">Unassigned</option>
+                    {managers.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label style={labelStyle}>Farm Name</label>
                 <input value={farmModal.data.name} onChange={(e) => setFarmModal({ ...farmModal, data: { ...farmModal.data, name: e.target.value } })} style={inputStyle} required />
@@ -567,6 +584,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
           }}
           fields={[
             { label: 'Owner (Farmer)', value: detailItem.data.farmerName },
+            { label: 'Assigned Manager', value: detailItem.data.managerName || 'Unassigned' },
             { label: 'Farm Type', value: detailItem.data.type },
             { label: 'Size', value: detailItem.data.size != null ? `${detailItem.data.size} ${detailItem.data.sizeUnit || 'HECTARES'}` : '—' },
             { label: 'Registered Plots', value: detailItem.data.plotCount },

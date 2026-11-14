@@ -99,7 +99,9 @@ public final class AdminDtos {
             String avatarUrl,
             String authProvider,
             Instant createdAt,
-            Instant lastLoginAt
+            Instant lastLoginAt,
+            List<Long> managedFarmIds,
+            List<String> managedFarmNames
     ) {}
 
     public record CreateUserRequest(
@@ -110,7 +112,8 @@ public final class AdminDtos {
             String location,
             String farmName,
             String farmType,
-            String status
+            String status,
+            List<Long> managedFarmIds
     ) {}
 
     public record UpdateUserRequest(
@@ -121,7 +124,8 @@ public final class AdminDtos {
             String farmName,
             String farmType,
             String status,
-            String newPassword
+            String newPassword,
+            List<Long> managedFarmIds
     ) {}
 
     public record UpdateUserStatusRequest(

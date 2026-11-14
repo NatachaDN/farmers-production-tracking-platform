@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from './services/adminService';
+import { managerService } from '../manager/services/managerService';
 import { notificationService } from '../../shared/services/notificationService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
 import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
@@ -77,6 +78,7 @@ const roleLabel = (role) => {
 
 export function AdminUsersView({ currentUserId }) {
   const [users, setUsers] = useState([]);
+  const [farms, setFarms] = useState([]);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -106,8 +108,18 @@ export function AdminUsersView({ currentUserId }) {
     }
   };
 
+  const loadFarms = async () => {
+    try {
+      const list = await managerService.listFarms('');
+      setFarms(Array.isArray(list) ? list : []);
+    } catch {
+      // Non-blocking if farms fail to load
+    }
+  };
+
   useEffect(() => {
     loadUsers();
+    loadFarms();
   }, [roleFilter, statusFilter]);
 
   const openCreate = (defaultRole = 'ROLE_MANAGER') => {
@@ -122,6 +134,7 @@ export function AdminUsersView({ currentUserId }) {
         farmName: '',
         farmType: 'MIXED',
         status: 'APPROVED',
+        managedFarmIds: [],
       },
     });
   };
@@ -139,7 +152,18 @@ export function AdminUsersView({ currentUserId }) {
         farmName: u.farmName || '',
         farmType: u.farmType || 'MIXED',
         status: u.status || 'APPROVED',
+        managedFarmIds: Array.isArray(u.managedFarmIds) ? u.managedFarmIds : [],
       },
+    });
+  };
+
+  const toggleManagedFarm = (farmId) => {
+    setModal((prev) => {
+      if (!prev) return prev;
+      const current = Array.isArray(prev.data.managedFarmIds) ? prev.data.managedFarmIds : [];
+      const exists = current.includes(farmId);
+      const next = exists ? current.filter((id) => id !== farmId) : [...current, farmId];
+      return { ...prev, data: { ...prev.data, managedFarmIds: next } };
     });
   };
 
@@ -148,15 +172,19 @@ export function AdminUsersView({ currentUserId }) {
     setSaving(true);
     setError('');
     try {
+      const payload = {
+        ...modal.data,
+        managedFarmIds: modal.data.role === 'ROLE_MANAGER' ? (modal.data.managedFarmIds || []) : [],
+      };
       if (modal.mode === 'create') {
-        await adminService.createUser(modal.data);
+        await adminService.createUser(payload);
         flash(`${roleLabel(modal.data.role)} account created.`);
       } else {
-        await adminService.updateUser(modal.id, modal.data);
+        await adminService.updateUser(modal.id, payload);
         flash('User updated.');
       }
       setModal(null);
-      await loadUsers();
+      await Promise.all([loadUsers(), loadFarms()]);
     } catch (err) {
       setError(err.message || 'Could not save user.');
     } finally {
@@ -287,6 +315,7 @@ export function AdminUsersView({ currentUserId }) {
                 <th style={{ padding: '12px 16px' }}>Role</th>
                 <th style={{ padding: '12px 16px' }}>Status</th>
                 <th style={{ padding: '12px 16px' }}>Location</th>
+                <th style={{ padding: '12px 16px' }}>Managed Farms</th>
                 <th style={{ padding: '12px 16px' }}>Actions</th>
               </tr>
             </thead>
@@ -310,6 +339,33 @@ export function AdminUsersView({ currentUserId }) {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', color: '#4B5752' }}>{u.location || '—'}</td>
+                    <td style={{ padding: '12px 16px', color: '#4B5752' }}>
+                      {u.role === 'ROLE_MANAGER' ? (
+                        Array.isArray(u.managedFarmNames) && u.managedFarmNames.length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {u.managedFarmNames.map((fn, idx) => (
+                              <span
+                                key={`${u.id}-farm-${idx}`}
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                  backgroundColor: '#EAF4ED',
+                                  color: '#164230',
+                                }}
+                              >
+                                {fn}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>None assigned</span>
+                        )
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         <button type="button" style={btnSecondary} onClick={() => setDetailUser(u)}>
@@ -407,6 +463,56 @@ export function AdminUsersView({ currentUserId }) {
                 <input value={modal.data.location} onChange={(e) => setModal({ ...modal, data: { ...modal.data, location: e.target.value } })} style={inputStyle} />
               </div>
             </div>
+            {modal.data.role === 'ROLE_MANAGER' && (
+              <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', backgroundColor: '#F9F6F0', border: '1px solid #ECE7DC' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>Assigned Farms (1-N Supervision)</label>
+                  <span style={{ fontSize: '0.72rem', color: '#4B5752', fontWeight: 600 }}>
+                    {(modal.data.managedFarmIds || []).length} selected
+                  </span>
+                </div>
+                {farms.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64716B' }}>No farms registered on the platform yet.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                    {farms.map((farm) => {
+                      const checked = (modal.data.managedFarmIds || []).includes(farm.id);
+                      const otherManager = farm.managerId && Number(farm.managerId) !== Number(modal.id) ? farm.managerName : null;
+                      return (
+                        <label
+                          key={farm.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            padding: '8px 10px',
+                            borderRadius: '10px',
+                            border: checked ? '1px solid #164230' : '1px solid #DFD8CA',
+                            backgroundColor: checked ? '#EAF4ED' : '#FFFFFF',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleManagedFarm(farm.id)}
+                            style={{ marginTop: '2px', accentColor: '#164230' }}
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: '#19201C' }}>{farm.name}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#64716B' }}>
+                              Owner: {farm.farmerName || '—'}
+                              {otherManager ? ` · Current Mgr: ${otherManager}` : ''}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
               <button type="button" style={btnSecondary} onClick={() => setModal(null)}>Cancel</button>
               <button type="submit" style={btnPrimary} disabled={saving}>{saving ? 'Saving…' : 'Save Account'}</button>
@@ -468,6 +574,9 @@ export function AdminUsersView({ currentUserId }) {
             { label: 'Farm Type', value: detailUser.farmType },
             { label: 'Total Area', value: detailUser.totalArea != null ? `${detailUser.totalArea} ha` : '—' },
             { label: 'Crops Grown', value: detailUser.cropsGrown },
+            ...(detailUser.role === 'ROLE_MANAGER'
+              ? [{ label: 'Managed Farms', value: detailUser.managedFarmNames?.length ? detailUser.managedFarmNames.join(', ') : 'None assigned' }]
+              : []),
             { label: 'Auth Provider', value: detailUser.authProvider || 'LOCAL' },
             { label: 'Joined At', value: detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleString() : '—' },
             { label: 'Last Login', value: detailUser.lastLoginAt ? new Date(detailUser.lastLoginAt).toLocaleString() : 'Never' },

@@ -26,4 +26,7 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
 
     @Query("SELECT COUNT(f) > 0 FROM Farm f WHERE f.farmer.id = :farmerId")
     boolean existsByFarmerId(@Param("farmerId") Long farmerId);
+
+    @Query("SELECT f FROM Farm f WHERE f.manager.id = :managerId ORDER BY f.createdAt DESC")
+    List<Farm> findByManagerId(@Param("managerId") Long managerId);
 }

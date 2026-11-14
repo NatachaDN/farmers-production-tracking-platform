@@ -84,6 +84,10 @@ public class AdminManagementService {
         String roleFilter = role != null ? role.trim().toUpperCase(Locale.ROOT) : "";
         String statusFilter = status != null ? status.trim().toUpperCase(Locale.ROOT) : "";
 
+        Map<Long, List<Farm>> farmsByManager = farmRepository.findAll().stream()
+                .filter(f -> f.getManager() != null)
+                .collect(Collectors.groupingBy(f -> f.getManager().getId()));
+
         return farmerRepository.findAll().stream()
                 .filter(u -> roleFilter.isEmpty() || roleFilter.equalsIgnoreCase(u.getRole()))
                 .filter(u -> statusFilter.isEmpty() || (u.getStatus() != null && statusFilter.equalsIgnoreCase(u.getStatus().name())))
@@ -92,7 +96,7 @@ public class AdminManagementService {
                         || (u.getEmailOrPhone() != null && u.getEmailOrPhone().toLowerCase(Locale.ROOT).contains(search))
                         || (u.getLocation() != null && u.getLocation().toLowerCase(Locale.ROOT).contains(search)))
                 .sorted(Comparator.comparing(Farmer::getId).reversed())
-                .map(this::toUserRow)
+                .map(u -> toUserRow(u, farmsByManager.getOrDefault(u.getId(), List.of())))
                 .toList();
     }
 
@@ -126,7 +130,9 @@ public class AdminManagementService {
         user.setAuthProvider("LOCAL");
         user.setAgreedToTerms(true);
 
-        return toUserRow(farmerRepository.save(user));
+        Farmer saved = farmerRepository.save(user);
+        syncManagedFarms(saved, req.managedFarmIds());
+        return toUserRow(saved, farmRepository.findByManagerId(saved.getId()));
     }
 
     @Transactional
@@ -166,7 +172,9 @@ public class AdminManagementService {
             user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         }
 
-        return toUserRow(farmerRepository.save(user));
+        Farmer saved = farmerRepository.save(user);
+        syncManagedFarms(saved, req.managedFarmIds());
+        return toUserRow(saved, farmRepository.findByManagerId(saved.getId()));
     }
 
     @Transactional
@@ -194,6 +202,11 @@ public class AdminManagementService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         if (adminEmailOrPhone != null && adminEmailOrPhone.equalsIgnoreCase(user.getEmailOrPhone())) {
             throw new BadRequestException("You cannot delete your own administrator account.");
+        }
+        List<Farm> managed = farmRepository.findByManagerId(user.getId());
+        if (!managed.isEmpty()) {
+            managed.forEach(f -> f.setManager(null));
+            farmRepository.saveAll(managed);
         }
         farmerRepository.delete(user);
     }
@@ -406,7 +419,47 @@ public class AdminManagementService {
 
     // ------------------------------------------------------------------ Helpers
 
+    private void syncManagedFarms(Farmer user, List<Long> managedFarmIds) {
+        if (!AdminAccessPolicy.ROLE_MANAGER.equalsIgnoreCase(user.getRole())) {
+            List<Farm> current = farmRepository.findByManagerId(user.getId());
+            if (!current.isEmpty()) {
+                current.forEach(f -> f.setManager(null));
+                farmRepository.saveAll(current);
+            }
+            return;
+        }
+        if (managedFarmIds == null) return;
+
+        Set<Long> targetIds = new HashSet<>(managedFarmIds);
+        List<Farm> currentlyManaged = farmRepository.findByManagerId(user.getId());
+        List<Farm> toSave = new ArrayList<>();
+
+        for (Farm f : currentlyManaged) {
+            if (!targetIds.contains(f.getId())) {
+                f.setManager(null);
+                toSave.add(f);
+            }
+        }
+        if (!targetIds.isEmpty()) {
+            for (Farm f : farmRepository.findAllById(targetIds)) {
+                if (f.getManager() == null || !user.getId().equals(f.getManager().getId())) {
+                    f.setManager(user);
+                    toSave.add(f);
+                }
+            }
+        }
+        if (!toSave.isEmpty()) {
+            farmRepository.saveAll(toSave);
+        }
+    }
+
     private AdminUserRow toUserRow(Farmer u) {
+        return toUserRow(u, farmRepository.findByManagerId(u.getId()));
+    }
+
+    private AdminUserRow toUserRow(Farmer u, List<Farm> managedFarms) {
+        List<Long> farmIds = managedFarms.stream().map(Farm::getId).toList();
+        List<String> farmNames = managedFarms.stream().map(Farm::getName).toList();
         return new AdminUserRow(
                 u.getId(),
                 u.getFullName(),
@@ -422,7 +475,9 @@ public class AdminManagementService {
                 u.getAvatarUrl(),
                 u.getAuthProvider(),
                 toInstant(u.getCreatedAt()),
-                toInstant(u.getLastLoginAt())
+                toInstant(u.getLastLoginAt()),
+                farmIds,
+                farmNames
         );
     }
 

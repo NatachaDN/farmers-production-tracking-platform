@@ -2,6 +2,8 @@ package com.farmer.tracking.modules.manager.service;
 
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
+import com.farmer.tracking.common.security.UserPrincipal;
+import com.farmer.tracking.modules.manager.service.ManagerScopeHelper.ManagerScope;
 import com.farmer.tracking.modules.animal.model.AnimalGroup;
 import com.farmer.tracking.modules.animal.model.AnimalGroupStatus;
 import com.farmer.tracking.modules.animal.model.AnimalIncident;
@@ -55,6 +57,7 @@ public class ManagementOperationsService {
     private final HarvestRepository harvestRepository;
     private final FarmInputRepository farmInputRepository;
     private final NotificationService notificationService;
+    private final ManagerScopeHelper scopeHelper;
 
     public ManagementOperationsService(
             FarmerRepository farmerRepository,
@@ -67,7 +70,8 @@ public class ManagementOperationsService {
             CycleRepository cycleRepository,
             HarvestRepository harvestRepository,
             FarmInputRepository farmInputRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            ManagerScopeHelper scopeHelper) {
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
         this.plotRepository = plotRepository;
@@ -79,12 +83,14 @@ public class ManagementOperationsService {
         this.harvestRepository = harvestRepository;
         this.farmInputRepository = farmInputRepository;
         this.notificationService = notificationService;
+        this.scopeHelper = scopeHelper;
     }
 
     // ------------------------------------------------------------------ Farms
 
     @Transactional(readOnly = true)
-    public List<ManagedFarmRow> listFarms(String search) {
+    public List<ManagedFarmRow> listFarms(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         List<Farmer> allPeople = farmerRepository.findAll();
         Map<Long, Farmer> peopleById = allPeople.stream()
@@ -113,6 +119,7 @@ public class ManagementOperationsService {
                 .collect(Collectors.groupingBy(c -> c.getPlot().getId()));
 
         return farmRepository.findAll().stream()
+                .filter(f -> scope.allowsFarm(f.getId()))
                 .map(f -> toRichFarmRow(f, plotsByFarm.getOrDefault(f.getId(), List.of()),
                         groupsByFarm.getOrDefault(f.getId(), List.of()), groupById,
                         allCrops, cyclesByPlot, peopleById, platformManagers))
@@ -126,18 +133,21 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedFarmRow createFarm(ManagedFarmRequest req) {
+    public ManagedFarmRow createFarm(ManagedFarmRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         Farmer farmer = farmerRepository.findById(req.farmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
         Farm farm = new Farm();
         farm.setFarmer(farmer);
-        applyFarmFields(farm, req);
+        applyFarmFields(farm, req, scope);
         Farm saved = farmRepository.save(farm);
         return toFarmRow(saved, 0);
     }
 
     @Transactional
-    public ManagedFarmRow updateFarm(Long id, ManagedFarmRequest req) {
+    public ManagedFarmRow updateFarm(Long id, ManagedFarmRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmAccess(scope, id);
         Farm farm = farmRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm not found."));
         if (req.farmerId() != null && !req.farmerId().equals(farm.getFarmer().getId())) {
@@ -145,7 +155,7 @@ public class ManagementOperationsService {
                     .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
             farm.setFarmer(farmer);
         }
-        applyFarmFields(farm, req);
+        applyFarmFields(farm, req, scope);
         Farm saved = farmRepository.save(farm);
         int plots = (int) plotRepository.findAll().stream()
                 .filter(p -> p.getFarm() != null && id.equals(p.getFarm().getId())).count();
@@ -153,14 +163,27 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public void deleteFarm(Long id) {
+    public void deleteFarm(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmAccess(scope, id);
         if (!farmRepository.existsById(id)) {
             throw new ResourceNotFoundException("Farm not found.");
         }
         farmRepository.deleteById(id);
     }
 
-    private void applyFarmFields(Farm farm, ManagedFarmRequest req) {
+    private void applyFarmFields(Farm farm, ManagedFarmRequest req, ManagerScope scope) {
+        if (scope.restricted() && scope.managerId() != null) {
+            if (farm.getManager() == null) {
+                farmerRepository.findById(scope.managerId()).ifPresent(farm::setManager);
+            }
+        } else if (req.managerId() != null) {
+            Farmer mgr = farmerRepository.findById(req.managerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found."));
+            farm.setManager(mgr);
+        } else {
+            farm.setManager(null);
+        }
         farm.setName(req.name().trim());
         farm.setType(parseFarmType(req.type()));
         farm.setSize(req.size() != null && req.size() > 0 ? req.size() : 1.0);
@@ -177,6 +200,8 @@ public class ManagementOperationsService {
                 f.getId(),
                 f.getFarmer().getId(),
                 f.getFarmer().getFullName(),
+                f.getManager() != null ? f.getManager().getId() : null,
+                f.getManager() != null ? f.getManager().getFullName() : null,
                 f.getName(),
                 f.getType() != null ? f.getType().name() : "MIXED",
                 f.getSize(),
@@ -217,14 +242,16 @@ public class ManagementOperationsService {
         };
 
         addPerson.accept(f.getFarmer());
+        if (f.getManager() != null) {
+            managerMap.putIfAbsent(f.getManager().getId(), new RelatedPersonSummary(
+                    f.getManager().getId(), f.getManager().getFullName(),
+                    f.getManager().getEmailOrPhone(), f.getManager().getRole()));
+        }
         for (Plot p : farmPlots) {
             addPerson.accept(peopleById.get(p.getFarmerId()));
         }
         for (AnimalGroup g : directGroups) {
             addPerson.accept(g.getFarmer());
-        }
-        for (RelatedPersonSummary mgr : platformManagers) {
-            managerMap.putIfAbsent(mgr.id(), mgr);
         }
 
         List<RelatedPlotSummary> plotSummaries = farmPlots.stream()
@@ -285,6 +312,8 @@ public class ManagementOperationsService {
                 f.getId(),
                 f.getFarmer().getId(),
                 f.getFarmer().getFullName(),
+                f.getManager() != null ? f.getManager().getId() : null,
+                f.getManager() != null ? f.getManager().getFullName() : null,
                 f.getName(),
                 f.getType() != null ? f.getType().name() : "MIXED",
                 f.getSize(),
@@ -317,15 +346,15 @@ public class ManagementOperationsService {
     // ------------------------------------------------------------------ Plots
 
     @Transactional(readOnly = true)
-    public List<ManagedPlotRow> listPlots(String search, Long farmId) {
+    public List<ManagedPlotRow> listPlots(String search, Long farmId, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, Farmer> farmers = farmerRepository.findAll().stream()
                 .collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
-        Map<Long, Farm> farms = farmRepository.findAll().stream()
-                .collect(Collectors.toMap(Farm::getId, Function.identity(), (a, b) -> a));
 
         return plotRepository.findAll().stream()
                 .filter(p -> farmId == null || (p.getFarm() != null && farmId.equals(p.getFarm().getId())))
+                .filter(p -> !scope.restricted() || (p.getFarm() != null && scope.allowsFarm(p.getFarm().getId())))
                 .map(p -> toPlotRow(p, farmers.get(p.getFarmerId()), p.getFarm()))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
@@ -337,7 +366,11 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedPlotRow createPlot(ManagedPlotRequest req) {
+    public ManagedPlotRow createPlot(ManagedPlotRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        if (scope.restricted()) {
+            scopeHelper.requireFarmAccess(scope, req.farmId());
+        }
         Farmer farmer = farmerRepository.findById(req.farmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
         Plot plot = new Plot();
@@ -348,9 +381,16 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedPlotRow updatePlot(Long id, ManagedPlotRequest req) {
+    public ManagedPlotRow updatePlot(Long id, ManagedPlotRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         Plot plot = plotRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot not found."));
+        if (scope.restricted()) {
+            scopeHelper.requireFarmAccess(scope, plot.getFarm() != null ? plot.getFarm().getId() : null);
+            if (req.farmId() != null) {
+                scopeHelper.requireFarmAccess(scope, req.farmId());
+            }
+        }
         if (req.farmerId() != null) {
             farmerRepository.findById(req.farmerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
@@ -363,11 +403,14 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public void deletePlot(Long id) {
-        if (!plotRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Plot not found.");
+    public void deletePlot(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Plot plot = plotRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Plot not found."));
+        if (scope.restricted()) {
+            scopeHelper.requireFarmAccess(scope, plot.getFarm() != null ? plot.getFarm().getId() : null);
         }
-        plotRepository.deleteById(id);
+        plotRepository.delete(plot);
     }
 
     private void applyPlotFields(Plot plot, ManagedPlotRequest req) {
@@ -424,13 +467,19 @@ public class ManagementOperationsService {
     // ------------------------------------------------------------------ Animal Groups
 
     @Transactional(readOnly = true)
-    public List<ManagedAnimalGroupRow> listAnimalGroups(String search) {
+    public List<ManagedAnimalGroupRow> listAnimalGroups(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, List<Plot>> plotsByGroup = plotRepository.findAll().stream()
                 .filter(p -> p.getAnimalGroupId() != null)
                 .collect(Collectors.groupingBy(Plot::getAnimalGroupId));
 
         return animalGroupRepository.findAll().stream()
+                .filter(g -> !scope.restricted()
+                        || (g.getFarm() != null && scope.allowsFarm(g.getFarm().getId()))
+                        || plotsByGroup.getOrDefault(g.getId(), List.of()).stream()
+                                .anyMatch(p -> p.getFarm() != null && scope.allowsFarm(p.getFarm().getId()))
+                        || (g.getFarmer() != null && scope.allowsFarmer(g.getFarmer().getId())))
                 .map(g -> toAnimalGroupRow(g, plotsByGroup.getOrDefault(g.getId(), List.of())))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
@@ -442,7 +491,15 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedAnimalGroupRow createAnimalGroup(ManagedAnimalGroupRequest req) {
+    public ManagedAnimalGroupRow createAnimalGroup(ManagedAnimalGroupRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        if (scope.restricted()) {
+            if (req.farmId() != null) {
+                scopeHelper.requireFarmAccess(scope, req.farmId());
+            } else {
+                scopeHelper.requireFarmerAccess(scope, req.farmerId());
+            }
+        }
         Farmer farmer = farmerRepository.findById(req.farmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
         AnimalGroup group = new AnimalGroup();
@@ -452,9 +509,20 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedAnimalGroupRow updateAnimalGroup(Long id, ManagedAnimalGroupRequest req) {
+    public ManagedAnimalGroupRow updateAnimalGroup(Long id, ManagedAnimalGroupRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         AnimalGroup group = animalGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Animal group not found."));
+        if (scope.restricted()) {
+            boolean allowed = (group.getFarm() != null && scope.allowsFarm(group.getFarm().getId()))
+                    || (group.getFarmer() != null && scope.allowsFarmer(group.getFarmer().getId()));
+            if (!allowed) {
+                throw new BadRequestException("Access denied: animal group is not linked to your assigned farms.");
+            }
+            if (req.farmId() != null) {
+                scopeHelper.requireFarmAccess(scope, req.farmId());
+            }
+        }
         if (req.farmerId() != null && !req.farmerId().equals(group.getFarmer().getId())) {
             Farmer farmer = farmerRepository.findById(req.farmerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
@@ -465,11 +533,18 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public void deleteAnimalGroup(Long id) {
-        if (!animalGroupRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Animal group not found.");
+    public void deleteAnimalGroup(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        AnimalGroup group = animalGroupRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Animal group not found."));
+        if (scope.restricted()) {
+            boolean allowed = (group.getFarm() != null && scope.allowsFarm(group.getFarm().getId()))
+                    || (group.getFarmer() != null && scope.allowsFarmer(group.getFarmer().getId()));
+            if (!allowed) {
+                throw new BadRequestException("Access denied: animal group is not linked to your assigned farms.");
+            }
         }
-        animalGroupRepository.deleteById(id);
+        animalGroupRepository.delete(group);
     }
 
     private void applyAnimalGroupFields(AnimalGroup g, ManagedAnimalGroupRequest req) {
@@ -548,7 +623,8 @@ public class ManagementOperationsService {
     // ------------------------------------------------------------------ Incidents
 
     @Transactional(readOnly = true)
-    public List<ManagedIncidentRow> listIncidents(String kind, String status, String search) {
+    public List<ManagedIncidentRow> listIncidents(String kind, String status, String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         String k = kind != null ? kind.trim().toUpperCase() : "";
         String st = status != null ? status.trim().toUpperCase() : "";
@@ -609,6 +685,7 @@ public class ManagementOperationsService {
         }
 
         return all.stream()
+                .filter(r -> scope.allowsFarmer(r.farmerId()))
                 .filter(r -> st.isEmpty() || st.equalsIgnoreCase(r.status()))
                 .filter(r -> q.isEmpty()
                         || r.farmerName().toLowerCase().contains(q)
@@ -621,7 +698,8 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedIncidentRow takeIncidentAction(String kind, Long id, IncidentActionRequest req, String actorName, Long actorId) {
+    public ManagedIncidentRow takeIncidentAction(String kind, Long id, IncidentActionRequest req, String actorName, Long actorId, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String normalizedKind = kind != null ? kind.trim().toUpperCase() : "";
         String normalizedStatus = req.status().trim().toUpperCase();
         if (!List.of("OPEN", "IN_PROGRESS", "RESOLVED", "DISMISSED").contains(normalizedStatus)) {
@@ -635,6 +713,7 @@ public class ManagementOperationsService {
         if ("CROP".equals(normalizedKind)) {
             CycleIncident ci = cycleIncidentRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Crop incident not found."));
+            scopeHelper.requireFarmerAccess(scope, ci.getFarmerId());
             ci.setStatus(normalizedStatus);
             ci.setActionTaken(req.actionTaken().trim());
             ci.setResolvedBy(actorName);
@@ -655,6 +734,7 @@ public class ManagementOperationsService {
         } else if ("ANIMAL".equals(normalizedKind)) {
             AnimalIncident ai = animalIncidentRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Animal incident not found."));
+            scopeHelper.requireFarmerAccess(scope, ai.getFarmerId());
             ai.setStatus(normalizedStatus);
             ai.setActionTaken(req.actionTaken().trim());
             ai.setResolvedBy(actorName);
@@ -691,7 +771,8 @@ public class ManagementOperationsService {
     // ------------------------------------------------------------------ Crops
 
     @Transactional(readOnly = true)
-    public List<ManagedCropRow> listCrops(String search) {
+    public List<ManagedCropRow> listCrops(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, String> farmerNames = farmerRepository.findAll().stream()
                 .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
@@ -699,6 +780,7 @@ public class ManagementOperationsService {
         List<Cycle> allCycles = cycleRepository.findAll();
 
         return cropRepository.findAll().stream()
+                .filter(c -> scope.allowsFarmer(c.getFarmerId()))
                 .map(c -> toRichCropRow(c, farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId()), allPlots, allCycles))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
@@ -710,7 +792,9 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedCropRow createCrop(ManagedCropRequest req) {
+    public ManagedCropRow createCrop(ManagedCropRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmerAccess(scope, req.farmerId());
         Farmer farmer = farmerRepository.findById(req.farmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
         Crop crop = new Crop();
@@ -720,10 +804,13 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedCropRow updateCrop(Long id, ManagedCropRequest req) {
+    public ManagedCropRow updateCrop(Long id, ManagedCropRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         Crop crop = cropRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Crop not found."));
+        scopeHelper.requireFarmerAccess(scope, crop.getFarmerId());
         if (req.farmerId() != null) {
+            scopeHelper.requireFarmerAccess(scope, req.farmerId());
             farmerRepository.findById(req.farmerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
             crop.setFarmerId(req.farmerId());
@@ -735,11 +822,12 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public void deleteCrop(Long id) {
-        if (!cropRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Crop not found.");
-        }
-        cropRepository.deleteById(id);
+    public void deleteCrop(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Crop crop = cropRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Crop not found."));
+        scopeHelper.requireFarmerAccess(scope, crop.getFarmerId());
+        cropRepository.delete(crop);
     }
 
     private void applyCropFields(Crop c, ManagedCropRequest req) {
@@ -811,10 +899,14 @@ public class ManagementOperationsService {
     // ------------------------------------------------------------------ Harvests
 
     @Transactional(readOnly = true)
-    public List<SimpleCycleOption> listCycleOptions() {
+    public List<SimpleCycleOption> listCycleOptions(UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         Map<Long, String> farmerNames = farmerRepository.findAll().stream()
                 .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
         return cycleRepository.findAll().stream()
+                .filter(c -> !scope.restricted()
+                        || (c.getPlot() != null && c.getPlot().getFarm() != null && scope.allowsFarm(c.getPlot().getFarm().getId()))
+                        || scope.allowsFarmer(c.getFarmerId()))
                 .map(c -> new SimpleCycleOption(
                         c.getId(),
                         c.getName(),
@@ -826,12 +918,14 @@ public class ManagementOperationsService {
     }
 
     @Transactional(readOnly = true)
-    public List<ManagedHarvestRow> listHarvests(String search) {
+    public List<ManagedHarvestRow> listHarvests(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, String> farmerNames = farmerRepository.findAll().stream()
                 .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
 
         return harvestRepository.findAll().stream()
+                .filter(h -> !scope.restricted() || (h.getCycle() != null && scope.allowsFarmer(h.getCycle().getFarmerId())))
                 .map(h -> toHarvestRow(h, farmerNames))
                 .filter(r -> q.isEmpty()
                         || (r.cropName() != null && r.cropName().toLowerCase().contains(q))
@@ -843,9 +937,11 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedHarvestRow createHarvest(ManagedHarvestRequest req) {
+    public ManagedHarvestRow createHarvest(ManagedHarvestRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         Cycle cycle = cycleRepository.findById(req.cycleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Production cycle not found."));
+        scopeHelper.requireFarmerAccess(scope, cycle.getFarmerId());
         Harvest h = new Harvest();
         h.setCycle(cycle);
         applyHarvestFields(h, cycle, req);
@@ -856,13 +952,18 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedHarvestRow updateHarvest(Long id, ManagedHarvestRequest req) {
+    public ManagedHarvestRow updateHarvest(Long id, ManagedHarvestRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         Harvest h = harvestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Harvest not found."));
         Cycle cycle = h.getCycle();
+        if (cycle != null) {
+            scopeHelper.requireFarmerAccess(scope, cycle.getFarmerId());
+        }
         if (req.cycleId() != null && (cycle == null || !req.cycleId().equals(cycle.getId()))) {
             cycle = cycleRepository.findById(req.cycleId())
                     .orElseThrow(() -> new ResourceNotFoundException("Production cycle not found."));
+            scopeHelper.requireFarmerAccess(scope, cycle.getFarmerId());
             h.setCycle(cycle);
         }
         applyHarvestFields(h, cycle, req);
@@ -873,11 +974,14 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public void deleteHarvest(Long id) {
-        if (!harvestRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Harvest not found.");
+    public void deleteHarvest(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        Harvest h = harvestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Harvest not found."));
+        if (h.getCycle() != null) {
+            scopeHelper.requireFarmerAccess(scope, h.getCycle().getFarmerId());
         }
-        harvestRepository.deleteById(id);
+        harvestRepository.delete(h);
     }
 
     private void applyHarvestFields(Harvest h, Cycle cycle, ManagedHarvestRequest req) {
@@ -924,12 +1028,14 @@ public class ManagementOperationsService {
     // ------------------------------------------------------------------ Farm Inputs
 
     @Transactional(readOnly = true)
-    public List<ManagedInputRow> listInputs(String search) {
+    public List<ManagedInputRow> listInputs(String search, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, String> farmerNames = farmerRepository.findAll().stream()
                 .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
 
         return farmInputRepository.findAll().stream()
+                .filter(i -> scope.allowsFarmer(i.getFarmerId()))
                 .map(i -> toInputRow(i, farmerNames.getOrDefault(i.getFarmerId(), "Farmer #" + i.getFarmerId())))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
@@ -941,7 +1047,9 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedInputRow createInput(ManagedInputRequest req) {
+    public ManagedInputRow createInput(ManagedInputRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        scopeHelper.requireFarmerAccess(scope, req.farmerId());
         Farmer farmer = farmerRepository.findById(req.farmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
         FarmInput input = new FarmInput();
@@ -951,10 +1059,13 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public ManagedInputRow updateInput(Long id, ManagedInputRequest req) {
+    public ManagedInputRow updateInput(Long id, ManagedInputRequest req, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
         FarmInput input = farmInputRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm input not found."));
+        scopeHelper.requireFarmerAccess(scope, input.getFarmerId());
         if (req.farmerId() != null) {
+            scopeHelper.requireFarmerAccess(scope, req.farmerId());
             farmerRepository.findById(req.farmerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Farmer not found."));
             input.setFarmerId(req.farmerId());
@@ -966,11 +1077,12 @@ public class ManagementOperationsService {
     }
 
     @Transactional
-    public void deleteInput(Long id) {
-        if (!farmInputRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Farm input not found.");
-        }
-        farmInputRepository.deleteById(id);
+    public void deleteInput(Long id, UserPrincipal principal) {
+        ManagerScope scope = scopeHelper.resolve(principal);
+        FarmInput input = farmInputRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm input not found."));
+        scopeHelper.requireFarmerAccess(scope, input.getFarmerId());
+        farmInputRepository.delete(input);
     }
 
     private void applyInputFields(FarmInput i, ManagedInputRequest req) {
