@@ -2,6 +2,7 @@ package com.farmer.tracking.modules.auth.service;
 
 import com.farmer.tracking.common.email.EmailService;
 import com.farmer.tracking.common.exception.AccountLockedException;
+import com.farmer.tracking.common.exception.ApiException;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -16,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,6 +103,9 @@ public class AuthServiceImpl implements AuthService {
 
         Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier)
                 .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
+        if ("GOOGLE".equals(farmer.getAuthProvider())) {
+            throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
+        }
 
         LocalDateTime now = LocalDateTime.now();
         if (farmer.getLockedUntil() != null && farmer.getLockedUntil().isAfter(now)) {
@@ -198,38 +204,39 @@ public class AuthServiceImpl implements AuthService {
         if (request == null || request.getEmailOrPhone() == null || request.getEmailOrPhone().trim().isEmpty()) {
             throw new IllegalArgumentException("Email or phone number is required.");
         }
+        if (!emailService.isConfigured()) {
+            throw new ApiException("Password reset email is currently unavailable. Contact your administrator.", HttpStatus.SERVICE_UNAVAILABLE);
+        }
 
         String normalizedIdentifier = request.getEmailOrPhone().trim().toLowerCase();
 
         // Same response whether or not the account exists, so this endpoint
         // cannot be used to discover which emails/phones are registered.
         ForgotPasswordResponse genericResponse = new ForgotPasswordResponse(
-                "If an account exists for " + normalizedIdentifier
-                        + ", a 6-digit reset code has been sent. It is valid for "
+                "If an eligible account exists, check your email for a 6-digit reset code. The code is valid for "
                         + RESET_CODE_VALIDITY_MINUTES + " minutes.",
                 normalizedIdentifier
         );
 
         Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier).orElse(null);
-        if (farmer == null || !normalizedIdentifier.contains("@") || farmer.getAccessStatus() != Farmer.AccessStatus.ACTIVE) {
+        if (farmer == null || !normalizedIdentifier.contains("@") || farmer.getAccessStatus() != Farmer.AccessStatus.ACTIVE
+                || "GOOGLE".equals(farmer.getAuthProvider())) {
             return genericResponse;
         }
 
         String resetCode = String.format("%06d", secureRandom.nextInt(1_000_000));
+        try {
+            emailService.sendPasswordResetCode(normalizedIdentifier, resetCode);
+        } catch (MailException ex) {
+            log.warn("SMTP rejected password reset delivery: {}", ex.getClass().getSimpleName());
+            return genericResponse;
+        }
 
         // Only a hash of the code is stored; the code itself is sent by email and never returned.
         farmer.setPasswordResetToken(passwordEncoder.encode(resetCode));
         farmer.setPasswordResetExpiresAt(LocalDateTime.now().plusMinutes(RESET_CODE_VALIDITY_MINUTES));
         farmer.setPasswordResetAttempts(0);
         farmerRepository.save(farmer);
-
-        try {
-            emailService.sendPasswordResetCode(normalizedIdentifier, resetCode);
-        } catch (Exception ex) {
-            farmer.setPasswordResetToken(null);
-            farmer.setPasswordResetExpiresAt(null);
-            log.error("Password reset delivery failed: {}", ex.getClass().getSimpleName());
-        }
 
         return genericResponse;
     }
@@ -257,7 +264,8 @@ public class AuthServiceImpl implements AuthService {
         Farmer farmer = farmerRepository.findLockedByEmailOrPhone(normalizedIdentifier)
                 .orElseThrow(() -> new BadRequestException(INVALID_RESET_CODE_MESSAGE));
 
-        if (farmer.getPasswordResetToken() == null || farmer.getPasswordResetExpiresAt() == null) {
+        if (farmer.getPasswordResetToken() == null || farmer.getPasswordResetExpiresAt() == null
+                || "GOOGLE".equals(farmer.getAuthProvider()) || farmer.getAccessStatus() != Farmer.AccessStatus.ACTIVE) {
             throw new BadRequestException(INVALID_RESET_CODE_MESSAGE);
         }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { googleAuth } from './services/googleAuth';
+import { googleAuth, googleRedirectUri } from './services/googleAuth';
 
 function GoogleMark({ size = 18 }) {
   return (
@@ -23,7 +23,11 @@ export function GoogleSignInSection({ onError, dividerLabel = 'or' }) {
   useEffect(() => {
     let active = true;
     googleAuth.getConfig()
-      .then((c) => active && setConfig({ status: c?.enabled ? 'ready' : 'unconfigured', clientId: c?.clientId }))
+      .then((c) => {
+        if (!active) return;
+        const ready = c?.enabled && c.redirectUris?.includes(googleRedirectUri());
+        setConfig({ status: ready ? 'ready' : 'unconfigured', clientId: c?.clientId });
+      })
       .catch(() => active && setConfig({ status: 'unavailable', clientId: null }));
     return () => { active = false; };
   }, []);
@@ -32,15 +36,15 @@ export function GoogleSignInSection({ onError, dividerLabel = 'or' }) {
     setStarting(true);
     try {
       await googleAuth.start(config.clientId);
-    } catch {
+    } catch (error) {
       setStarting(false);
-      onError?.('Could not start Google sign-in. Please try again.');
+      onError?.(error.message || 'Could not start Google sign-in. Please try again.');
     }
   };
 
   const disabled = config.status !== 'ready' || starting;
   const note = {
-    unconfigured: 'Google sign-in is not set up on this server yet.',
+    unconfigured: 'Google sign-in is unavailable at this app address.',
     unavailable: 'Google sign-in is unavailable while the server cannot be reached.',
   }[config.status];
 

@@ -81,9 +81,9 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
     setNotice('');
     setLoading(true);
     try {
-      await authService.forgotPassword(emailOrPhone.trim());
+      const response = await authService.forgotPassword(emailOrPhone.trim());
       setResetCode('');
-      setNotice('If an account exists, a new verification code has been sent.');
+      setNotice(response?.message || 'If an eligible account exists, check your email for a new code.');
     } catch (err) {
       setError(err.message || 'Could not resend code. Please try again.');
     } finally {
@@ -141,7 +141,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                 marginBottom: '28px',
                 lineHeight: 1.5
               }}>
-                Enter the email address associated with your Acrea account. For accounts registered with a phone number, contact your administrator.
+                Enter the email address for your Acrea password account. If you registered with Google, use Continue with Google. For phone accounts, contact your administrator.
               </p>
 
               {/* Error Alert */}
@@ -187,7 +187,7 @@ export function ForgotPasswordView({ onNavigate, onResetComplete, onResetSuccess
                       id="forgot-identifier-input"
                       type="email"
                       autoComplete="email"
-                      placeholder="name@example.com"
+                      placeholder="nadege.kamga@example.com"
                       value={emailOrPhone}
                       onChange={(e) => setEmailOrPhone(e.target.value)}
                       required

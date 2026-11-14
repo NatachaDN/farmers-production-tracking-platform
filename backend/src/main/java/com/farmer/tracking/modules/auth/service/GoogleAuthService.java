@@ -1,5 +1,6 @@
 package com.farmer.tracking.modules.auth.service;
 
+import com.farmer.tracking.common.exception.UnauthorizedException;
 import com.farmer.tracking.common.security.AdminAccessPolicy;
 import com.farmer.tracking.common.security.JwtTokenProvider;
 import com.farmer.tracking.modules.auth.dto.AuthResponse;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -52,7 +54,9 @@ public class GoogleAuthService {
     }
 
     public GoogleConfigResponse config() {
-        return new GoogleConfigResponse(googleClient.isConfigured(), googleClient.isConfigured() ? googleClient.getClientId() : null);
+        return googleClient.isConfigured()
+                ? new GoogleConfigResponse(true, googleClient.getClientId(), googleClient.getRedirectUris())
+                : new GoogleConfigResponse(false, null, Set.of());
     }
 
     @Transactional
@@ -72,6 +76,12 @@ public class GoogleAuthService {
         Farmer farmer = existing.orElseGet(() -> newFarmer(identity));
 
         if (!created) {
+            if (farmer.getGoogleId() != null && !farmer.getGoogleId().equals(identity.subject())) {
+                throw new UnauthorizedException("Use the Google account already linked to Acrea.");
+            }
+            if (farmer.getGoogleId() == null && !identity.authoritativeEmail()) {
+                throw new UnauthorizedException("Use your Acrea password to sign in to this account.");
+            }
             AuthServiceImpl.requireActiveAccess(farmer);
             if (farmer.getGoogleId() == null) {
                 // First time this existing account signs in with Google. The password was set by
@@ -80,6 +90,9 @@ public class GoogleAuthService {
                 farmer.setGoogleId(identity.subject());
                 farmer.setAuthProvider("GOOGLE");
                 farmer.setPasswordHash(unusablePasswordHash());
+                farmer.setPasswordResetToken(null);
+                farmer.setPasswordResetExpiresAt(null);
+                farmer.setPasswordResetAttempts(0);
                 farmer.setTokenVersion(farmer.getTokenVersion() + 1);
                 log.info("Linked existing farmer account {} to Google and retired its password", farmer.getId());
             }
@@ -88,7 +101,8 @@ public class GoogleAuthService {
             }
         }
 
-        if (adminAccessPolicy.isAdminEmail(identity.email()) && !AdminAccessPolicy.ROLE_ADMIN.equals(farmer.getRole())) {
+        if (identity.authoritativeEmail() && identity.email().equals(farmer.getEmailOrPhone())
+                && adminAccessPolicy.isAdminEmail(identity.email()) && !AdminAccessPolicy.ROLE_ADMIN.equals(farmer.getRole())) {
             farmer.setRole(AdminAccessPolicy.ROLE_ADMIN);
             log.info("Farmer account {} promoted to administrator (allow-listed Google email)", farmer.getId());
         }

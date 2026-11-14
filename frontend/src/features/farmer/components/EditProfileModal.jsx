@@ -222,7 +222,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
               required
               value={formData.farmName}
               onChange={handleChange}
-              placeholder="e.g. Green Acres Farm"
+              placeholder="e.g. Mbouda Farm"
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -245,7 +245,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
               type="text"
               value={formData.cropsGrown}
               onChange={handleChange}
-              placeholder="e.g. Maize, Tomatoes, Beans"
+              placeholder="e.g. Cassava, Plantain, Maize"
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -412,6 +412,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
                 id="modal-location"
                 name="location"
                 type="text"
+                placeholder="e.g. Mbouda, West Region"
                 value={formData.location}
                 onChange={handleChange}
                 style={{

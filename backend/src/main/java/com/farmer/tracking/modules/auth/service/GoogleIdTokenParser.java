@@ -63,7 +63,9 @@ public final class GoogleIdTokenParser {
             throw new UnauthorizedException("Your Google email address is not verified.");
         }
 
-        return new GoogleIdentity(subject, email.trim().toLowerCase(Locale.ROOT), text(claims, "name"), text(claims, "picture"));
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        boolean authoritativeEmail = normalizedEmail.endsWith("@gmail.com") || text(claims, "hd") != null;
+        return new GoogleIdentity(subject, normalizedEmail, text(claims, "name"), text(claims, "picture"), authoritativeEmail);
     }
 
     private static boolean audienceMatches(JsonNode aud, String expected) {

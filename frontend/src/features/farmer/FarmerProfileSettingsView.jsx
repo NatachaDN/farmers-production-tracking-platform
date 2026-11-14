@@ -401,7 +401,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                 type="text"
                 value={formData.farmName}
                 onChange={handleChange}
-                placeholder="e.g. Green Acres Farm"
+                placeholder="e.g. Mbouda Farm"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -432,7 +432,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                   type="text"
                   value={formData.location}
                   onChange={handleChange}
-                  placeholder="e.g. Nakuru County, Kenya"
+                  placeholder="e.g. Mbouda, West Region"
                   style={{
                     width: '100%',
                     padding: '10px 14px 10px 36px',
@@ -581,7 +581,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                 type="text"
                 value={formData.cropsGrown}
                 onChange={handleChange}
-                placeholder="e.g. Maize, Tomatoes, Beans, Cassava"
+                placeholder="e.g. Cassava, Plantain, Maize, Cocoa"
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -660,7 +660,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
                 type="text"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="e.g. Joyce Muthoni"
+                placeholder="e.g. Nadège Kamga"
                 style={{
                   width: '100%',
                   padding: '10px 14px',

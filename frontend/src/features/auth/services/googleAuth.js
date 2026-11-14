@@ -22,7 +22,6 @@ function randomString(byteLength = 32) {
 }
 
 async function challengeFor(verifier) {
-  if (!window.crypto?.subtle) return null;
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
   return base64Url(new Uint8Array(digest));
 }
@@ -39,8 +38,12 @@ export const googleAuth = {
   },
 
   async start(clientId) {
+    if (!window.crypto?.subtle) {
+      throw new Error('Google sign-in requires HTTPS or localhost.');
+    }
     const state = randomString(16);
     const verifier = randomString(48);
+    const challenge = await challengeFor(verifier);
     sessionStorage.setItem(STATE_KEY, state);
     sessionStorage.setItem(VERIFIER_KEY, verifier);
 
@@ -50,13 +53,10 @@ export const googleAuth = {
       response_type: 'code',
       scope: 'openid email profile',
       state,
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
       prompt: 'select_account',
     });
-    const challenge = await challengeFor(verifier);
-    if (challenge) {
-      params.set('code_challenge', challenge);
-      params.set('code_challenge_method', 'S256');
-    }
     window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
   },
 
@@ -87,13 +87,13 @@ export const googleAuth = {
             ? 'Google sign-in was cancelled.'
             : 'Google could not complete the sign-in. Please try again.');
         }
-        if (!code || !state || !expectedState || state !== expectedState) {
+        if (!code || !state || !expectedState || state !== expectedState || !verifier) {
           throw new Error('The Google sign-in session expired or was not recognised. Please try again.');
         }
         return apiClient.post('/auth/google', {
           code,
           redirectUri: googleRedirectUri(),
-          codeVerifier: verifier || undefined,
+          codeVerifier: verifier,
         });
       })();
     }

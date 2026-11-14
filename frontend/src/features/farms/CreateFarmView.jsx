@@ -272,7 +272,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder="e.g. Green Valley Farm"
+                    placeholder="e.g. Dschang Highlands Farm"
                     style={{
                       border: 'none',
                       outline: 'none',
@@ -516,7 +516,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                   type="text"
                   value={formData.region}
                   onChange={(e) => handleChange('region', e.target.value)}
-                  placeholder="e.g. West"
+                  placeholder="e.g. West Region"
                   style={{
                     width: '100%',
                     backgroundColor: '#FFFFFF',
@@ -539,7 +539,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                   type="text"
                   value={formData.district}
                   onChange={(e) => handleChange('district', e.target.value)}
-                  placeholder="e.g. Bafoussam"
+                  placeholder="e.g. Mifi"
                   style={{
                     width: '100%',
                     backgroundColor: '#FFFFFF',

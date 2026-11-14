@@ -439,7 +439,7 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
               <div style={{ marginTop: '10px' }}>
                 <input
                   type="text"
-                  placeholder="Enter custom crop name (e.g. Sorghum, Carrots)"
+                  placeholder="e.g. Plantain or Cocoyam"
                   value={customCropName}
                   onChange={(e) => setCustomCropName(e.target.value)}
                   required={selectedCrop === '__CUSTOM__'}

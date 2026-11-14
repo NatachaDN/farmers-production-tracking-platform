@@ -19,6 +19,9 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Exchanges a Google authorization code for the signed-in user's identity (OAuth 2.0 code flow).
@@ -32,14 +35,18 @@ public class GoogleOAuthClient {
 
     private final String clientId;
     private final String clientSecret;
+    private final Set<String> redirectUris;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
     public GoogleOAuthClient(@Value("${app.google.client-id:}") String clientId,
                              @Value("${app.google.client-secret:}") String clientSecret,
+                             @Value("${app.google.redirect-uris:}") String redirectUris,
                              ObjectMapper objectMapper) {
         this.clientId = clientId == null ? "" : clientId.trim();
         this.clientSecret = clientSecret == null ? "" : clientSecret.trim();
+        this.redirectUris = Arrays.stream(redirectUris.split(","))
+                .map(String::trim).filter(uri -> !uri.isEmpty()).collect(Collectors.toUnmodifiableSet());
         this.objectMapper = objectMapper;
 
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -49,16 +56,23 @@ public class GoogleOAuthClient {
     }
 
     public boolean isConfigured() {
-        return !clientId.isEmpty() && !clientSecret.isEmpty();
+        return !clientId.isEmpty() && !clientSecret.isEmpty() && !redirectUris.isEmpty();
     }
 
     public String getClientId() {
         return clientId;
     }
 
+    public Set<String> getRedirectUris() {
+        return redirectUris;
+    }
+
     public GoogleIdentity exchangeCode(String code, String redirectUri, String codeVerifier) {
         if (!isConfigured()) {
             throw new BadRequestException("Google sign-in is not configured on this server.");
+        }
+        if (!redirectUris.contains(redirectUri)) {
+            throw new BadRequestException("Google sign-in is not configured for this app address.");
         }
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
@@ -67,9 +81,7 @@ public class GoogleOAuthClient {
         form.add("client_secret", clientSecret);
         form.add("redirect_uri", redirectUri);
         form.add("grant_type", "authorization_code");
-        if (codeVerifier != null && !codeVerifier.isBlank()) {
-            form.add("code_verifier", codeVerifier);
-        }
+        form.add("code_verifier", codeVerifier);
 
         String body;
         try {
@@ -81,7 +93,7 @@ public class GoogleOAuthClient {
                     .body(String.class);
         } catch (RestClientResponseException ex) {
             // Typical causes: expired/used code, redirect URI not registered, wrong client secret.
-            log.warn("Google rejected the code exchange: HTTP {} {}", ex.getStatusCode().value(), ex.getResponseBodyAsString());
+            log.warn("Google rejected the code exchange: HTTP {}", ex.getStatusCode().value());
             throw new UnauthorizedException("Google rejected the sign-in request. Please try again.");
         } catch (RestClientException ex) {
             log.warn("Could not reach Google token endpoint: {}", ex.getMessage());

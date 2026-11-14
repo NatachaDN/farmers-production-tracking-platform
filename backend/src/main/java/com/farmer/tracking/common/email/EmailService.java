@@ -2,40 +2,48 @@ package com.farmer.tracking.common.email;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
  * Sends transactional emails on behalf of the Acrea platform.
  *
  * <p>SMTP credentials are injected via environment variables:
  * {@code MAIL_USERNAME}, {@code MAIL_PASSWORD}, {@code MAIL_HOST}, {@code MAIL_PORT}.
- * Password reset delivery requires SMTP credentials.
+ * Password reset delivery requires credentials when SMTP authentication is enabled.
  */
 @Service
 public class EmailService {
 
-    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-
     private final JavaMailSender mailSender;
+    private final String host;
+    private final String fromAddress;
+    private final String smtpUsername;
+    private final String smtpPassword;
+    private final boolean smtpAuth;
 
-    @Value("${app.mail.from:noreply@acrea.app}")
-    private String fromAddress;
-
-    @Value("${spring.mail.username:}")
-    private String smtpUsername;
-
-    public EmailService(JavaMailSender mailSender) {
+    public EmailService(JavaMailSender mailSender,
+                        @Value("${spring.mail.host:}") String host,
+                        @Value("${app.mail.from:}") String fromAddress,
+                        @Value("${spring.mail.username:}") String smtpUsername,
+                        @Value("${spring.mail.password:}") String smtpPassword,
+                        @Value("${spring.mail.properties.mail.smtp.auth:true}") boolean smtpAuth) {
         this.mailSender = mailSender;
+        this.host = host;
+        this.fromAddress = fromAddress;
+        this.smtpUsername = smtpUsername;
+        this.smtpPassword = smtpPassword;
+        this.smtpAuth = smtpAuth;
     }
 
-    // ------------------------------------------------------------------
-    // Public API
-    // ------------------------------------------------------------------
+    public boolean isConfigured() {
+        return StringUtils.hasText(host) && StringUtils.hasText(fromAddress)
+                && (!smtpAuth || (StringUtils.hasText(smtpUsername) && StringUtils.hasText(smtpPassword)));
+    }
 
     /**
      * Sends the 6-digit password reset code to the farmer's registered email.
@@ -45,9 +53,7 @@ public class EmailService {
      */
     public void sendPasswordResetCode(String toEmail, String resetCode) {
         String subject = "Your Acrea password reset code";
-        String body = buildResetEmailHtml(toEmail, resetCode);
-
-        if (smtpUsername == null || smtpUsername.isBlank()) {
+        if (!isConfigured()) {
             throw new IllegalStateException("Password reset email delivery is not configured.");
         }
 
@@ -57,12 +63,12 @@ public class EmailService {
             helper.setFrom(fromAddress);
             helper.setTo(toEmail);
             helper.setSubject(subject);
-            helper.setText(body, /* html = */ true);
+            helper.setText("Your Acrea password reset code is " + resetCode
+                    + ". It expires in 15 minutes. If you did not request it, you can ignore this email.",
+                    buildResetEmailHtml(resetCode));
             mailSender.send(message);
-            log.info("[EmailService] Password reset code sent to [{}]", toEmail);
         } catch (MessagingException e) {
-            log.error("[EmailService] Failed to send password reset email to [{}]: {}", toEmail, e.getMessage(), e);
-            throw new RuntimeException("Could not send password reset email. Please try again later.");
+            throw new MailPreparationException("Could not prepare password reset email", e);
         }
     }
 
@@ -70,7 +76,7 @@ public class EmailService {
     // Private helpers
     // ------------------------------------------------------------------
 
-    private String buildResetEmailHtml(String recipientEmail, String code) {
+    private String buildResetEmailHtml(String code) {
         return """
                 <!DOCTYPE html>
                 <html lang="en">
@@ -106,9 +112,7 @@ public class EmailService {
                                 Password reset request
                               </h1>
                               <p style="font-size:14px;color:#555;line-height:1.6;margin:0 0 28px;">
-                                We received a request to reset the password for
-                                <strong style="color:#164230;">%s</strong>.
-                                Use the code below in the app. It expires in
+                                Use the code below to reset your Acrea password. It expires in
                                 <strong>15 minutes</strong>.
                               </p>
 
@@ -146,6 +150,6 @@ public class EmailService {
                   </table>
                 </body>
                 </html>
-                """.formatted(recipientEmail, code);
+                """.formatted(code);
     }
 }

@@ -125,7 +125,7 @@ export function LoginView({ onNavigate, onLoginSuccess, initialError = '', initi
                 <input
                   id="login-identifier"
                   type="text"
-                  placeholder="name@example.com or phone"
+                  placeholder="Email or +237 6XX XXX XXX"
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
                   autoComplete="username"

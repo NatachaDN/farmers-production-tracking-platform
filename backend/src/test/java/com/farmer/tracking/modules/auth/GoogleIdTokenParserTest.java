@@ -36,6 +36,19 @@ class GoogleIdTokenParserTest {
         assertEquals("1234", identity.subject());
         assertEquals("joyce@gmail.com", identity.email());
         assertEquals("Joyce M", identity.name());
+        assertTrue(identity.authoritativeEmail());
+    }
+
+    @Test
+    void verifiedThirdPartyEmail_isNotAuthoritative() {
+        String claims = """
+                {"iss":"https://accounts.google.com","aud":"%s","exp":%d,
+                "sub":"1234","email":"joyce@example.com","email_verified":true}
+                """.formatted(AUDIENCE, now.plusSeconds(3600).getEpochSecond());
+        String payload = Base64.getUrlEncoder().withoutPadding().encodeToString(claims.getBytes(StandardCharsets.UTF_8));
+
+        assertFalse(GoogleIdTokenParser.parse("header." + payload + ".signature", AUDIENCE, now, mapper)
+                .authoritativeEmail());
     }
 
     @Test

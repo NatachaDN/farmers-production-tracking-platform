@@ -133,7 +133,7 @@ export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId }) {
             </label>
             <input
               type="text"
-              placeholder="e.g. Green Acres Farm, Highland Valley"
+              placeholder="e.g. Mbouda Farm"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -150,11 +150,11 @@ export function NewFarmModal({ isOpen, onClose, onFarmCreated, farmerId }) {
 
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '6px' }}>
-              General Location / County
+              Town or village and region
             </label>
             <input
               type="text"
-              placeholder="e.g. Nakuru County, Kenya · Sub-county / District"
+              placeholder="e.g. Mbouda, West Region"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               style={{

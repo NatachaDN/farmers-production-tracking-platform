@@ -2,6 +2,7 @@ package com.farmer.tracking.modules.auth;
 
 import com.farmer.tracking.common.email.EmailService;
 import com.farmer.tracking.common.exception.AccountLockedException;
+import com.farmer.tracking.common.exception.ApiException;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
@@ -19,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailSendException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -251,6 +254,7 @@ class AuthServiceTest {
 
     @Test
     void forgotPassword_StoresHashedCode_AndNeverReturnsIt() {
+        when(emailService.isConfigured()).thenReturn(true);
         ForgotPasswordRequest request = new ForgotPasswordRequest("joyce@example.com");
 
         Farmer farmer = new Farmer();
@@ -272,6 +276,7 @@ class AuthServiceTest {
 
     @Test
     void forgotPassword_ReturnsGenericResponse_WhenFarmerDoesNotExist() {
+        when(emailService.isConfigured()).thenReturn(true);
         ForgotPasswordRequest request = new ForgotPasswordRequest("unknown@example.com");
 
         when(farmerRepository.findByEmailOrPhone("unknown@example.com")).thenReturn(Optional.empty());
@@ -280,6 +285,31 @@ class AuthServiceTest {
 
         assertNotNull(response.getMessage());
         verify(emailService, never()).sendPasswordResetCode(anyString(), anyString());
+        verify(farmerRepository, never()).save(any());
+    }
+
+    @Test
+    void forgotPassword_reportsMissingSmtpBeforeLookingUpTheAccount() {
+        ApiException error = assertThrows(ApiException.class,
+                () -> authService.forgotPassword(new ForgotPasswordRequest("joyce@example.com")));
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, error.getStatus());
+        verifyNoInteractions(farmerRepository);
+    }
+
+    @Test
+    void forgotPassword_preservesExistingCodeWhenResendFails() {
+        String email = "joyce@example.com";
+        Farmer farmer = new Farmer();
+        farmer.setEmailOrPhone(email);
+        farmer.setPasswordResetToken("existing-code-hash");
+        when(emailService.isConfigured()).thenReturn(true);
+        when(farmerRepository.findByEmailOrPhone(email)).thenReturn(Optional.of(farmer));
+        doThrow(new MailSendException("unavailable")).when(emailService).sendPasswordResetCode(eq(email), anyString());
+
+        authService.forgotPassword(new ForgotPasswordRequest(email));
+
+        assertEquals("existing-code-hash", farmer.getPasswordResetToken());
         verify(farmerRepository, never()).save(any());
     }
 

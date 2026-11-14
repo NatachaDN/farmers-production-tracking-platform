@@ -3,13 +3,7 @@ import { cropService } from '../services/cropService';
 import { IconClose, IconSprout, IconCheck } from '../../../shared/components/Icons';
 
 const POPULAR_SUGGESTIONS = [
-  { name: 'Maize', varieties: ['Hybrid 614', 'Duma 43', 'H624'] },
-  { name: 'Tomatoes', varieties: ['Anna F1', 'Kilele F1', 'Rio Grande'] },
-  { name: 'Beans', varieties: ['Rosecoco (GLP-2)', 'Mwitemania', 'Yellow Bean'] },
-  { name: 'Potatoes', varieties: ['Shangi', 'Dutch Robjin', 'Unica'] },
-  { name: 'Cassava', varieties: ['Migyera', 'Tajirika', 'KME 1'] },
-  { name: 'Rice', varieties: ['Basmati 370', 'Komboka', 'NERICA'] },
-  { name: 'Coffee', varieties: ['SL28', 'Ruiru 11', 'Batian'] }
+  'Cassava', 'Plantain', 'Maize', 'Cocoa', 'Beans', 'Cocoyam', 'Tomatoes'
 ];
 
 export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
@@ -19,13 +13,6 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   if (!isOpen) return null;
-
-  const handleSelectSuggestion = (crop) => {
-    setName(crop.name);
-    if (crop.varieties && crop.varieties.length > 0 && !variety) {
-      setVariety(crop.varieties[0]);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -170,24 +157,24 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
               Quick Suggestions
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {POPULAR_SUGGESTIONS.map((item) => (
+              {POPULAR_SUGGESTIONS.map((crop) => (
                 <button
-                  key={item.name}
+                  key={crop}
                   type="button"
-                  onClick={() => handleSelectSuggestion(item)}
+                  onClick={() => setName(crop)}
                   style={{
                     padding: '5px 10px',
                     borderRadius: '999px',
                     fontSize: '0.75rem',
                     fontWeight: name.toLowerCase() === item.name.toLowerCase() ? 700 : 500,
-                    backgroundColor: name.toLowerCase() === item.name.toLowerCase() ? '#EAF4ED' : '#F4EFE6',
-                    color: name.toLowerCase() === item.name.toLowerCase() ? '#285336' : '#4B5752',
-                    border: name.toLowerCase() === item.name.toLowerCase() ? '1px solid #3E7B52' : '1px solid #DFD8CA',
+                    backgroundColor: name.toLowerCase() === crop.toLowerCase() ? '#EAF4ED' : '#F4EFE6',
+                    color: name.toLowerCase() === crop.toLowerCase() ? '#285336' : '#4B5752',
+                    border: name.toLowerCase() === crop.toLowerCase() ? '1px solid #3E7B52' : '1px solid #DFD8CA',
                     cursor: 'pointer',
                     transition: 'all 150ms ease'
                   }}
                 >
-                  + {item.name}
+                  + {crop}
                 </button>
               ))}
             </div>
@@ -202,7 +189,7 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
               type="text"
               required
               autoFocus
-              placeholder="e.g. Maize, Tomatoes, Coffee, Sorghum"
+              placeholder="e.g. Cassava, Plantain, Maize, Cocoa"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{
@@ -238,7 +225,7 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
             </div>
             <input
               type="text"
-              placeholder="e.g. Hybrid 614, Anna F1, Rosecoco, Shangi"
+              placeholder="e.g. CMS 8704 for maize"
               value={variety}
               onChange={(e) => setVariety(e.target.value)}
               style={{

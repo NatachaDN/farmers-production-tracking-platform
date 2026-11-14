@@ -178,20 +178,19 @@ Google OAuth 2.0 authorization-code flow (with PKCE). The browser redirects to G
 
 ### 3.1 `GET /api/v1/auth/google/config` (public)
 ```json
-{ "enabled": true, "clientId": "xxxx.apps.googleusercontent.com" }
+{ "enabled": true, "clientId": "xxxx.apps.googleusercontent.com", "redirectUris": ["http://localhost:5173/auth/google/callback"] }
 ```
 `enabled` is `false` (and `clientId` null) until `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
 
 ### 3.2 `POST /api/v1/auth/google` (public)
 ```json
-{ "code": "4/0Aea...", "redirectUri": "http://localhost:5173/auth/google/callback", "codeVerifier": "pkce-verifier" }
+{ "code": "4/0Aea...", "redirectUri": "http://localhost:5173/auth/google/callback", "codeVerifier": "<43–128 character PKCE verifier>" }
 ```
 Response `200`: same shape as login (`token`, `tokenType`, `farmer`, `message`); `farmer` also carries `avatarUrl` and
 `authProvider` (`LOCAL` or `GOOGLE`). Errors: `400` not configured, `401` Google rejected the code or the token failed
 validation (audience, issuer, expiry, unverified email), `502` Google unreachable.
 
-Account rules: a new Google email creates a `ROLE_FARMER` account. If a password account already uses the same verified
-email, it is linked to Google and its password is retired. Emails listed in `ADMIN_EMAILS` become `ROLE_ADMIN`.
+Account rules: a new Google email creates a `ROLE_FARMER` account. A matching Gmail or Google Workspace address can link an existing password account and retire its password. Linked accounts sign in using their Google subject. Allow-listed Google-hosted addresses can receive `ROLE_ADMIN`.
 
 ---
 

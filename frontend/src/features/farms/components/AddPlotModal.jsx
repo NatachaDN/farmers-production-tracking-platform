@@ -154,7 +154,7 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
             </label>
             <input
               type="text"
-              placeholder="e.g., Plot E — Wheat or North Field"
+              placeholder="e.g. Plot E — Plantain"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{

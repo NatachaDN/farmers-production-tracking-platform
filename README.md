@@ -308,11 +308,17 @@ The frontend will run at `http://localhost:5173`.
 
 ### Google sign-in (OAuth 2.0)
 1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create an **OAuth client ID** of type *Web application*.
-2. Add the authorised redirect URI `http://localhost:5173/auth/google/callback` (and your production URL + the same path).
-3. Put the values in `.env` (see `.env.example`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
-4. Restart the backend. The "Continue with Google" button on the login and register screens becomes active.
+2. Add the exact frontend callback to **Authorized redirect URIs**. Use `http://localhost:5173/auth/google/callback` on Vite's default port. If you run the frontend at `http://127.0.0.1:5179`, use `http://127.0.0.1:5179/auth/google/callback`. For production use your HTTPS frontend address followed by `/auth/google/callback`.
+3. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the backend environment or the gitignored root `.env`. Set `GOOGLE_REDIRECT_URIS` to the same comma-separated callbacks registered in Google Cloud for that environment.
+4. If the Google app is in Testing, add the Google accounts that will sign in as test users. Restart the backend and select **Continue with Google**. With registration review enabled, approve a new test account in Acrea and sign in again to verify access.
 
 In production the host must serve `index.html` for `/auth/google/callback` (single-page-app fallback).
+
+### Password reset email (SMTP)
+
+Set `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` and `MAIL_PASSWORD` using your SMTP provider's settings. Set `MAIL_FROM` if the authorized sender differs from the SMTP username. Use port 587 with STARTTLS by default. For implicit TLS on port 465, set `MAIL_SMTP_STARTTLS=false` and `MAIL_SMTP_SSL=true`. For Gmail, use an [app password](https://support.google.com/mail/answer/185833) where your account permits one.
+
+Restart the backend and request a code from **Forgot password** using an approved Acrea password account with an email address you control. Enter the code and confirm the new password works. For a local SMTP capture server, set its host and port, an explicit `MAIL_FROM`, and set `MAIL_SMTP_AUTH=false` and `MAIL_SMTP_STARTTLS=false`. Keep authentication and encryption enabled for a hosted SMTP provider.
 
 ### Admin console
 The management console is available to administrators and managers. Administrators can review registrations, change access, assign farmers to managers, and maintain the shared crop catalog. Managers see their assigned farmers and can approve or decline their pending registrations.
