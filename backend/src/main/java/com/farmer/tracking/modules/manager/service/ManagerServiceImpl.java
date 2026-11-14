@@ -370,10 +370,10 @@ public class ManagerServiceImpl implements ManagerService {
 
         Map<Long, Plot> plotMap = plots.stream().collect(Collectors.toMap(Plot::getId, Function.identity(), (a, b) -> a));
 
-        List<CycleIncident> incidents = new ArrayList<>();
-        for (Cycle c : cycles) {
-            incidents.addAll(incidentRepository.findByCycleIdOrderByIncidentDateDesc(c.getId()));
-        }
+        List<Long> cycleIds = cycles.stream().map(Cycle::getId).toList();
+        List<CycleIncident> incidents = cycleIds.isEmpty()
+                ? List.of()
+                : incidentRepository.findByCycleIdInOrderByIncidentDateDesc(cycleIds);
 
         ManagerFarmerRow farmerRow = toFarmerRow(f, plots, cycles, harvests);
 

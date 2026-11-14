@@ -2,6 +2,7 @@ package com.farmer.tracking.modules.crop.repository;
 
 import com.farmer.tracking.modules.crop.entity.ActivityType;
 import com.farmer.tracking.modules.crop.entity.CycleActivity;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,10 @@ import java.util.Optional;
 @Repository
 public interface CycleActivityRepository extends JpaRepository<CycleActivity, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"cycle", "cycle.plot"})
+    List<CycleActivity> findAll();
+
     /** All activities for a cycle, most recent first. */
     List<CycleActivity> findByCycleIdOrderByActivityDateDesc(Long cycleId);
 
@@ -26,6 +31,7 @@ public interface CycleActivityRepository extends JpaRepository<CycleActivity, Lo
     List<CycleActivity> findByCycleIdAndActivityType(Long cycleId, ActivityType activityType);
 
     /** All activities for all cycles belonging to a farmer, most recent first. */
+    @EntityGraph(attributePaths = {"cycle", "cycle.plot"})
     @Query("SELECT a FROM CycleActivity a WHERE a.cycle.farmerId = :farmerId ORDER BY a.activityDate DESC, a.createdAt DESC")
     List<CycleActivity> findByFarmerIdOrderByActivityDateDesc(@Param("farmerId") Long farmerId);
 }

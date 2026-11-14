@@ -57,26 +57,21 @@ public class ManagerScopeHelper {
         }
 
         Long managerId = principal.getId();
-        List<Farm> assignedFarms = farmRepository.findByManagerId(managerId);
-        Set<Long> farmIds = assignedFarms.stream().map(Farm::getId).collect(Collectors.toSet());
+        List<Object[]> assignedRows = farmRepository.findScopeIdsByManagerId(managerId);
+        Set<Long> farmIds = new HashSet<>();
         Set<Long> farmerIds = new HashSet<>();
 
-        for (Farm f : assignedFarms) {
-            if (f.getFarmer() != null) {
-                farmerIds.add(f.getFarmer().getId());
+        for (Object[] row : assignedRows) {
+            if (row[0] instanceof Long farmId) {
+                farmIds.add(farmId);
+            }
+            if (row[1] instanceof Long farmerId) {
+                farmerIds.add(farmerId);
             }
         }
         if (!farmIds.isEmpty()) {
-            for (Plot p : plotRepository.findAll()) {
-                if (p.getFarm() != null && farmIds.contains(p.getFarm().getId()) && p.getFarmerId() != null) {
-                    farmerIds.add(p.getFarmerId());
-                }
-            }
-            for (AnimalGroup g : animalGroupRepository.findAll()) {
-                if (g.getFarm() != null && farmIds.contains(g.getFarm().getId()) && g.getFarmer() != null) {
-                    farmerIds.add(g.getFarmer().getId());
-                }
-            }
+            farmerIds.addAll(plotRepository.findDistinctFarmerIdsByFarmIdIn(farmIds));
+            farmerIds.addAll(animalGroupRepository.findDistinctFarmerIdsByFarmIdIn(farmIds));
         }
 
         return new ManagerScope(true, managerId, farmIds, farmerIds);

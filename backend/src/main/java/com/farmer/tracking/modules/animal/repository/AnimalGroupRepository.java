@@ -3,19 +3,29 @@ package com.farmer.tracking.modules.animal.repository;
 import com.farmer.tracking.modules.animal.model.AnimalGroup;
 import com.farmer.tracking.modules.animal.model.AnimalGroupStatus;
 import com.farmer.tracking.modules.animal.model.AnimalType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface AnimalGroupRepository extends JpaRepository<AnimalGroup, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"farmer", "farm"})
+    List<AnimalGroup> findAll();
+
+    @EntityGraph(attributePaths = {"farmer", "farm"})
     @Query("SELECT g FROM AnimalGroup g WHERE g.farmer.id = :farmerId ORDER BY g.createdAt DESC")
     List<AnimalGroup> findByFarmerIdOrderByCreatedAtDesc(@Param("farmerId") Long farmerId);
+
+    @Query("SELECT DISTINCT g.farmer.id FROM AnimalGroup g WHERE g.farm.id IN :farmIds AND g.farmer IS NOT NULL")
+    List<Long> findDistinctFarmerIdsByFarmIdIn(@Param("farmIds") Collection<Long> farmIds);
 
     @Query("SELECT g FROM AnimalGroup g WHERE g.farmer.id = :farmerId AND g.animalType = :animalType ORDER BY g.createdAt DESC")
     List<AnimalGroup> findByFarmerIdAndAnimalTypeOrderByCreatedAtDesc(@Param("farmerId") Long farmerId, @Param("animalType") AnimalType animalType);

@@ -54,6 +54,10 @@ import java.util.stream.Stream;
 public class AdminService {
 
     private static final int IDLE_AFTER_DAYS = 14;
+    private static final long OVERVIEW_CACHE_TTL_MS = 10_000L;
+
+    private volatile Overview cachedOverview;
+    private volatile long cachedOverviewAtMs;
 
     private final FarmerRepository farmerRepository;
     private final FarmRepository farmRepository;
@@ -84,6 +88,11 @@ public class AdminService {
     // ------------------------------------------------------------------ overview
 
     public Overview overview() {
+        long now = System.currentTimeMillis();
+        Overview cached = cachedOverview;
+        if (cached != null && (now - cachedOverviewAtMs) < OVERVIEW_CACHE_TTL_MS) {
+            return cached;
+        }
         Data d = load();
         LocalDate today = LocalDate.now();
 
@@ -176,11 +185,14 @@ public class AdminService {
         List<AuditRow> audit = auditRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 8))
                 .stream().map(AdminService::toAuditRow).toList();
 
-        return new Overview(Instant.now(), totals, highlights, farmersByType, cyclesByStatus, activitiesByType,
+        Overview result = new Overview(Instant.now(), totals, highlights, farmersByType, cyclesByStatus, activitiesByType,
                 stages, harvestByCrop, inputsByType,
                 perDay(30, today, d.activities.stream().map(CycleActivity::getActivityDate)),
                 perDay(30, today, d.farmers.values().stream().map(f -> f.getCreatedAt() == null ? null : f.getCreatedAt().toLocalDate())),
                 harvestPerMonth, top, attention, recent, audit);
+        cachedOverview = result;
+        cachedOverviewAtMs = System.currentTimeMillis();
+        return result;
     }
 
     // ------------------------------------------------------------------ farmers
@@ -233,39 +245,43 @@ public class AdminService {
     // ------------------------------------------------------------------ activity & production lists
 
     public List<ActivityRow> activities(String type, int limit) {
-        Data d = load();
         ActivityType filter = type == null || type.isBlank() ? null : ActivityType.valueOf(type.trim().toUpperCase(Locale.ROOT));
-        return d.activities.stream()
+        Map<Long, String> farmerNames = farmerNameMap();
+        return activityRepository.findAll().stream()
                 .filter(a -> filter == null || a.getActivityType() == filter)
                 .sorted(ACTIVITY_NEWEST_FIRST)
                 .limit(clamp(limit))
-                .map(a -> toActivityRow(a, d))
+                .map(a -> toActivityRow(a, farmerNames))
                 .toList();
     }
 
     public List<CycleRow> cycles(String status) {
-        Data d = load();
         CycleStatus filter = status == null || status.isBlank() ? null : CycleStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
-        return d.cycles.stream()
+        Map<Long, String> farmerNames = farmerNameMap();
+        Map<Long, List<CycleActivity>> activitiesByCycle = activityRepository.findAll().stream()
+                .collect(Collectors.groupingBy(a -> a.getCycle().getId()));
+        Map<Long, Harvest> harvestByCycle = harvestRepository.findAll().stream()
+                .collect(Collectors.toMap(h -> h.getCycle().getId(), Function.identity(), (a, b) -> a));
+        return cycleRepository.findAll().stream()
                 .filter(c -> filter == null || c.getStatus() == filter)
                 .sorted(Comparator.comparing(Cycle::getStartDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(c -> toCycleRow(c, d))
+                .map(c -> toCycleRow(c, activitiesByCycle, harvestByCycle, farmerNames))
                 .toList();
     }
 
     public List<HarvestRow> harvests() {
-        Data d = load();
-        return d.harvests.stream()
+        Map<Long, String> farmerNames = farmerNameMap();
+        return harvestRepository.findAll().stream()
                 .sorted(Comparator.comparing(Harvest::getHarvestDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(h -> toHarvestRow(h, d))
+                .map(h -> toHarvestRow(h, farmerNames))
                 .toList();
     }
 
     public List<InputRow> inputs() {
-        Data d = load();
-        return d.inputs.stream()
+        Map<Long, String> farmerNames = farmerNameMap();
+        return inputRepository.findAll().stream()
                 .sorted(Comparator.comparing(FarmInput::getPurchaseDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(i -> toInputRow(i, d))
+                .map(i -> toInputRow(i, farmerNames))
                 .toList();
     }
 
@@ -290,15 +306,32 @@ public class AdminService {
                 d.inputSpendByFarmer.getOrDefault(f.getId(), 0.0));
     }
 
+    private Map<Long, String> farmerNameMap() {
+        return farmerRepository.findAll().stream()
+                .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+    }
+
     private CycleRow toCycleRow(Cycle c, Data d) {
-        List<CycleActivity> acts = d.activitiesByCycle.getOrDefault(c.getId(), List.of());
+        return toCycleRow(c, d.activitiesByCycle, d.harvestByCycle, null, d);
+    }
+
+    private CycleRow toCycleRow(Cycle c, Map<Long, List<CycleActivity>> activitiesByCycle,
+                                Map<Long, Harvest> harvestByCycle, Map<Long, String> farmerNames) {
+        return toCycleRow(c, activitiesByCycle, harvestByCycle, farmerNames, null);
+    }
+
+    private CycleRow toCycleRow(Cycle c, Map<Long, List<CycleActivity>> activitiesByCycle,
+                                Map<Long, Harvest> harvestByCycle, Map<Long, String> farmerNames, Data d) {
+        List<CycleActivity> acts = activitiesByCycle.getOrDefault(c.getId(), List.of());
         LocalDate last = acts.stream().map(CycleActivity::getActivityDate).filter(Objects::nonNull)
                 .max(Comparator.naturalOrder()).orElse(null);
-        Harvest h = d.harvestByCycle.get(c.getId());
+        Harvest h = harvestByCycle.get(c.getId());
         HarvestSummary harvest = h == null ? null
                 : new HarvestSummary(h.getQuantity(), h.getUnit() == null ? null : h.getUnit().name(), h.getHarvestDate(), h.getCalculatedYield());
+        String fName = d != null ? farmerName(d, c.getFarmerId())
+                : farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId());
         return new CycleRow(c.getId(), c.getName(), c.getCropName(), c.getPlot() != null ? c.getPlot().getName() : null,
-                c.getFarmerId(), farmerName(d, c.getFarmerId()),
+                c.getFarmerId(), fName,
                 c.getStatus() == null ? null : c.getStatus().name(), c.getStage(), c.getProgress(), c.getAcreage(),
                 c.getStartDate(), c.getEndDate(), c.getExpectedQuantity(), c.getExpectedQuantityUnit(),
                 acts.size(), last, health(c, last), harvest);
@@ -312,6 +345,14 @@ public class AdminService {
                 c.getFarmerId(), farmerName(d, c.getFarmerId()));
     }
 
+    private ActivityRow toActivityRow(CycleActivity a, Map<Long, String> farmerNames) {
+        Cycle c = a.getCycle();
+        return new ActivityRow(a.getId(), a.getActivityType() == null ? null : a.getActivityType().name(),
+                a.getActivityDate(), a.getNotes(), instant(a.getCreatedAt()),
+                c.getId(), c.getName(), cropLabel(c), c.getPlot() != null ? c.getPlot().getName() : null,
+                c.getFarmerId(), farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId()));
+    }
+
     private HarvestRow toHarvestRow(Harvest h, Data d) {
         Cycle c = h.getCycle();
         return new HarvestRow(h.getId(), c.getId(), c.getName(), cropLabel(c), c.getFarmerId(), farmerName(d, c.getFarmerId()),
@@ -319,8 +360,23 @@ public class AdminService {
                 h.getCalculatedYield(), h.getNotes());
     }
 
+    private HarvestRow toHarvestRow(Harvest h, Map<Long, String> farmerNames) {
+        Cycle c = h.getCycle();
+        return new HarvestRow(h.getId(), c.getId(), c.getName(), cropLabel(c), c.getFarmerId(),
+                farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId()),
+                h.getQuantity(), h.getUnit() == null ? null : h.getUnit().name(), h.getHarvestDate(),
+                h.getCalculatedYield(), h.getNotes());
+    }
+
     private InputRow toInputRow(FarmInput i, Data d) {
         return new InputRow(i.getId(), i.getFarmerId(), farmerName(d, i.getFarmerId()), i.getName(),
+                i.getType() == null ? null : i.getType().name(), i.getQuantity(), i.getUnit(), i.getPurchaseDate(),
+                i.getPurchasePrice(), i.getCumulativeCost());
+    }
+
+    private InputRow toInputRow(FarmInput i, Map<Long, String> farmerNames) {
+        return new InputRow(i.getId(), i.getFarmerId(),
+                farmerNames.getOrDefault(i.getFarmerId(), "Farmer #" + i.getFarmerId()), i.getName(),
                 i.getType() == null ? null : i.getType().name(), i.getQuantity(), i.getUnit(), i.getPurchaseDate(),
                 i.getPurchasePrice(), i.getCumulativeCost());
     }

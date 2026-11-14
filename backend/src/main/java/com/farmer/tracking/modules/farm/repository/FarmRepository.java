@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.farm.repository;
 
 import com.farmer.tracking.modules.farm.model.Farm;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,11 @@ import java.util.Optional;
 @Repository
 public interface FarmRepository extends JpaRepository<Farm, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"farmer", "manager"})
+    List<Farm> findAll();
+
+    @EntityGraph(attributePaths = {"farmer", "manager"})
     @Query("SELECT f FROM Farm f WHERE f.farmer.id = :farmerId ORDER BY f.createdAt DESC")
     List<Farm> findByFarmerIdOrderByCreatedAtDesc(@Param("farmerId") Long farmerId);
 
@@ -27,6 +33,10 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
     @Query("SELECT COUNT(f) > 0 FROM Farm f WHERE f.farmer.id = :farmerId")
     boolean existsByFarmerId(@Param("farmerId") Long farmerId);
 
+    @EntityGraph(attributePaths = {"farmer", "manager"})
     @Query("SELECT f FROM Farm f WHERE f.manager.id = :managerId ORDER BY f.createdAt DESC")
     List<Farm> findByManagerId(@Param("managerId") Long managerId);
+
+    @Query("SELECT f.id, f.farmer.id FROM Farm f WHERE f.manager.id = :managerId")
+    List<Object[]> findScopeIdsByManagerId(@Param("managerId") Long managerId);
 }
