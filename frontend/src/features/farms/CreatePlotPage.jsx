@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { farmService } from './services/farmService';
 import { plotService } from './services/plotService';
+import { cropService } from '../crops/services/cropService';
+import { CreateCropModal } from '../crops/components/CreateCropModal';
 import {
   IconAlertCircle,
   IconArrowLeft,
@@ -66,6 +68,21 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
   const photoInputRef = useRef(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [farmerCrops, setFarmerCrops] = useState([]);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!farmerId) return;
+    let mounted = true;
+    cropService.getCrops(farmerId)
+      .then((list) => {
+        if (mounted && Array.isArray(list)) {
+          setFarmerCrops(list);
+        }
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, [farmerId]);
 
   useEffect(() => {
     let mounted = true;
@@ -393,9 +410,30 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                 {/* Primary Crop */}
                 <div>
-                  <label htmlFor="plot-crop" style={labelStyle}>
-                    Primary Crop
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label htmlFor="plot-crop" style={{ ...labelStyle, marginBottom: 0 }}>
+                      Primary Crop
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCropModalOpen(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 10px',
+                        borderRadius: '9999px',
+                        border: '1px solid #3E7B52',
+                        backgroundColor: '#EAF4ED',
+                        color: '#2A6740',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <IconPlus size={12} /> Add New Crop
+                    </button>
+                  </div>
                   <input
                     id="plot-crop"
                     type="text"
@@ -405,7 +443,10 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
                     style={inputStyle}
                   />
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                    {CROP_SUGGESTIONS.map((crop) => {
+                    {Array.from(new Set([
+                      ...farmerCrops.map((c) => c.displayName || c.name).filter(Boolean),
+                      ...CROP_SUGGESTIONS,
+                    ])).map((crop) => {
                       const active = cropType.toLowerCase() === crop.toLowerCase();
                       return (
                         <button
@@ -608,6 +649,17 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
           </div>
         </form>
       )}
+
+      <CreateCropModal
+        farmerId={farmerId}
+        isOpen={isCropModalOpen}
+        onClose={() => setIsCropModalOpen(false)}
+        onCreated={(created) => {
+          setFarmerCrops((prev) => [created, ...prev]);
+          setCropType(created.displayName || created.name || '');
+          setIsCropModalOpen(false);
+        }}
+      />
     </div>
   );
 }
