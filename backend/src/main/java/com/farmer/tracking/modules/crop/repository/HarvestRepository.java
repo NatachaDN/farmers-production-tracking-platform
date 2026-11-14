@@ -1,6 +1,7 @@
 package com.farmer.tracking.modules.crop.repository;
 
 import com.farmer.tracking.modules.crop.entity.Harvest;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,10 +16,15 @@ import java.util.Optional;
 @Repository
 public interface HarvestRepository extends JpaRepository<Harvest, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"cycle", "cycle.plot"})
+    List<Harvest> findAll();
+
     Optional<Harvest> findByCycleId(Long cycleId);
 
     boolean existsByCycleId(Long cycleId);
 
+    @EntityGraph(attributePaths = {"cycle", "cycle.plot"})
     @Query("SELECT h FROM Harvest h WHERE h.cycle.farmerId = :farmerId ORDER BY h.harvestDate DESC")
     List<Harvest> findByFarmerIdOrderByHarvestDateDesc(@Param("farmerId") Long farmerId);
 }

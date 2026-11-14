@@ -39,6 +39,11 @@ import java.util.stream.Collectors;
 @Service
 public class AdminManagementService {
 
+    private static final long ANALYTICS_CACHE_TTL_MS = 10_000L;
+
+    private volatile AdminAnalyticsResponse cachedAnalytics;
+    private volatile long cachedAnalyticsAtMs;
+
     private final FarmerRepository farmerRepository;
     private final PasswordEncoder passwordEncoder;
     private final FarmRepository farmRepository;
@@ -300,6 +305,11 @@ public class AdminManagementService {
 
     @Transactional(readOnly = true)
     public AdminAnalyticsResponse analytics() {
+        long now = System.currentTimeMillis();
+        AdminAnalyticsResponse cached = cachedAnalytics;
+        if (cached != null && (now - cachedAnalyticsAtMs) < ANALYTICS_CACHE_TTL_MS) {
+            return cached;
+        }
         List<Farmer> users = farmerRepository.findAll();
         List<Farm> farms = farmRepository.findAll();
         List<Plot> plots = plotRepository.findAll();
@@ -404,7 +414,7 @@ public class AdminManagementService {
                 .sorted(Comparator.comparing(InputSpend::spent).reversed())
                 .toList();
 
-        return new AdminAnalyticsResponse(
+        AdminAnalyticsResponse response = new AdminAnalyticsResponse(
                 Instant.now(),
                 users.size(), totalFarmers, totalManagers, totalAdmins, suspendedUsers, pendingUsers,
                 farms.size(), plots.size(), totalPlotAreaHa,
@@ -415,6 +425,9 @@ public class AdminManagementService {
                 usersByRole, usersByStatus, incidentsByStatus,
                 farmsByRegion, livestockByType, harvestByCrop, harvestPerMonth, inputsByType
         );
+        cachedAnalytics = response;
+        cachedAnalyticsAtMs = System.currentTimeMillis();
+        return response;
     }
 
     // ------------------------------------------------------------------ Helpers
