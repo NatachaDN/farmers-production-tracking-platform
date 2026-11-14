@@ -345,3 +345,4 @@ export function ManageAnimalGroupsView() {
     </div>
   );
 }
+

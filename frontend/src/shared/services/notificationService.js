@@ -7,3 +7,4 @@ export const notificationService = {
   markRead: (id) => apiClient.put(`/notifications/${id}/read`, {}),
   markAllRead: () => apiClient.put('/notifications/read-all', {}),
 };
+

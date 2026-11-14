@@ -492,3 +492,4 @@ public class AdminManagementService {
         return kg(h) / 50.0;
     }
 }
+

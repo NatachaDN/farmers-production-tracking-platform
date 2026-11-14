@@ -548,3 +548,4 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
     </div>
   );
 }
+

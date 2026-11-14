@@ -72,3 +72,4 @@ public class NotificationService {
         notificationRepository.saveAll(list);
     }
 }
+
