@@ -12,7 +12,10 @@ import com.farmer.tracking.modules.auth.dto.*;
 import com.farmer.tracking.modules.auth.mapper.AuthMapper;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.model.PasswordChangeRequest;
+import com.farmer.tracking.modules.auth.model.PasswordChangeRequestStatus;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
+import com.farmer.tracking.modules.auth.repository.PasswordChangeRequestRepository;
 import com.farmer.tracking.modules.auth.service.AuthServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,9 @@ class AuthServiceTest {
     private FarmerRepository farmerRepository;
 
     @Mock
+    private PasswordChangeRequestRepository passwordChangeRequestRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -60,6 +66,7 @@ class AuthServiceTest {
         authMapper = new AuthMapper();
         authService = new AuthServiceImpl(
                 farmerRepository,
+                passwordChangeRequestRepository,
                 authMapper,
                 passwordEncoder,
                 tokenProvider,
@@ -225,6 +232,26 @@ class AuthServiceTest {
 
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
         verify(tokenProvider, never()).generateToken(any(), anyString(), org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void login_ThrowsUnauthorized_WhenFarmerRejected() {
+        LoginRequest request = new LoginRequest("joyce@example.com", "SecurePass123");
+
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("joyce@example.com");
+        farmer.setPasswordHash("hashed_password");
+        farmer.setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus.REJECTED);
+        farmer.setRejectionReason("Documents could not be verified");
+
+        when(farmerRepository.findByEmailOrPhone("joyce@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("SecurePass123", "hashed_password")).thenReturn(true);
+
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.login(request));
+        assertTrue(ex.getMessage().contains("rejected"));
+        assertTrue(ex.getMessage().contains("Documents could not be verified"));
+        verify(tokenProvider, never()).generateToken(any(), anyString());
     }
 
     @Test
@@ -442,5 +469,82 @@ class AuthServiceTest {
                 "file", "script.exe", "application/octet-stream", "content".getBytes()
         );
         assertThrows(BadRequestException.class, () -> authService.uploadAvatar("joyce@example.com", badFile));
+    }
+
+    @Test
+    void requestPasswordChange_Success() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setFullName("Kara");
+        farmer.setEmailOrPhone("kara@example.com");
+        farmer.setFarmName("Green Acres Farm");
+        farmer.setAuthProvider("LOCAL");
+        farmer.setPasswordHash("encodedOldPass");
+
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setCurrentPassword("OldPass123!");
+        req.setNewPassword("NewPass456!");
+        req.setConfirmPassword("NewPass456!");
+        req.setReason("Routine security rotation");
+
+        when(farmerRepository.findByEmailOrPhone("kara@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("OldPass123!", "encodedOldPass")).thenReturn(true);
+        when(passwordEncoder.matches("NewPass456!", "encodedOldPass")).thenReturn(false);
+        when(passwordChangeRequestRepository.existsByFarmerIdAndStatus(1L, PasswordChangeRequestStatus.PENDING))
+                .thenReturn(false);
+        when(passwordEncoder.encode("NewPass456!")).thenReturn("encodedNewPass");
+        when(passwordChangeRequestRepository.save(any(PasswordChangeRequest.class))).thenAnswer(inv -> {
+            PasswordChangeRequest saved = inv.getArgument(0);
+            saved.setId(42L);
+            return saved;
+        });
+
+        PasswordChangeRequestResponse res = authService.requestPasswordChange("kara@example.com", req);
+
+        assertNotNull(res);
+        assertEquals(42L, res.id());
+        assertEquals("PENDING", res.status());
+        assertEquals("Routine security rotation", res.reason());
+    }
+
+    @Test
+    void requestPasswordChange_ThrowsBadRequest_WhenFormerPasswordIncorrect() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("kara@example.com");
+        farmer.setAuthProvider("LOCAL");
+        farmer.setPasswordHash("encodedOldPass");
+
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setCurrentPassword("WrongOldPass");
+        req.setNewPassword("NewPass456!");
+        req.setConfirmPassword("NewPass456!");
+
+        when(farmerRepository.findByEmailOrPhone("kara@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("WrongOldPass", "encodedOldPass")).thenReturn(false);
+
+        assertThrows(BadRequestException.class, () -> authService.requestPasswordChange("kara@example.com", req));
+    }
+
+    @Test
+    void requestPasswordChange_ThrowsConflict_WhenPendingRequestExists() {
+        Farmer farmer = new Farmer();
+        farmer.setId(1L);
+        farmer.setEmailOrPhone("kara@example.com");
+        farmer.setAuthProvider("LOCAL");
+        farmer.setPasswordHash("encodedOldPass");
+
+        ChangePasswordRequest req = new ChangePasswordRequest();
+        req.setCurrentPassword("OldPass123!");
+        req.setNewPassword("NewPass456!");
+        req.setConfirmPassword("NewPass456!");
+
+        when(farmerRepository.findByEmailOrPhone("kara@example.com")).thenReturn(Optional.of(farmer));
+        when(passwordEncoder.matches("OldPass123!", "encodedOldPass")).thenReturn(true);
+        when(passwordEncoder.matches("NewPass456!", "encodedOldPass")).thenReturn(false);
+        when(passwordChangeRequestRepository.existsByFarmerIdAndStatus(1L, PasswordChangeRequestStatus.PENDING))
+                .thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> authService.requestPasswordChange("kara@example.com", req));
     }
 }

@@ -2,12 +2,17 @@ package com.farmer.tracking.modules.admin.service;
 
 import com.farmer.tracking.common.audit.AuditEvent;
 import com.farmer.tracking.common.audit.AuditEventRepository;
+import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.security.AdminAccessPolicy;
 import com.farmer.tracking.modules.admin.api.AdminDtos.*;
+import com.farmer.tracking.modules.auth.dto.PasswordChangeRequestResponse;
 import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.model.PasswordChangeRequest;
+import com.farmer.tracking.modules.auth.model.PasswordChangeRequestStatus;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
+import com.farmer.tracking.modules.auth.repository.PasswordChangeRequestRepository;
 import com.farmer.tracking.modules.crop.entity.ActivityType;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleActivity;
@@ -58,11 +63,13 @@ public class AdminService {
     private final HarvestRepository harvestRepository;
     private final FarmInputRepository inputRepository;
     private final AuditEventRepository auditRepository;
+    private final PasswordChangeRequestRepository passwordChangeRequestRepository;
 
     public AdminService(FarmerRepository farmerRepository, FarmRepository farmRepository, PlotRepository plotRepository,
                         CycleRepository cycleRepository, CycleActivityRepository activityRepository,
                         HarvestRepository harvestRepository, FarmInputRepository inputRepository,
-                        AuditEventRepository auditRepository) {
+                        AuditEventRepository auditRepository,
+                        PasswordChangeRequestRepository passwordChangeRequestRepository) {
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
         this.plotRepository = plotRepository;
@@ -71,6 +78,7 @@ public class AdminService {
         this.harvestRepository = harvestRepository;
         this.inputRepository = inputRepository;
         this.auditRepository = auditRepository;
+        this.passwordChangeRequestRepository = passwordChangeRequestRepository;
     }
 
     // ------------------------------------------------------------------ overview
@@ -443,6 +451,72 @@ public class AdminService {
                 farmerRepository.findAll(), farmRepository.findAll(), plotRepository.findAll(),
                 cycleRepository.findAll(), activityRepository.findAll(), harvestRepository.findAll(),
                 inputRepository.findAll());
+    }
+
+    // ------------------------------------------------------------------ password change requests
+
+    public List<PasswordChangeRequestResponse> passwordChangeRequests(String status) {
+        List<PasswordChangeRequest> list;
+        if (status != null && !status.isBlank()) {
+            PasswordChangeRequestStatus parsed;
+            try {
+                parsed = PasswordChangeRequestStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException("Invalid password change request status: " + status);
+            }
+            list = passwordChangeRequestRepository.findByStatusOrderByCreatedAtDesc(parsed);
+        } else {
+            list = passwordChangeRequestRepository.findAllByOrderByCreatedAtDesc();
+        }
+        return list.stream().map(PasswordChangeRequestResponse::from).toList();
+    }
+
+    @Transactional
+    public PasswordChangeRequestResponse approvePasswordChangeRequest(Long requestId, String adminEmailOrPhone, String adminNote) {
+        PasswordChangeRequest req = passwordChangeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Password change request not found."));
+
+        if (req.getStatus() != PasswordChangeRequestStatus.PENDING) {
+            throw new BadRequestException("Only pending password change requests can be approved.");
+        }
+
+        Farmer admin = farmerRepository.findByEmailOrPhone(adminEmailOrPhone.trim().toLowerCase(Locale.ROOT))
+                .orElseThrow(() -> new ResourceNotFoundException("Administrator account not found."));
+
+        Farmer targetFarmer = req.getFarmer();
+        targetFarmer.setPasswordHash(req.getNewPasswordHash());
+        farmerRepository.save(targetFarmer);
+
+        req.setStatus(PasswordChangeRequestStatus.APPROVED);
+        req.setAdminNote(adminNote != null && !adminNote.isBlank() ? adminNote.trim() : null);
+        req.setReviewedById(admin.getId());
+        req.setReviewedByName(admin.getFullName());
+        req.setReviewedAt(LocalDateTime.now());
+
+        PasswordChangeRequest saved = passwordChangeRequestRepository.save(req);
+        return PasswordChangeRequestResponse.from(saved);
+    }
+
+    @Transactional
+    public PasswordChangeRequestResponse rejectPasswordChangeRequest(Long requestId, String adminEmailOrPhone, String adminNote) {
+        PasswordChangeRequest req = passwordChangeRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Password change request not found."));
+
+        if (req.getStatus() != PasswordChangeRequestStatus.PENDING) {
+            throw new BadRequestException("Only pending password change requests can be rejected.");
+        }
+
+        Farmer admin = farmerRepository.findByEmailOrPhone(adminEmailOrPhone.trim().toLowerCase(Locale.ROOT))
+                .orElseThrow(() -> new ResourceNotFoundException("Administrator account not found."));
+
+        req.setStatus(PasswordChangeRequestStatus.REJECTED);
+        req.setAdminNote(adminNote != null && !adminNote.isBlank() ? adminNote.trim() : null);
+        req.setReviewedById(admin.getId());
+        req.setReviewedByName(admin.getFullName());
+        req.setReviewedAt(LocalDateTime.now());
+
+        PasswordChangeRequest saved = passwordChangeRequestRepository.save(req);
+        return PasswordChangeRequestResponse.from(saved);
     }
 
     private Long consoleManagerId() {

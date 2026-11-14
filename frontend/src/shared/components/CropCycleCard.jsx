@@ -52,7 +52,7 @@ export function CropCycleCard({
                 color: 'var(--color-text-primary)',
                 letterSpacing: '-0.01em'
               }}>
-                {cropName} · {plotName}
+                {plotName ? `${cropName} · ${plotName}` : cropName}
               </h3>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
                 {area}

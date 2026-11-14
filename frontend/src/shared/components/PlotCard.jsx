@@ -1,18 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBadge } from './StatusBadge';
 import { IconDots, IconChevronRight, IconTrash, IconPencil } from './Icons';
 
 export function PlotCard({
   icon,
   title,
+  farmName,
   area,
   stage,
   progress = 0,
+  imageUrl,
+  imageUrls,
   updated = "Updated today",
   onViewDetails,
   onEditPlot,
   onDeletePlot
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const coverImage = !imgFailed ? (imageUrl || (Array.isArray(imageUrls) && imageUrls[0]) || null) : null;
+  const photoCount = Array.isArray(imageUrls) ? imageUrls.length : (imageUrl ? 1 : 0);
+
   return (
     <article className="workspace-record-card" style={{
       backgroundColor: 'var(--color-card-bg)',
@@ -27,6 +34,46 @@ export function PlotCard({
     }}>
       {/* Top Header */}
       <div>
+        {coverImage && (
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            height: '132px',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            marginBottom: '14px',
+            border: '1px solid var(--color-card-border)',
+            backgroundColor: '#F4F1EA',
+          }}>
+            <img
+              src={coverImage}
+              alt={title}
+              onError={() => setImgFailed(true)}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+            {photoCount > 1 && (
+              <span style={{
+                position: 'absolute',
+                bottom: '8px',
+                right: '8px',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(22, 66, 48, 0.82)',
+                color: '#FFFFFF',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+              }}>
+                +{photoCount - 1} more
+              </span>
+            )}
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{
             width: '38px',
@@ -113,6 +160,16 @@ export function PlotCard({
         }}>
           {title}
         </h3>
+        {farmName && (
+          <p style={{
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: farmName === 'Unassigned' ? '#92400E' : '#3E7B52',
+            marginBottom: '4px'
+          }}>
+            {farmName === 'Unassigned' ? 'Unassigned farm' : `Farm: ${farmName}`}
+          </p>
+        )}
         <p style={{
           fontSize: '0.8125rem',
           color: 'var(--color-text-muted)',

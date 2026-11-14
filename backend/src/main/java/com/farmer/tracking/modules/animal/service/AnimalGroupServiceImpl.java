@@ -30,7 +30,6 @@ import java.util.List;
 @Service
 @Transactional
 public class AnimalGroupServiceImpl implements AnimalGroupService {
-
     private final AnimalGroupRepository animalGroupRepository;
     private final FarmerRepository farmerRepository;
     private final FarmRepository farmRepository;
@@ -47,7 +46,6 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         this.farmRepository = farmRepository;
         this.records = records;
     }
-
     @Override
     public AnimalGroupResponse createAnimalGroup(Long farmerId, CreateAnimalGroupRequest request) {
         Farmer farmer = farmerRepository.findById(farmerId)
@@ -125,7 +123,6 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         }
 
         Farm farm = livestockFarm(farmerId, request.getFarmId() == null ? group.getFarmId() : request.getFarmId());
-
         group.setName(request.getName().trim());
         group.setAnimalType(request.getAnimalType());
         group.setBreed(request.getBreed() != null ? request.getBreed().trim() : null);
@@ -167,18 +164,6 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         animalGroupRepository.delete(group);
     }
 
-    /**
-     * Checks if the animal group has protected historical records that must be retained.
-     * In this baseline, an archived group with recorded notes or custom population shifts is protected,
-     * laying the foundation for future production and health logs.
-     */
-    private boolean hasProtectedHistoricalDependencies(AnimalGroup group) {
-        if (group.getStatus() == AnimalGroupStatus.ARCHIVED && group.getNotes() != null && group.getNotes().contains("[PROTECTED]")) {
-            return true;
-        }
-        return false;
-    }
-
     private void validateOwnership(AnimalGroup group, Long farmerId) {
         if (group.getFarmer() == null || !group.getFarmer().getId().equals(farmerId)) {
             throw new ForbiddenException("Data Isolation Violation: You do not have permission to access animal group " + group.getId());
@@ -193,5 +178,11 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
             throw new BadRequestException("Animal groups can only belong to livestock farms.");
         }
         return farm;
+    }
+
+    private boolean hasProtectedHistoricalDependencies(AnimalGroup group) {
+        return group.getStatus() == AnimalGroupStatus.ARCHIVED
+                && group.getNotes() != null
+                && group.getNotes().contains("[PROTECTED]");
     }
 }

@@ -7,6 +7,7 @@ import {
   IconClose,
   IconWarning
 } from '../../../shared/components/Icons';
+import { Skeleton } from '../../../shared/components/Skeleton';
 
 /**
  * CycleInputUsageList displays all inputs consumed on the cycle,
@@ -59,8 +60,33 @@ export function CycleInputUsageList({
         </div>
 
         {isLoading ? (
-          <div style={{ padding: '36px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            Loading cycle input consumptions...
+          <div className="table-wrapper">
+            <table className="consumed-table">
+              <thead>
+                <tr>
+                  <th>Input Item</th>
+                  <th>Quantity Used</th>
+                  <th>Unit Price</th>
+                  <th>Total Real Cost</th>
+                  <th>Application Date</th>
+                  <th>Notes</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3].map((i) => (
+                  <tr key={i}>
+                    <td><Skeleton width="120px" height="18px" /></td>
+                    <td><Skeleton width="70px" height="20px" borderRadius="9999px" /></td>
+                    <td><Skeleton width="80px" height="16px" /></td>
+                    <td><Skeleton width="90px" height="18px" /></td>
+                    <td><Skeleton width="80px" height="14px" /></td>
+                    <td><Skeleton width="60px" height="14px" /></td>
+                    <td style={{ textAlign: 'right' }}><Skeleton width="30px" height="30px" borderRadius="6px" style={{ marginLeft: 'auto' }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : usages.length === 0 ? (
           <div className="consumed-inputs-empty">

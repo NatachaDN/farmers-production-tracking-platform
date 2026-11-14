@@ -3,7 +3,10 @@ import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
 import { CreateFarmView } from './features/farms/CreateFarmView';
+import { CreateFarmPage } from './features/farms/CreateFarmPage';
 import { FarmDetailsView } from './features/farms/FarmDetailsView';
+import { CreatePlotPage } from './features/farms/CreatePlotPage';
+import { PlotDetailsView } from './features/farms/PlotDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
@@ -23,17 +26,25 @@ import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
-import './features/admin/admin.css';
-import './features/auth/auth.css';
-import './shared/components/Workspace.css';
 import { LivestockView } from './features/livestock/LivestockView';
+import { ManagerDashboardView } from './features/manager/ManagerDashboardView';
+import { ManagerFarmersView } from './features/manager/ManagerFarmersView';
+import { ManagerReportsView } from './features/manager/ManagerReportsView';
 import { ReportsView } from './features/reports/ReportsView';
 import { AdminReferenceCrops } from './features/admin/AdminReferenceCrops';
 import { managerService } from './features/admin/services/adminService';
 import { farmService } from './features/farms/services/farmService';
+import './features/admin/admin.css';
+import './features/auth/auth.css';
+import './shared/components/Workspace.css';
+import './features/manager/manager.css';
 
 const hasConsoleAccess = user => ['ROLE_ADMIN', 'ROLE_MANAGER'].includes(user?.role);
-const homeRouteFor = user => user?.role === 'ROLE_MANAGER' ? 'manager-overview' : user?.role === 'ROLE_ADMIN' ? 'admin-overview' : 'dashboard';
+const homeRouteFor = (user) => {
+  if (authService.isAdmin(user)) return 'admin-overview';
+  if (authService.isManager(user)) return 'manager-dashboard';
+  return 'dashboard';
+};
 const routeParams = () => new URLSearchParams(window.location.search);
 const cycleRoutes = new Set(['activities', 'production', 'cycle-inputs', 'incidents']);
 
@@ -44,7 +55,7 @@ export function App() {
   const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser());
   const [currentRoute, setCurrentRoute] = useState(() => {
     if (googleAuth.isCallback()) return 'google-callback';
-    return authService.isAuthenticated() ? routeParams().get('page') || homeRouteFor(authService.getStoredUser()) : 'login';
+    return 'login';
   });
   const [selectedFarmId, setSelectedFarmId] = useState(() => Number(routeParams().get('farm')) || null);
   const [linkedCycleId, setLinkedCycleId] = useState(() => Number(routeParams().get('cycle')) || null);
@@ -55,6 +66,8 @@ export function App() {
   const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [selectedPlotId, setSelectedPlotId] = useState(null);
+  const [createPlotFarmId, setCreatePlotFarmId] = useState(null);
 
   useEffect(() => {
     if (!currentUser?.id || hasConsoleAccess(currentUser)) return;
@@ -125,9 +138,25 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      authService.logout();
+      setCurrentUser(null);
+      setCurrentRoute('login');
+      setLoginError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('acrea:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('acrea:unauthorized', handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
     if (authService.isAuthenticated()) {
       authService.getCurrentUser().then((user) => {
-        if (user) setCurrentUser(user);
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
+          setCurrentRoute('login');
+        }
       }).catch(() => {});
     }
   }, []);
@@ -159,17 +188,17 @@ export function App() {
 
   const routeHeaders = {
     'manager-overview': { title: 'Manager overview', subtitle: 'Production across your assigned farmers' },
-    'manager-farmers': { title: 'Assigned farmers', subtitle: 'Review your assigned accounts and farms' },
     'manager-activity': { title: 'Assigned farmer activity', subtitle: 'Field work across your assigned farms' },
-    'manager-reports': { title: 'Manager reports', subtitle: 'Production records for your assigned farmers' },
     'farms-create': { title: 'Create farm', subtitle: 'Register your land and farm details' },
-    'farm-details': { title: 'Farm details', subtitle: 'Saved farm information and production records' },
     'admin-overview': { title: 'Platform overview', subtitle: `${todayLabel()} · Every farmer, one view` },
     'admin-farmers': { title: 'Farmers', subtitle: 'Accounts, farms and production by farmer' },
     'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
     'admin-production': { title: 'Production', subtitle: 'Cycles, harvests and input spending' },
     'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
     'admin-crops': { title: 'Reference crops', subtitle: 'Manage shared crop choices for farmers' },
+    'manager-dashboard': { title: 'Supervision Dashboard', subtitle: `${todayLabel()} · Cooperative Network Production` },
+    'manager-farmers': { title: 'Supervised Farmers', subtitle: 'Member directory, crop allocations and registration approvals' },
+    'manager-reports': { title: 'Consolidated Production Reports', subtitle: 'Multi-farmer production aggregation and exports' },
     dashboard: {
       title: 'Dashboard',
       subtitle: `${todayLabel()}${currentUser?.farmName ? ` · ${currentUser.farmName}` : ''}`
@@ -177,6 +206,22 @@ export function App() {
     farms: {
       title: 'Farms & Plots',
       subtitle: 'Organize land, plots and active production cycles'
+    },
+    'farm-details': {
+      title: 'Farm Overview & Fields',
+      subtitle: 'Field parcels, terrain profile, and operational notes'
+    },
+    'create-farm': {
+      title: 'New Farm Registration',
+      subtitle: 'Configure your farm structure, acreage, and location step-by-step'
+    },
+    'create-plot': {
+      title: 'New Plot Registration',
+      subtitle: 'Assign a cultivated plot to your farm and record its crop details'
+    },
+    'plot-details': {
+      title: 'Plot Overview & Cycles',
+      subtitle: 'Cultivated parcel details, farm assignment, and production cycles'
     },
     crops: {
       title: 'Crop cycles',
@@ -294,6 +339,15 @@ export function App() {
           {currentRoute === 'manager-farmers' && <AdminFarmersView user={currentUser} />}
           {currentRoute === 'manager-activity' && <AdminActivityView isAdmin={false} />}
           {currentRoute === 'manager-reports' && <AdminProductionView service={managerService} />}
+          {currentRoute === 'manager-dashboard' && (
+            <ManagerDashboardView onNavigate={(r) => setCurrentRoute(r)} />
+          )}
+          {currentRoute === 'manager-farmers' && (
+            <ManagerFarmersView />
+          )}
+          {currentRoute === 'manager-reports' && (
+            <ManagerReportsView />
+          )}
           {currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={setCurrentRoute} isAdmin />}
           {currentRoute === 'admin-farmers' && <AdminFarmersView user={currentUser} />}
           {currentRoute === 'admin-activity' && <AdminActivityView isAdmin />}
@@ -311,10 +365,21 @@ export function App() {
           {currentRoute === 'farms' && (
             <FarmsAndPlotsView
               farmerId={currentUser?.id}
-              onNavigate={(r) => setCurrentRoute(r)}
-              onSelectFarm={(id) => {
-                setSelectedFarmId(id);
+              onNavigate={(r, extraId) => {
+                if (extraId) setSelectedFarmId(extraId);
+                setCurrentRoute(r);
+              }}
+              onSelectFarm={(farmId) => {
+                setSelectedFarmId(farmId);
                 setCurrentRoute('farm-details');
+              }}
+              onSelectPlot={(plotId) => {
+                setSelectedPlotId(plotId);
+                setCurrentRoute('plot-details');
+              }}
+              onCreatePlot={(farmId) => {
+                setCreatePlotFarmId(farmId || null);
+                setCurrentRoute('create-plot');
               }}
             />
           )}
@@ -328,13 +393,68 @@ export function App() {
               }}
             />
           )}
+          {currentRoute === 'create-farm' && (
+            <CreateFarmPage
+              onNavigate={(r) => setCurrentRoute(r)}
+              initialFarmer={currentUser}
+              onFarmCreated={(newFarm) => {
+                setCurrentRoute('farms');
+              }}
+            />
+          )}
           {currentRoute === 'farm-details' && (
             <FarmDetailsView
               user={currentUser}
               farmId={selectedFarmId}
-              onNavigate={(r, farmId) => {
-                if (farmId) setSelectedFarmId(farmId);
+              farmerId={currentUser?.id}
+              onNavigate={(r, extraId) => {
+                if (extraId) setSelectedFarmId(extraId);
                 setCurrentRoute(r);
+              }}
+              onSelectPlot={(plotId) => {
+                setSelectedPlotId(plotId);
+                setCurrentRoute('plot-details');
+              }}
+              onCreatePlot={(farmId) => {
+                setCreatePlotFarmId(farmId || selectedFarmId || null);
+                setCurrentRoute('create-plot');
+              }}
+              onBack={() => setCurrentRoute('farms')}
+            />
+          )}
+          {currentRoute === 'create-plot' && (
+            <CreatePlotPage
+              farmerId={currentUser?.id}
+              initialFarmId={createPlotFarmId}
+              onBack={() => setCurrentRoute(createPlotFarmId ? 'farm-details' : 'farms')}
+              onNavigate={(r, extraId) => {
+                if (r === 'farm-details' && extraId) setSelectedFarmId(extraId);
+                if (r === 'plot-details' && extraId) setSelectedPlotId(extraId);
+                setCurrentRoute(r);
+              }}
+              onPlotCreated={(newPlot) => {
+                setSelectedPlotId(newPlot.id);
+                if (newPlot.farmId) setSelectedFarmId(newPlot.farmId);
+                setCurrentRoute('plot-details');
+              }}
+            />
+          )}
+          {currentRoute === 'plot-details' && (
+            <PlotDetailsView
+              plotId={selectedPlotId}
+              farmerId={currentUser?.id}
+              onSelectFarm={(farmId) => {
+                setSelectedFarmId(farmId);
+                setCurrentRoute('farm-details');
+              }}
+              onNavigate={(r) => setCurrentRoute(r)}
+              onBack={(farmId) => {
+                if (farmId) {
+                  setSelectedFarmId(farmId);
+                  setCurrentRoute('farm-details');
+                } else {
+                  setCurrentRoute('farms');
+                }
               }}
             />
           )}
@@ -383,7 +503,6 @@ export function App() {
             <button className="workspace-button" type="button" onClick={() => setCurrentRoute('farms')}>Open farms</button>
           </section>}
           </>}
-
           {/* Quick Edit Profile Modal */}
           <EditProfileModal
             isOpen={isEditProfileModalOpen}

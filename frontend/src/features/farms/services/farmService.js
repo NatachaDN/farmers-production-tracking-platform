@@ -49,8 +49,21 @@ export const farmService = {
   /**
    * Update an existing farm record (owner verified server-side).
    */
-  updateFarm: async (id, farmData) => {
+  updateFarm: async (arg1, arg2, arg3) => {
+    const id = arg3 ? arg2 : arg1;
+    const farmData = arg3 ? arg3 : arg2;
     const data = await apiClient.put(`/farms/${id}`, farmData);
     return data;
+  },
+
+  /**
+   * Upload a farm picture (JPEG, PNG, WebP) from the user's camera or device.
+   * @param {File} file
+   * @returns {Promise<{ url: string }>}
+   */
+  uploadFarmPhoto: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.upload('/farms/upload-image', formData);
   }
 };

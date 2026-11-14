@@ -1,4 +1,5 @@
 import React from 'react';
+import './Skeleton.css';
 
 /**
  * Returns a font-size that fits the value comfortably inside the card.
@@ -8,12 +9,44 @@ import React from 'react';
  */
 function valueFontSize(value) {
   const len = String(value).length;
-  if (len <= 6)  return '2rem';
+  if (len <= 6) return '2rem';
   if (len <= 14) return '1.125rem';
   return '0.9375rem';
 }
 
-export function MetricCard({ label, value, subtext, icon, iconBg = "#EAF4ED" }) {
+export function MetricCard({ label, value, subtext, icon, iconBg = "#EAF4ED", loading = false }) {
+  if (loading || value === '…' || value === undefined || value === null) {
+    return (
+      <div style={{
+        backgroundColor: 'var(--color-card-bg)',
+        border: '1px solid var(--color-card-border)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '20px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: '140px',
+        boxShadow: 'var(--shadow-card)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            color: 'var(--color-text-secondary)'
+          }}>
+            {label}
+          </span>
+          <div className="acrea-skeleton" style={{ width: '36px', height: '36px', borderRadius: '50%' }} />
+        </div>
+
+        <div style={{ marginTop: '16px' }}>
+          <div className="acrea-skeleton" style={{ width: '48%', height: '32px', borderRadius: '6px' }} />
+          <div className="acrea-skeleton" style={{ width: '70%', height: '14px', borderRadius: '4px', marginTop: '10px' }} />
+        </div>
+      </div>
+    );
+  }
+
   const fontSize = valueFontSize(value);
 
   return (
@@ -47,7 +80,7 @@ export function MetricCard({ label, value, subtext, icon, iconBg = "#EAF4ED" }) 
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            {icon}
+            {typeof icon === 'function' ? React.createElement(icon, { size: 20 }) : icon}
           </div>
         )}
       </div>

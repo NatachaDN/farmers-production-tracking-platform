@@ -56,6 +56,9 @@ const TONES = {
   ROLE_ADMIN: 'forest', ROLE_FARMER: 'sand', GOOGLE: 'teal', LOCAL: 'sand',
   LOGIN_FAILED: 'red', GOOGLE_LOGIN_FAILED: 'red', REGISTER: 'green', GOOGLE_REGISTER: 'green',
   LOGIN: 'slate', GOOGLE_LOGIN: 'teal',
+  PASSWORD_CHANGE_REQUESTED: 'amber', PASSWORD_CHANGE_APPROVED: 'green',
+  PASSWORD_CHANGE_REJECTED: 'red', PASSWORD_CHANGE_CANCELLED: 'slate',
+  PENDING: 'amber', APPROVED: 'green', REJECTED: 'red',
   WATERING: 'teal', FERTILIZING: 'green', TREATMENT: 'amber', WEEDING: 'sand',
   SEEDS: 'green', FERTILIZER: 'teal', PESTICIDE: 'amber', OTHER: 'sand',
 };

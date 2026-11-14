@@ -1,25 +1,33 @@
 package com.farmer.tracking.modules.admin.controller;
 
+import com.farmer.tracking.common.audit.AuditEventType;
+import com.farmer.tracking.common.audit.AuditService;
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.common.exception.UnauthorizedException;
+import com.farmer.tracking.common.security.UserPrincipal;
 import com.farmer.tracking.common.telemetry.SystemInfoService;
 import com.farmer.tracking.common.telemetry.TelemetryService;
 import com.farmer.tracking.modules.admin.api.AdminDtos.*;
 import com.farmer.tracking.modules.admin.service.AdminService;
-import com.farmer.tracking.common.security.UserPrincipal;
-import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.modules.animal.controller.AnimalGroupRecordController.ProductionRow;
 import com.farmer.tracking.modules.animal.repository.AnimalGroupRecordRepository;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDate;
+import com.farmer.tracking.modules.auth.dto.PasswordChangeRequestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -34,13 +42,16 @@ public class AdminController {
     private final SystemInfoService systemInfoService;
     private final TelemetryService telemetryService;
     private final AnimalGroupRecordRepository animalRecords;
+    private final AuditService auditService;
 
-    public AdminController(AdminService adminService, SystemInfoService systemInfoService, TelemetryService telemetryService,
-                           AnimalGroupRecordRepository animalRecords) {
+    public AdminController(AdminService adminService, SystemInfoService systemInfoService,
+                           TelemetryService telemetryService, AnimalGroupRecordRepository animalRecords,
+                           AuditService auditService) {
         this.adminService = adminService;
         this.systemInfoService = systemInfoService;
         this.telemetryService = telemetryService;
         this.animalRecords = animalRecords;
+        this.auditService = auditService;
     }
 
     @GetMapping("/overview")
@@ -106,5 +117,45 @@ public class AdminController {
     @Operation(summary = "Server health, database latency and API traffic since the last restart")
     public Telemetry telemetry() {
         return new Telemetry(Instant.now(), systemInfoService.snapshot(), telemetryService.snapshot());
+    }
+
+    @GetMapping("/password-requests")
+    @Operation(summary = "List farmer password change requests, optionally filtered by status")
+    public List<PasswordChangeRequestResponse> passwordRequests(@RequestParam(required = false) String status) {
+        return adminService.passwordChangeRequests(status);
+    }
+
+    @PostMapping("/password-requests/{id}/approve")
+    @Operation(summary = "Approve a farmer password change request and apply the new password")
+    public PasswordChangeRequestResponse approvePasswordRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails admin,
+            @RequestBody(required = false) ReviewPasswordChangeRequest body,
+            HttpServletRequest http) {
+        if (admin == null) {
+            throw new UnauthorizedException("Administrator authentication required.");
+        }
+        String note = body != null ? body.adminNote() : null;
+        PasswordChangeRequestResponse response = adminService.approvePasswordChangeRequest(id, admin.getUsername(), note);
+        auditService.record(AuditEventType.PASSWORD_CHANGE_APPROVED, response.farmerId(),
+                response.farmerName(), "Admin approved password change request #" + id, http);
+        return response;
+    }
+
+    @PostMapping("/password-requests/{id}/reject")
+    @Operation(summary = "Reject a farmer password change request")
+    public PasswordChangeRequestResponse rejectPasswordRequest(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails admin,
+            @RequestBody(required = false) ReviewPasswordChangeRequest body,
+            HttpServletRequest http) {
+        if (admin == null) {
+            throw new UnauthorizedException("Administrator authentication required.");
+        }
+        String note = body != null ? body.adminNote() : null;
+        PasswordChangeRequestResponse response = adminService.rejectPasswordChangeRequest(id, admin.getUsername(), note);
+        auditService.record(AuditEventType.PASSWORD_CHANGE_REJECTED, response.farmerId(),
+                response.farmerName(), "Admin rejected password change request #" + id, http);
+        return response;
     }
 }

@@ -39,7 +39,7 @@ export function AdminActivityView({ isAdmin }) {
                 <button key={t} className="adm-chip" aria-pressed={type === t} onClick={() => setType(t)}>{label(t)}</button>
               ))}
             </div>
-            <input className="adm-input" type="search" placeholder="Search farmer, crop, plot or notes" aria-label="Search field activities"
+            <input className="adm-input" type="search" placeholder="Rechercher producteur (Bandjoun, Bafoussam), culture ou parcelle" aria-label="Search field activities"
               value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <DataGate state={field}>{() => (

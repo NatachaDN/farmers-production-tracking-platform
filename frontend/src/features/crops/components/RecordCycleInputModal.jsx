@@ -380,7 +380,7 @@ export function RecordCycleInputModal({ isOpen, onClose, farmerId, cycleId, cycl
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Top-dressing at vegetative stage"
+                  placeholder="e.g. Fumure de fond avec fiente de Bafoussam"
                   style={inputStyle}
                 />
               </div>

@@ -80,4 +80,6 @@ public final class AdminDtos {
                                List<AuditRow> auditEvents) {}
 
     public record Telemetry(Instant generatedAt, SystemSnapshot system, TrafficSnapshot traffic) {}
+
+    public record ReviewPasswordChangeRequest(String adminNote) {}
 }

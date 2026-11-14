@@ -2,8 +2,11 @@ package com.farmer.tracking.modules.crop.repository;
 
 import com.farmer.tracking.modules.crop.entity.Harvest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,4 +20,7 @@ public interface HarvestRepository extends JpaRepository<Harvest, Long> {
     Optional<Harvest> findByCycleId(Long cycleId);
 
     boolean existsByCycleId(Long cycleId);
+
+    @Query("SELECT h FROM Harvest h WHERE h.cycle.farmerId = :farmerId ORDER BY h.harvestDate DESC")
+    List<Harvest> findByFarmerIdOrderByHarvestDateDesc(@Param("farmerId") Long farmerId);
 }

@@ -74,8 +74,6 @@ class AnimalGroupServiceTest {
         farm.setName("Green Acres Farm");
         farm.setFarmer(owner);
         farm.setType(com.farmer.tracking.modules.auth.model.FarmType.LIVESTOCK);
-
-        ownedGroup = new AnimalGroup();
         ownedGroup.setId(GROUP_ID);
         ownedGroup.setFarmer(owner);
         ownedGroup.setFarm(farm);
@@ -138,7 +136,7 @@ class AnimalGroupServiceTest {
         request.setName("Boer Goats");
         request.setAnimalType(AnimalType.GOATS);
         request.setInitialPopulation(15);
-        request.setCurrentPopulation(null);
+        request.setCurrentPopulation(null); // omitted
         request.setFarmId(FARM_ID);
         when(farmRepository.findByIdAndFarmerId(FARM_ID, OWNER_ID)).thenReturn(Optional.of(farm));
 

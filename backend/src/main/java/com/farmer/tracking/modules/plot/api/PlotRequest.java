@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+import java.util.List;
+
 public class PlotRequest {
 
     @NotBlank(message = "Plot name is required")
@@ -21,6 +23,16 @@ public class PlotRequest {
     private String stage;
 
     private Long farmId;
+
+    private String soilType;
+
+    private String irrigationType;
+
+    private String slope;
+
+    private String notes;
+
+    private List<String> imageUrls;
 
     public PlotRequest() {}
 
@@ -93,5 +105,45 @@ public class PlotRequest {
 
     public void setStage(String stage) {
         this.stage = stage;
+    }
+
+    public String getSoilType() {
+        return soilType;
+    }
+
+    public void setSoilType(String soilType) {
+        this.soilType = soilType;
+    }
+
+    public String getIrrigationType() {
+        return irrigationType;
+    }
+
+    public void setIrrigationType(String irrigationType) {
+        this.irrigationType = irrigationType;
+    }
+
+    public String getSlope() {
+        return slope;
+    }
+
+    public void setSlope(String slope) {
+        this.slope = slope;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
     }
 }

@@ -6,6 +6,7 @@ import {
   IconSprout,
   IconWheat
 } from '../../../shared/components/Icons';
+import { AcreaMap } from '../../../shared/components/AcreaMap';
 
 const ACTIVITY_TYPES = [
   { value: 'WATERING', label: 'Watering', icon: IconDroplets, color: '#3A86C8' },
@@ -24,6 +25,21 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
   });
 
   const [errors, setErrors] = useState({});
+  const [activityLocation, setActivityLocation] = useState('');
+
+  const handleMapLocationSelect = ({ latitude, longitude, localityHint }) => {
+    const locTag = localityHint
+      ? `${localityHint} [GPS: ${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E]`
+      : `[GPS: ${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E]`;
+    setActivityLocation(locTag);
+    setFormData((prev) => {
+      const existing = prev.notes || '';
+      if (existing.includes('GPS:')) {
+        return { ...prev, notes: existing.replace(/\[GPS:[^\]]+\]/, `[GPS: ${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E]`) };
+      }
+      return { ...prev, notes: existing ? `${existing} · ${locTag}` : locTag };
+    });
+  };
 
   // Synchronize form fields whenever initialData changes
   useEffect(() => {
@@ -147,6 +163,19 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
         {errors.activityDate && <span className="field-error">{errors.activityDate}</span>}
       </div>
 
+      {/* Field Intervention Location Map */}
+      <div className="form-group">
+        <AcreaMap
+          locationText={activityLocation || formData.notes}
+          onLocationSelect={handleMapLocationSelect}
+          label="Intervention Field Location (Map & GPS)"
+          hint="Tap where in the field this task occurred or use GPS to pin your live position."
+          height="170px"
+          pinLabel={formData.activityType || 'Activity'}
+          pinColor="#D97706"
+        />
+      </div>
+
       {/* Observation Notes */}
       <div className="form-group">
         <div className="label-with-count">
@@ -162,7 +191,7 @@ export function ActivityForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="notes"
           rows={3}
           className={`form-textarea ${errors.notes ? 'input-error' : ''}`}
-          placeholder="e.g. Applied 20L bio-fertilizer per row, observed uniform moisture..."
+          placeholder="e.g. Épandage de fiente compostée sur les billons de maïs à Bandjoun, humidité satisfaisante..."
           value={formData.notes}
           onChange={handleChange}
         />

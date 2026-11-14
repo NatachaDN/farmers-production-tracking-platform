@@ -308,9 +308,14 @@ export function CycleInputUsageForm({
               {remainingStockPreview.toFixed(2)} {unit}
             </div>
             <div className={`calc-stat-subtext ${remainingStockPreview < 0 ? 'warning' : ''}`}>
-              {remainingStockPreview < 0
-                ? '⚠️ Deficit of ' + Math.abs(remainingStockPreview).toFixed(2) + ' ' + unit
-                : 'Will remain in available inventory'}
+              {remainingStockPreview < 0 ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <IconWarning size={12} color="#DC2626" />
+                  <span>{'Deficit of ' + Math.abs(remainingStockPreview).toFixed(2) + ' ' + unit}</span>
+                </span>
+              ) : (
+                'Will remain in available inventory'
+              )}
             </div>
           </div>
         </div>
@@ -346,7 +351,7 @@ export function CycleInputUsageForm({
             type="text"
             maxLength="500"
             className="form-input"
-            placeholder="e.g. Applied at root zone during morning irrigation"
+            placeholder="e.g. Épandage au pied des plants de maïs à Bandjoun le matin"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={!isCycleActive || isSubmitting}
