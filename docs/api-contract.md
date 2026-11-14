@@ -356,3 +356,178 @@ All plot endpoints require an authenticated user with a valid Bearer token. Owne
 }
 ```
 - **Forced Deletion:** When called with `?force=true`, any linked cycles are unlinked from the plot and the plot is deleted.
+
+
+---
+
+## 6. Animal Group Management Module (Livestock)
+
+Base path: `/api/v1/animals/groups` (also supports `/api/animals/groups`)
+
+### 6.1 Register Animal Group
+- **Endpoint:** `POST /api/v1/animals/groups`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Request Body:**
+```json
+{
+  "name": "Dairy Herd A",
+  "animalType": "CATTLE",
+  "breed": "Holstein Friesian",
+  "initialPopulation": 30,
+  "currentPopulation": 30,
+  "location": "Barn 2 — East Pasture",
+  "farmId": 1,
+  "purpose": "Milk Production",
+  "status": "ACTIVE",
+  "startDate": "2026-10-15",
+  "notes": "Healthy dairy herd with vaccination schedule up to date."
+}
+```
+- **Response (201 Created):**
+```json
+{
+  "id": 1,
+  "farmerId": 1,
+  "farmId": 1,
+  "farmName": "Green Acres Farm",
+  "name": "Dairy Herd A",
+  "animalType": "CATTLE",
+  "animalTypeDisplay": "Cattle",
+  "breed": "Holstein Friesian",
+  "initialPopulation": 30,
+  "currentPopulation": 30,
+  "location": "Barn 2 — East Pasture",
+  "purpose": "Milk Production",
+  "status": "ACTIVE",
+  "startDate": "2026-10-15",
+  "notes": "Healthy dairy herd with vaccination schedule up to date.",
+  "createdAt": "2026-11-10T12:00:00",
+  "updatedAt": "2026-11-10T12:00:00"
+}
+```
+- **Error (400 Bad Request):** If `initialPopulation` <= 0, `currentPopulation` < 0, or missing required fields (`name`, `animalType`).
+
+### 6.2 List Farmer's Animal Groups
+- **Endpoint:** `GET /api/v1/animals/groups`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Response (200 OK):** Array of `AnimalGroupResponse` items owned by the authenticated farmer.
+
+### 6.3 Get Animal Group Details
+- **Endpoint:** `GET /api/v1/animals/groups/{id}`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Response (200 OK):** `AnimalGroupResponse` object.
+- **Error (403 Forbidden):** If the group belongs to another farmer (enforcing multi-tenant isolation).
+- **Error (404 Not Found):** If the animal group ID does not exist.
+
+### 6.4 Update Animal Group
+- **Endpoint:** `PUT /api/v1/animals/groups/{id}`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Request Body:**
+```json
+{
+  "name": "Dairy Herd A — Milking Phase",
+  "animalType": "CATTLE",
+  "breed": "Holstein Friesian",
+  "currentPopulation": 28,
+  "initialPopulation": 30,
+  "location": "Barn 2 — East Pasture",
+  "purpose": "Milk Production",
+  "status": "ACTIVE",
+  "notes": "Two heads culled for health reasons."
+}
+```
+- **Response (200 OK):** Updated `AnimalGroupResponse` object.
+- **Error (400 Bad Request):** If population values are invalid.
+- **Error (403 Forbidden):** If the group belongs to another farmer.
+- **Error (404 Not Found):** If group ID does not exist.
+
+### 6.5 Delete Animal Group
+- **Endpoint:** `DELETE /api/v1/animals/groups/{id}`
+- **Auth required:** `ROLE_FARMER` (Bearer JWT token)
+- **Response (204 No Content):** Group successfully deleted when no historical dependencies exist.
+- **Error (403 Forbidden):** If the group belongs to another farmer.
+- **Error (404 Not Found):** If group ID does not exist.
+- **Error (409 Conflict):** If the group is protected by historical records or active production logs.
+
+---
+
+## 7. Manager Supervision & Cooperative Module (`/api/v1/manager/**`)
+
+All manager endpoints require authentication with role `ROLE_MANAGER` or `ROLE_ADMIN`.
+
+### 7.1 Manager Aggregated Dashboard (US-33)
+- **Endpoint:** `GET /api/v1/manager/dashboard`
+- **Auth required:** `ROLE_MANAGER` or `ROLE_ADMIN`
+- **Response (200 OK):**
+```json
+{
+  "totalFarmers": 12,
+  "pendingFarmers": 2,
+  "approvedFarmers": 9,
+  "rejectedFarmers": 1,
+  "activeCyclesCount": 8,
+  "completedCyclesCount": 14,
+  "totalHarvestKg": 24500.0,
+  "totalHarvestTons": 24.5,
+  "totalCultivatedAreaHa": 45.2,
+  "totalPlotsCount": 15,
+  "totalAnimalGroupsCount": 6,
+  "totalAnimalPopulation": 85,
+  "activeAlertsCount": 2,
+  "recentAlerts": [...],
+  "topProducers": [...],
+  "monthlyProduction": [...],
+  "pendingRegistrations": [...]
+}
+```
+
+### 7.2 View and Filter Supervised Farmers (US-31, US-32)
+- **Endpoint:** `GET /api/v1/manager/farmers`
+- **Query Parameters:**
+  - `search`: Filter by name, email, phone, or location.
+  - `region`: Filter by geographic region.
+  - `crop`: Filter by crop name grown.
+  - `status`: `PENDING`, `APPROVED`, `REJECTED`, or `ALL`.
+  - `sort`: `name`, `cycles`, `plots`, `harvest`, `joined`, `status`.
+- **Response (200 OK):** Array of `ManagerFarmerRow` objects with plots count, active cycles, and harvested yield.
+
+### 7.3 Farmer Drilldown Details (US-33)
+- **Endpoint:** `GET /api/v1/manager/farmers/{id}`
+- **Response (200 OK):** `ManagerFarmerDetail` object containing farmer profile, farms, plots, active cycles, harvest records, field incidents, and livestock groups.
+
+### 7.4 Approve / Reject Farmer Registration (US-34)
+- **Endpoint:** `PUT /api/v1/manager/farmers/{id}/status`
+- **Request Body:**
+```json
+{
+  "status": "APPROVED",
+  "rejectionReason": null
+}
+```
+Or for rejection:
+```json
+{
+  "status": "REJECTED",
+  "rejectionReason": "National identity verification unconfirmed."
+}
+```
+- **Response (200 OK):** Updated `ManagerFarmerRow` object. Rejected farmers are denied login with an explanatory message.
+
+### 7.5 Multi-Farmer Consolidated Production Report (US-35)
+- **Endpoint:** `POST /api/v1/manager/reports/consolidated`
+- **Request Body:**
+```json
+{
+  "startDate": "2026-01-01",
+  "endDate": "2026-06-30",
+  "farmerIds": [1, 2, 5],
+  "region": "Rift Valley",
+  "crop": "Maize"
+}
+```
+- **Response (200 OK):** `ConsolidatedReportResponse` with report ID, period bounds, total yield (tons and kg), active cycles, cultivated area, crop breakdown with volume shares, and individual farmer performance rows.
+
+### 7.6 Export Consolidated Report as CSV (US-35)
+- **Endpoint:** `POST /api/v1/manager/reports/consolidated/export`
+- **Content-Type:** `text/csv; charset=UTF-8`
+- **Response (200 OK):** Formatted CSV document attachment for cooperative export and record keeping.

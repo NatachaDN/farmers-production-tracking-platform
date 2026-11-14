@@ -1,7 +1,72 @@
 import React from 'react';
-import { IconCrop, IconLivestock } from '../../shared/components/Icons';
+import { IconCrop, IconFarms } from '../../shared/components/Icons';
+import '../../shared/components/Skeleton.css';
 
-export function QuickModuleCards({ onNavigate }) {
+export function QuickModuleCards({ summary, onNavigate, loading = false }) {
+  if (loading) {
+    return (
+      <>
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid var(--color-card-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div className="acrea-skeleton" style={{ width: '38px', height: '38px', borderRadius: '50%' }} />
+              <div className="acrea-skeleton" style={{ width: '90px', height: '20px', borderRadius: '9999px' }} />
+            </div>
+            <div className="acrea-skeleton" style={{ width: '140px', height: '20px', borderRadius: '4px', marginBottom: '8px' }} />
+            <div className="acrea-skeleton" style={{ width: '95%', height: '14px', borderRadius: '4px' }} />
+          </div>
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F4EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="acrea-skeleton" style={{ width: '120px', height: '14px', borderRadius: '4px' }} />
+            <div className="acrea-skeleton" style={{ width: '80px', height: '14px', borderRadius: '4px' }} />
+          </div>
+        </div>
+
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid var(--color-card-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div className="acrea-skeleton" style={{ width: '38px', height: '38px', borderRadius: '50%' }} />
+              <div className="acrea-skeleton" style={{ width: '90px', height: '20px', borderRadius: '9999px' }} />
+            </div>
+            <div className="acrea-skeleton" style={{ width: '140px', height: '20px', borderRadius: '4px', marginBottom: '8px' }} />
+            <div className="acrea-skeleton" style={{ width: '95%', height: '14px', borderRadius: '4px' }} />
+          </div>
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F4EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="acrea-skeleton" style={{ width: '120px', height: '14px', borderRadius: '4px' }} />
+            <div className="acrea-skeleton" style={{ width: '80px', height: '14px', borderRadius: '4px' }} />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const activeCycles = summary?.activeCyclesCount ?? 0;
+  const totalHarvestKg = summary?.totalHarvestKg ?? 0;
+  const harvestDisplay = totalHarvestKg >= 1000
+    ? `${(totalHarvestKg / 1000).toFixed(1)} t`
+    : `${totalHarvestKg.toFixed(0)} kg`;
+
+  const plotsCount = summary?.plotsCount ?? 0;
+  const totalAreaHa = summary?.totalAreaHa ?? 0;
+  const farmsCount = summary?.farmsCount ?? 0;
+
   return (
     <>
       {/* Crop Production Quick Card */}
@@ -43,7 +108,7 @@ export function QuickModuleCards({ onNavigate }) {
 
         <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F4EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-            4 active cycles · 6.3 t harvested
+            {activeCycles} active cycles · {harvestDisplay} harvested
           </span>
           <button
             onClick={() => onNavigate && onNavigate('crops')}
@@ -54,7 +119,7 @@ export function QuickModuleCards({ onNavigate }) {
         </div>
       </div>
 
-      {/* Animal Production Quick Card */}
+      {/* Farms & Plots Quick Card */}
       <div style={{
         backgroundColor: '#FFFFFF',
         border: '1px solid var(--color-card-border)',
@@ -76,30 +141,30 @@ export function QuickModuleCards({ onNavigate }) {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <IconLivestock size={20} color="#D97706" />
+              <IconFarms size={20} color="#D97706" />
             </div>
             <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '3px 8px', borderRadius: '9999px', fontWeight: 500 }}>
-              Animal production
+              Land & Plots
             </span>
           </div>
 
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '6px' }}>
-            Animal Production
+            Farms & Plots
           </h3>
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-            Track animal groups, feeding, production and population changes.
+            Track your farm acreage, parcel boundaries, soil conditions and plots.
           </p>
         </div>
 
         <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #F4EFE6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-            4 groups · 6,840 units this month
+            {plotsCount} plots ({totalAreaHa} ha) · {farmsCount} farm{farmsCount === 1 ? '' : 's'}
           </span>
           <button
-            onClick={() => onNavigate && onNavigate('livestock')}
+            onClick={() => onNavigate && onNavigate('farms')}
             style={{ fontSize: '0.8125rem', color: '#D97706', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            Open module →
+            Manage plots →
           </button>
         </div>
       </div>

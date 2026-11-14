@@ -1,0 +1,159 @@
+/* ============================================================
+   ACREA MOBILE-FIRST & SMALL SCREEN ERGONOMICS
+   ============================================================ */
+
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.acrea-main>* {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Responsive grid utility classes */
+.acrea-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.acrea-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.acrea-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.acrea-dashboard-split {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 20px;
+}
+
+.acrea-dashboard-triple {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 20px;
+}
+
+.acrea-mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .auth-container {
+    min-height: 100dvh !important;
+    width: 100% !important;
+  }
+
+  .auth-form-wrapper {
+    min-height: 100dvh !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+    padding: 24px 20px 20px !important;
+  }
+
+  .auth-form-wrapper>div:nth-child(2) {
+    margin: auto 0 !important;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .acrea-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .acrea-dashboard-split,
+  .acrea-dashboard-triple {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .acrea-mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    background-color: #FFFFFF;
+    border-top: 1px solid var(--color-card-border, #ECE7DC);
+    box-shadow: 0 -4px 20px rgba(22, 66, 48, 0.08);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .acrea-mobile-bottom-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    border-radius: 10px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #788680);
+    transition: background-color 150ms ease, color 150ms ease;
+    padding: 4px 2px;
+  }
+
+  .acrea-mobile-bottom-btn.active {
+    color: #164230;
+    background-color: var(--color-brand-tint, #EAF4ED);
+  }
+
+  /* Prevent iOS auto-zoom and make form fields easy to tap outdoors */
+  .acrea-main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .acrea-main select,
+  .acrea-main textarea {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  /* Keep tables horizontally scrollable instead of breaking page width */
+  .acrea-main table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-form-wrapper {
+    min-height: 100dvh !important;
+    padding: 20px 18px 20px !important;
+  }
+
+  .auth-form-wrapper>div:nth-child(2) {
+    margin: auto 0 !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    max-width: 100% !important;
+  }
+
+  .acrea-grid-4,
+  .acrea-grid-3,
+  .acrea-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .acrea-topbar h1 {
+    font-size: 1.25rem !important;
+  }
+
+  .acrea-topbar p {
+    font-size: 0.75rem !important;
+  }
+}

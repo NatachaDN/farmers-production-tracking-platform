@@ -1,0 +1,91 @@
+import { apiClient } from '../../../shared/services/apiClient.js';
+
+/**
+ * Service for Animal Group / Livestock Management CRUD operations.
+ */
+export const animalGroupService = {
+  /**
+   * Fetch all animal groups owned by the authenticated farmer.
+   */
+  async getGroups() {
+    return await apiClient.get('/animals/groups');
+  },
+
+  /**
+   * Fetch details for a specific animal group by ID.
+   */
+  async getGroupById(id) {
+    return await apiClient.get(`/animals/groups/${id}`);
+  },
+
+  /**
+   * Register a new animal group.
+   */
+  async createGroup(groupData) {
+    return await apiClient.post('/animals/groups', groupData);
+  },
+
+  /**
+   * Update an existing animal group.
+   */
+  async updateGroup(id, groupData) {
+    return await apiClient.put(`/animals/groups/${id}`, groupData);
+  },
+
+  /**
+   * Delete an animal group.
+   */
+  async deleteGroup(id) {
+    return await apiClient.delete(`/animals/groups/${id}`);
+  },
+
+  /**
+   * Upload an animal group photo from the farmer's device or camera.
+   * @param {File} file
+   * @returns {Promise<{ url: string }>}
+   */
+  async uploadAnimalPhoto(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.upload('/farms/upload-image', formData);
+  },
+
+  // ---- Animal Production Records ----
+  async getProductions(groupId) {
+    return await apiClient.get(`/animals/groups/${groupId}/productions`);
+  },
+  async createProduction(groupId, data) {
+    return await apiClient.post(`/animals/groups/${groupId}/productions`, data);
+  },
+  async deleteProduction(groupId, recordId) {
+    return await apiClient.delete(`/animals/groups/${groupId}/productions/${recordId}`);
+  },
+
+  // ---- Animal Activities ----
+  async getActivities(groupId) {
+    return await apiClient.get(`/animals/groups/${groupId}/activities`);
+  },
+  async createActivity(groupId, data) {
+    return await apiClient.post(`/animals/groups/${groupId}/activities`, data);
+  },
+  async updateActivity(groupId, activityId, data) {
+    return await apiClient.put(`/animals/groups/${groupId}/activities/${activityId}`, data);
+  },
+  async deleteActivity(groupId, activityId) {
+    return await apiClient.delete(`/animals/groups/${groupId}/activities/${activityId}`);
+  },
+
+  // ---- Animal Incidents ----
+  async getIncidents(groupId) {
+    return await apiClient.get(`/animals/groups/${groupId}/incidents`);
+  },
+  async createIncident(groupId, data) {
+    return await apiClient.post(`/animals/groups/${groupId}/incidents`, data);
+  },
+  async updateIncident(groupId, incidentId, data) {
+    return await apiClient.put(`/animals/groups/${groupId}/incidents/${incidentId}`, data);
+  },
+  async deleteIncident(groupId, incidentId) {
+    return await apiClient.delete(`/animals/groups/${groupId}/incidents/${incidentId}`);
+  }
+};

@@ -31,11 +31,11 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
     if (user && isOpen) {
       setFormData({
         fullName: user.fullName || '',
-        farmName: user.farmName || 'Green Acres Farm',
-        cropsGrown: user.cropsGrown || 'Maize, Tomatoes, Beans, Cassava',
-        totalArea: user.totalArea !== undefined && user.totalArea !== null ? user.totalArea : 8.7,
+        farmName: user.farmName || '',
+        cropsGrown: user.cropsGrown || '',
+        totalArea: user.totalArea !== undefined && user.totalArea !== null ? user.totalArea : '',
         avatarUrl: user.avatarUrl || '',
-        location: user.location || 'Nakuru County, Kenya',
+        location: user.location || '',
         farmType: user.farmType || 'MIXED'
       });
       setErrors({});
@@ -222,7 +222,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
               required
               value={formData.farmName}
               onChange={handleChange}
-              placeholder="e.g. Green Acres Farm"
+              placeholder="e.g. Ferme Agro-Pastorale de Bandjoun"
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -245,7 +245,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
               type="text"
               value={formData.cropsGrown}
               onChange={handleChange}
-              placeholder="e.g. Maize, Tomatoes, Beans"
+              placeholder="e.g. Banane Plantain, Tomates de Foumbot, Maïs Jaune"
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -343,7 +343,12 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }) {
             </div>
 
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            {uploadError && <p style={{ color: '#DC2626', fontSize: '0.75rem', marginBottom: '10px' }}>⚠ {uploadError}</p>}
+            {uploadError && (
+              <p style={{ color: '#DC2626', fontSize: '0.75rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <IconAlertCircle size={14} color="#DC2626" />
+                <span>{uploadError}</span>
+              </p>
+            )}
 
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0 12px' }}>

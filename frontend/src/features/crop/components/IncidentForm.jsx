@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './IncidentForm.css';
+import {
+  IconShieldAlert,
+  IconBug,
+  IconZap,
+  IconCloudRain,
+  IconClipboard,
+} from '../../../shared/components/Icons';
 
 const INCIDENT_TYPES = [
-  { value: 'DISEASE',  label: 'Disease',  emoji: '🦠', color: '#7C3AED' },
-  { value: 'PEST',     label: 'Pest',     emoji: '🐛', color: '#DC2626' },
-  { value: 'DAMAGE',   label: 'Damage',   emoji: '⚡', color: '#D97706' },
-  { value: 'WEATHER',  label: 'Weather',  emoji: '🌧️', color: '#3A86C8' },
-  { value: 'OTHER',    label: 'Other',    emoji: '📋', color: '#4F8A64' },
+  { value: 'DISEASE',  label: 'Disease',  Icon: IconShieldAlert, color: '#7C3AED' },
+  { value: 'PEST',     label: 'Pest',     Icon: IconBug,         color: '#DC2626' },
+  { value: 'DAMAGE',   label: 'Damage',   Icon: IconZap,         color: '#D97706' },
+  { value: 'WEATHER',  label: 'Weather',  Icon: IconCloudRain,   color: '#3A86C8' },
+  { value: 'OTHER',    label: 'Other',    Icon: IconClipboard,   color: '#4F8A64' },
 ];
 
 const SEVERITY_LABELS = ['', 'Low', 'Minor', 'Moderate', 'Serious', 'Critical'];
@@ -123,6 +130,7 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
         <div className="incident-type-grid">
           {INCIDENT_TYPES.map((type) => {
             const isSelected = formData.incidentType === type.value;
+            const TypeIcon = type.Icon;
             return (
               <button
                 type="button"
@@ -130,8 +138,8 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
                 className={`type-pill ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleTypeSelect(type.value)}
               >
-                <span className="type-pill-icon" style={{ fontSize: '1.25rem' }}>
-                  {type.emoji}
+                <span className="type-pill-icon">
+                  <TypeIcon size={18} color={isSelected ? '#FFFFFF' : type.color} />
                 </span>
                 <span className="type-pill-label">{type.label}</span>
               </button>
@@ -171,7 +179,7 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="description"
           rows={4}
           className={`form-textarea ${errors.description ? 'input-error' : ''}`}
-          placeholder="e.g. Early blight spotted on lower leaves of 30% of plants in row 3–7. Yellowing margins observed..."
+          placeholder="e.g. Attaque de chenilles légionnaires sur les jeunes plants de maïs à Foumbot, jaunissement des feuilles..."
           value={formData.description}
           onChange={handleChange}
         />
@@ -214,7 +222,7 @@ export function IncidentForm({ onSubmit, isSubmitting, initialData = null, onCan
           name="actionTaken"
           rows={3}
           className={`form-textarea ${errors.actionTaken ? 'input-error' : ''}`}
-          placeholder="e.g. Applied copper-based fungicide across all affected rows at 8am..."
+          placeholder="e.g. Traitement au bio-pesticide homologué et pulvérisation de purin de neem à 7h du matin..."
           value={formData.actionTaken || ''}
           onChange={handleChange}
         />

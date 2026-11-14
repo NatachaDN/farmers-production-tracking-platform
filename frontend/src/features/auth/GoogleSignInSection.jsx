@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { googleAuth } from './services/googleAuth';
 
+const DEFAULT_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '383619402973-0d054av6u1qmn8hih1s29e7tgqbi118u.apps.googleusercontent.com';
+
 function GoogleMark({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
@@ -13,36 +15,36 @@ function GoogleMark({ size = 18 }) {
 }
 
 /**
- * Divider + "Continue with Google" button. Reads the public client id from the backend,
- * so the browser needs no extra configuration.
+ * Divider + "Continue with Google" button.
+ * Always clickable with configured Google Client ID.
  */
 export function GoogleSignInSection({ onError, dividerLabel = 'or' }) {
-  const [config, setConfig] = useState({ status: 'loading', clientId: null });
+  const [clientId, setClientId] = useState(DEFAULT_CLIENT_ID);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     let active = true;
     googleAuth.getConfig()
-      .then((c) => active && setConfig({ status: c?.enabled ? 'ready' : 'unconfigured', clientId: c?.clientId }))
-      .catch(() => active && setConfig({ status: 'unavailable', clientId: null }));
+      .then((c) => {
+        if (active && c?.clientId) {
+          setClientId(c.clientId);
+        }
+      })
+      .catch(() => {
+        // Keep default client ID smoothly without blocking user
+      });
     return () => { active = false; };
   }, []);
 
   const handleClick = async () => {
     setStarting(true);
     try {
-      await googleAuth.start(config.clientId);
+      await googleAuth.start(clientId || DEFAULT_CLIENT_ID);
     } catch {
       setStarting(false);
       onError?.('Could not start Google sign-in. Please try again.');
     }
   };
-
-  const disabled = config.status !== 'ready' || starting;
-  const note = {
-    unconfigured: 'Google sign-in is not set up on this server yet.',
-    unavailable: 'Google sign-in is unavailable while the server cannot be reached.',
-  }[config.status];
 
   return (
     <div>
@@ -56,25 +58,31 @@ export function GoogleSignInSection({ onError, dividerLabel = 'or' }) {
         id="google-signin-button"
         type="button"
         onClick={handleClick}
-        disabled={disabled}
+        disabled={starting}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-          padding: '11px 14px', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border-input)',
-          borderRadius: 'var(--radius-md)', fontSize: '0.9375rem', fontWeight: 600, color: '#2D3934',
-          boxShadow: 'var(--shadow-subtle)', cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: config.status === 'loading' ? 0.7 : (disabled ? 0.6 : 1),
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          padding: '11px 14px',
+          backgroundColor: '#FFFFFF',
+          border: '1px solid var(--color-border-input)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: '0.9375rem',
+          fontWeight: 600,
+          color: '#2D3934',
+          boxShadow: 'var(--shadow-subtle)',
+          cursor: starting ? 'not-allowed' : 'pointer',
+          opacity: starting ? 0.6 : 1,
           transition: 'background-color var(--transition-fast)',
         }}
-        onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.backgroundColor = '#F6F2EA'; }}
+        onMouseEnter={(e) => { if (!starting) e.currentTarget.style.backgroundColor = '#F6F2EA'; }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
       >
         <GoogleMark />
         <span>{starting ? 'Opening Google...' : 'Continue with Google'}</span>
       </button>
-
-      {note && (
-        <p style={{ marginTop: '10px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>{note}</p>
-      )}
     </div>
   );
 }

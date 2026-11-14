@@ -16,23 +16,10 @@ import {
   IconWarning
 } from '../../../shared/components/Icons';
 
-const FALLBACK_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)', cropName: 'Maize', plotName: 'Plot A', status: 'ACTIVE', acreage: 2.5, stage: 'Vegetative growth' },
-  { id: 2, name: 'Tomatoes (Plot B)', cropName: 'Tomatoes', plotName: 'Plot B', status: 'ACTIVE', acreage: 1.0, stage: 'Flowering' },
-  { id: 3, name: 'Beans (Plot C)', cropName: 'Beans', plotName: 'Plot C', status: 'ACTIVE', acreage: 0.8, stage: 'Planting' },
-];
-
-const FALLBACK_INPUTS = [
-  { id: 1, name: 'Hybrid Maize Seed 614', type: 'SEEDS', quantity: 45.0, unit: 'kg', purchasePrice: 480.0 },
-  { id: 2, name: 'CAN Fertilizer', type: 'FERTILIZER', quantity: 200.0, unit: 'kg', purchasePrice: 160.0 },
-  { id: 3, name: 'DAP Planting Fertilizer', type: 'FERTILIZER', quantity: 150.0, unit: 'kg', purchasePrice: 180.0 },
-  { id: 4, name: 'Belt Expert Pesticide', type: 'PESTICIDE', quantity: 12.0, unit: 'litres', purchasePrice: 1250.0 },
-];
-
-export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
-  const [cycles, setCycles] = useState(FALLBACK_CYCLES);
-  const [selectedCycleId, setSelectedCycleId] = useState(initialCycleId || 1);
-  const [availableInputs, setAvailableInputs] = useState(FALLBACK_INPUTS);
+export function CycleInputsPage({ farmerId, initialCycleId = null }) {
+  const [cycles, setCycles] = useState([]);
+  const [selectedCycleId, setSelectedCycleId] = useState(initialCycleId || null);
+  const [availableInputs, setAvailableInputs] = useState([]);
   const [usages, setUsages] = useState([]);
   const [costSummary, setCostSummary] = useState(null);
 
@@ -50,18 +37,18 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
   // 1. Load Farmer's Cycles
   useEffect(() => {
     async function fetchCycles() {
+      if (!farmerId) return;
       try {
         const data = await cropCycleService.getCycles(farmerId);
-        if (Array.isArray(data) && data.length > 0) {
-          setCycles(data);
-          if (!initialCycleId) {
-            // Default to first active cycle
-            const activeOne = data.find((c) => (c.status || '').toUpperCase() === 'ACTIVE');
-            setSelectedCycleId(activeOne ? activeOne.id : data[0].id);
-          }
+        const list = Array.isArray(data) ? data : [];
+        setCycles(list);
+        if (list.length > 0 && !selectedCycleId) {
+          const activeOne = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
+          setSelectedCycleId(activeOne.id);
         }
       } catch (err) {
-        console.warn('Using default demo cycles:', err);
+        console.warn('Failed to fetch cycles:', err);
+        setCycles([]);
       }
     }
     fetchCycles();
@@ -69,13 +56,13 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
 
   // 2. Load Inventory Inputs for farmer
   const loadInventory = async () => {
+    if (!farmerId) return;
     try {
       const data = await inputService.getInputs(farmerId);
-      if (Array.isArray(data) && data.length > 0) {
-        setAvailableInputs(data);
-      }
+      setAvailableInputs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Using default demo inputs:', err);
+      console.warn('Failed to load inputs:', err);
+      setAvailableInputs([]);
     }
   };
 
@@ -190,10 +177,16 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
           </div>
           <div>
             <h3 className="cycle-selection-title">
-              {selectedCycle?.name || 'Crop Cycle Inputs'}
+              {selectedCycle ? (selectedCycle.name || `${selectedCycle.cropName} Cycle`) : 'Crop Cycle Inputs'}
             </h3>
             <p className="cycle-selection-subtitle">
-              Crop: <strong>{selectedCycle?.cropName || 'Maize'}</strong> · Cultivated Area: <strong>{selectedCycle?.acreage || 0} ha</strong> · Status: <strong>{selectedCycle?.status || 'ACTIVE'}</strong>
+              {selectedCycle ? (
+                <>
+                  Crop: <strong>{selectedCycle.cropName || '—'}</strong> · Cultivated Area: <strong>{selectedCycle.acreage || 0} ha</strong> · Status: <strong>{selectedCycle.status || 'ACTIVE'}</strong>
+                </>
+              ) : (
+                'Create a crop production cycle first to record input consumption.'
+              )}
             </p>
           </div>
         </div>
@@ -202,10 +195,11 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
           {/* Cycle Dropdown */}
           <select
             className="cycle-dropdown-select"
-            value={selectedCycleId}
-            onChange={(e) => setSelectedCycleId(Number(e.target.value))}
+            value={selectedCycleId || ''}
+            onChange={(e) => setSelectedCycleId(e.target.value ? Number(e.target.value) : null)}
             id="cycle-selector-dropdown"
           >
+            {cycles.length === 0 && <option value="">No cycles available</option>}
             {cycles.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name || `${c.cropName} (Plot ${c.plotId || c.id})`} — [{(c.status || 'ACTIVE').toUpperCase()}]
@@ -231,7 +225,7 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
             ) : (
               <>
                 <IconPlus size={16} />
-                <span>+ Record Input Usage</span>
+                <span>Record Input Usage</span>
               </>
             )}
           </button>
@@ -244,25 +238,29 @@ export function CycleInputsPage({ farmerId = 1, initialCycleId = null }) {
           label="Total Input Cost"
           value={`KES ${Number(totalExpenditure).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Real financial expenditure on crop"
-          icon={IconInputs}
+          icon={<IconInputs size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
         <MetricCard
           label="Inputs Consumed"
           value={`${consumedItemsCount}`}
           subtext="Times inputs were deducted"
-          icon={IconPackage}
+          icon={<IconPackage size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
         <MetricCard
           label="Top Cost Category"
           value={topCategoryEntry ? topCategoryEntry[0] : 'None'}
           subtext={topCategoryEntry ? `KES ${Number(topCategoryEntry[1]).toLocaleString()} spent` : 'No items logged'}
-          icon={IconSprout}
+          icon={<IconSprout size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
         <MetricCard
           label="Inventory Stock Items"
           value={`${availableInputs.length}`}
           subtext="Available items in farm inventory"
-          icon={IconPackage}
+          icon={<IconPackage size={20} color="var(--color-brand-primary, #3E7B52)" />}
+          loading={isLoading}
         />
       </div>
 

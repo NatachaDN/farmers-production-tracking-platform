@@ -49,5 +49,16 @@ export const plotService = {
   async deletePlot(farmerId, plotId, force = false) {
     const query = force ? '?force=true' : '';
     return await apiClient.delete(`/farmers/${farmerId}/plots/${plotId}${query}`);
+  },
+
+  /**
+   * Upload a plot photo from the farmer's device or camera.
+   * @param {File} file
+   * @returns {Promise<{ url: string }>}
+   */
+  async uploadPlotPhoto(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.upload('/farms/upload-image', formData);
   }
 };

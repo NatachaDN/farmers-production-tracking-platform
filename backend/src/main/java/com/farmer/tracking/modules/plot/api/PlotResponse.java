@@ -3,6 +3,8 @@ package com.farmer.tracking.modules.plot.api;
 import com.farmer.tracking.modules.plot.entity.Plot;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PlotResponse {
 
@@ -15,6 +17,11 @@ public class PlotResponse {
     private String location;
     private String cropType;
     private String stage;
+    private String soilType;
+    private String irrigationType;
+    private String slope;
+    private String notes;
+    private List<String> imageUrls = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -48,6 +55,11 @@ public class PlotResponse {
             resp.setFarmId(plot.getFarm().getId());
             resp.setFarmName(plot.getFarm().getName());
         }
+        resp.setSoilType(plot.getSoilType());
+        resp.setIrrigationType(plot.getIrrigationType());
+        resp.setSlope(plot.getSlope());
+        resp.setNotes(plot.getNotes());
+        resp.setImageUrls(plot.getImageUrls() != null ? new ArrayList<>(plot.getImageUrls()) : new ArrayList<>());
         return resp;
     }
 
@@ -137,5 +149,45 @@ public class PlotResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getSoilType() {
+        return soilType;
+    }
+
+    public void setSoilType(String soilType) {
+        this.soilType = soilType;
+    }
+
+    public String getIrrigationType() {
+        return irrigationType;
+    }
+
+    public void setIrrigationType(String irrigationType) {
+        this.irrigationType = irrigationType;
+    }
+
+    public String getSlope() {
+        return slope;
+    }
+
+    public void setSlope(String slope) {
+        this.slope = slope;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls != null ? new ArrayList<>(imageUrls) : new ArrayList<>();
     }
 }

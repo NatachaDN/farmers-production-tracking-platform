@@ -17,6 +17,8 @@ public class FarmerProfileResponse {
     private String farmName;
     private String cropsGrown;
     private Double totalArea;
+    private com.farmer.tracking.modules.auth.model.RegistrationStatus status;
+    private String rejectionReason;
 
     public FarmerProfileResponse() {}
 
@@ -124,5 +126,21 @@ public class FarmerProfileResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public com.farmer.tracking.modules.auth.model.RegistrationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(com.farmer.tracking.modules.auth.model.RegistrationStatus status) {
+        this.status = status;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

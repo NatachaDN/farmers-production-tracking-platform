@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { IconCheck, IconClose, IconWarning, IconPencil } from '../../../shared/components/Icons';
+import { AcreaMap } from '../../../shared/components/AcreaMap';
+
+const labelStyle = { display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' };
+const inputStyle = {
+  width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md, 8px)',
+  border: '1px solid var(--color-border-subtle, #DCD6CD)', fontSize: '0.875rem',
+  color: 'var(--color-text-primary, #19201C)', backgroundColor: 'var(--color-canvas, #F9F6F0)',
+  outline: 'none', boxSizing: 'border-box'
+};
+const cancelBtnStyle = {
+  padding: '10px 18px', borderRadius: 'var(--radius-md, 8px)',
+  backgroundColor: 'transparent', border: '1px solid var(--color-border-subtle, #DCD6CD)',
+  color: 'var(--color-text-secondary, #43534B)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer'
+};
+const submitBtnStyle = {
+  padding: '10px 20px', borderRadius: 'var(--radius-md, 8px)',
+  backgroundColor: 'var(--color-brand-primary, #164230)', color: '#FFFFFF', border: 'none',
+  fontWeight: 600, fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '8px',
+  boxShadow: 'var(--shadow-btn-primary, 0 4px 12px rgba(22, 66, 48, 0.25))', cursor: 'pointer'
+};
 
 export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated }) {
   const [name, setName] = useState('');
@@ -8,6 +28,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
   const [cropType, setCropType] = useState('Maize');
   const [stage, setStage] = useState('Planting');
   const [farmId, setFarmId] = useState('');
+  const [soilType, setSoilType] = useState('');
+  const [irrigationType, setIrrigationType] = useState('');
+  const [slope, setSlope] = useState('');
+  const [notes, setNotes] = useState('');
   const [validationError, setValidationError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -20,6 +44,10 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
       setCropType(plot.crop || plot.cropType || 'Maize');
       setStage(plot.stage || 'Planting');
       setFarmId(plot.farmId ? String(plot.farmId) : (farms[0]?.id ? String(farms[0].id) : ''));
+      setSoilType(plot.soilType || '');
+      setIrrigationType(plot.irrigationType || '');
+      setSlope(plot.slope || '');
+      setNotes(plot.notes || '');
       setValidationError('');
     }
   }, [plot, farms]);
@@ -58,7 +86,12 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
         location: trimmedLocation,
         cropType,
         stage,
-        farmId: farmId ? Number(farmId) : undefined
+        farmId: farmId ? Number(farmId) : undefined,
+        soilType: soilType.trim() || null,
+        irrigationType: irrigationType.trim() || null,
+        slope: slope.trim() || null,
+        notes: notes.trim() || null,
+        imageUrls: plot.imageUrls || [],
       });
       onClose();
     } catch (err) {
@@ -66,6 +99,11 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleMapLocationSelect = ({ latitude, longitude, localityHint }) => {
+    const coords = `${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E`;
+    setLocation((prev) => localityHint ? `${localityHint} (${coords})` : `${prev ? prev.split(' (')[0] : 'Parcel'} (${coords})`);
   };
 
   return (
@@ -155,32 +193,22 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
+            <label style={labelStyle}>
               Plot Name <span style={{ color: '#DC2626' }}>*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Plot A — Maize"
+              placeholder="e.g. Parcelle 1 — Plantains de Bandjoun"
               required
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md, 8px)',
-                border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                fontSize: '0.875rem',
-                color: 'var(--color-text-primary, #19201C)',
-                backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
+              <label style={labelStyle}>
                 Cultivated Area (ha) <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <input
@@ -191,39 +219,13 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
                 onChange={(e) => setArea(e.target.value)}
                 placeholder="e.g. 2.5"
                 required
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
+                style={inputStyle}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
-                Primary Crop Type
-              </label>
-              <select
-                value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
+              <label style={labelStyle}>Primary Crop Type</label>
+              <select value={cropType} onChange={(e) => setCropType(e.target.value)} style={inputStyle}>
                 <option value="Maize">Maize (Corn)</option>
                 <option value="Tomatoes">Tomatoes</option>
                 <option value="Beans">Beans</option>
@@ -237,49 +239,35 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
+            <label style={labelStyle}>
               Location / Sector <span style={{ color: '#DC2626' }}>*</span>
             </label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. North Field, Section 1"
+              placeholder="e.g. Versant Bandjoun, Secteur Bafoussam"
               required
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md, 8px)',
-                border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                fontSize: '0.875rem',
-                color: 'var(--color-text-primary, #19201C)',
-                backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <AcreaMap
+              locationText={location}
+              onLocationSelect={handleMapLocationSelect}
+              label="Pinpoint Plot Location on Map"
+              hint="Tap on the map or tap GPS to update this plot's parcel position."
+              height="180px"
+              pinLabel={name || 'Plot'}
+              pinColor="#2D7A52"
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: farms.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
-                Growth Stage
-              </label>
-              <select
-                value={stage}
-                onChange={(e) => setStage(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md, 8px)',
-                  border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-text-primary, #19201C)',
-                  backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
+              <label style={labelStyle}>Growth Stage</label>
+              <select value={stage} onChange={(e) => setStage(e.target.value)} style={inputStyle}>
                 <option value="Planting">Planting</option>
                 <option value="Vegetative growth">Vegetative growth</option>
                 <option value="Flowering">Flowering</option>
@@ -291,24 +279,8 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
 
             {farms.length > 0 && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)', marginBottom: '6px' }}>
-                  Assigned Farm
-                </label>
-                <select
-                  value={farmId}
-                  onChange={(e) => setFarmId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md, 8px)',
-                    border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text-primary, #19201C)',
-                    backgroundColor: 'var(--color-canvas, #F9F6F0)',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
+                <label style={labelStyle}>Assigned Farm</label>
+                <select value={farmId} onChange={(e) => setFarmId(e.target.value)} style={inputStyle}>
                   {farms.map((farm) => (
                     <option key={farm.id} value={farm.id}>
                       {farm.name} {farm.isDefault ? '(Default)' : ''}
@@ -319,43 +291,58 @@ export function EditPlotModal({ isOpen, onClose, plot, farms = [], onPlotUpdated
             )}
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '12px' }}>
+            <div>
+              <label style={labelStyle}>Soil Type</label>
+              <select value={soilType} onChange={(e) => setSoilType(e.target.value)} style={inputStyle}>
+                <option value="">Not specified</option>
+                <option value="Loamy">Loamy</option>
+                <option value="Clay">Clay</option>
+                <option value="Sandy">Sandy</option>
+                <option value="Silty">Silty</option>
+                <option value="Volcanic">Volcanic</option>
+                <option value="Lateritic">Lateritic</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Irrigation Method</label>
+              <select value={irrigationType} onChange={(e) => setIrrigationType(e.target.value)} style={inputStyle}>
+                <option value="">Not specified</option>
+                <option value="Rain-fed">Rain-fed</option>
+                <option value="Drip">Drip Irrigation</option>
+                <option value="Sprinkler">Sprinkler</option>
+                <option value="Manual / Gravity">Manual / Gravity</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Terrain / Slope</label>
+              <select value={slope} onChange={(e) => setSlope(e.target.value)} style={inputStyle}>
+                <option value="">Not specified</option>
+                <option value="Flat">Flat</option>
+                <option value="Gentle Slope">Gentle Slope</option>
+                <option value="Steep / Terraced">Steep / Terraced</option>
+                <option value="Valley / Lowland">Valley / Lowland</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Field Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Optional notes on drainage, sun exposure, boundaries, or past treatments..."
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            />
+          </div>
+
           {/* Form Actions */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              style={{
-                padding: '10px 18px',
-                borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--color-border-subtle, #DCD6CD)',
-                color: 'var(--color-text-secondary, #43534B)',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer'
-              }}
-            >
+            <button type="button" onClick={onClose} disabled={isSubmitting} style={{ ...cancelBtnStyle, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: '10px 20px',
-                borderRadius: 'var(--radius-md, 8px)',
-                backgroundColor: 'var(--color-brand-primary, #164230)',
-                color: '#FFFFFF',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: 'var(--shadow-btn-primary, 0 4px 12px rgba(22, 66, 48, 0.25))'
-              }}
-            >
+            <button type="submit" disabled={isSubmitting} style={{ ...submitBtnStyle, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
               <IconCheck size={16} />
               <span>{isSubmitting ? 'Saving Changes...' : 'Save Plot Changes'}</span>
             </button>

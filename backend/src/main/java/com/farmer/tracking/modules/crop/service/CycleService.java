@@ -6,10 +6,18 @@ import com.farmer.tracking.modules.crop.api.CycleRequest;
 import com.farmer.tracking.modules.crop.api.CycleResponse;
 import com.farmer.tracking.modules.crop.api.PlotConflictCheckResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
+import com.farmer.tracking.modules.crop.entity.CycleActivity;
+import com.farmer.tracking.modules.crop.entity.CycleIncident;
+import com.farmer.tracking.modules.crop.entity.CycleInputUsage;
 import com.farmer.tracking.modules.crop.entity.CycleStatus;
+import com.farmer.tracking.modules.crop.repository.CycleActivityRepository;
+import com.farmer.tracking.modules.crop.repository.CycleIncidentRepository;
+import com.farmer.tracking.modules.crop.repository.CycleInputUsageRepository;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
+import com.farmer.tracking.modules.crop.repository.HarvestRepository;
 import com.farmer.tracking.modules.plot.entity.Plot;
 import com.farmer.tracking.modules.plot.repository.PlotRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +39,24 @@ public class CycleService {
 
     private final CycleRepository cycleRepository;
     private final PlotRepository plotRepository;
+    private final CycleActivityRepository cycleActivityRepository;
+    private final CycleIncidentRepository cycleIncidentRepository;
+    private final CycleInputUsageRepository cycleInputUsageRepository;
+    private final HarvestRepository harvestRepository;
 
-    public CycleService(CycleRepository cycleRepository, PlotRepository plotRepository) {
+    @Autowired
+    public CycleService(CycleRepository cycleRepository,
+                        PlotRepository plotRepository,
+                        CycleActivityRepository cycleActivityRepository,
+                        CycleIncidentRepository cycleIncidentRepository,
+                        CycleInputUsageRepository cycleInputUsageRepository,
+                        HarvestRepository harvestRepository) {
         this.cycleRepository = cycleRepository;
         this.plotRepository = plotRepository;
+        this.cycleActivityRepository = cycleActivityRepository;
+        this.cycleIncidentRepository = cycleIncidentRepository;
+        this.cycleInputUsageRepository = cycleInputUsageRepository;
+        this.harvestRepository = harvestRepository;
     }
 
     /**
@@ -147,6 +169,29 @@ public class CycleService {
     public void deleteCycle(Long farmerId, Long cycleId) {
         Cycle cycle = cycleRepository.findByIdAndFarmerId(cycleId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cycle not found with id: " + cycleId + " for farmer: " + farmerId));
+
+        if (cycleActivityRepository != null) {
+            List<CycleActivity> activities = cycleActivityRepository.findByCycleIdOrderByActivityDateDesc(cycleId);
+            if (activities != null && !activities.isEmpty()) {
+                cycleActivityRepository.deleteAll(activities);
+            }
+        }
+        if (cycleIncidentRepository != null) {
+            List<CycleIncident> incidents = cycleIncidentRepository.findByCycleIdOrderByIncidentDateDesc(cycleId);
+            if (incidents != null && !incidents.isEmpty()) {
+                cycleIncidentRepository.deleteAll(incidents);
+            }
+        }
+        if (cycleInputUsageRepository != null) {
+            List<CycleInputUsage> usages = cycleInputUsageRepository.findByCycleIdAndFarmerIdOrderByUsageDateDesc(cycleId, farmerId);
+            if (usages != null && !usages.isEmpty()) {
+                cycleInputUsageRepository.deleteAll(usages);
+            }
+        }
+        if (harvestRepository != null) {
+            harvestRepository.findByCycleId(cycleId).ifPresent(harvestRepository::delete);
+        }
+
         cycleRepository.delete(cycle);
     }
 

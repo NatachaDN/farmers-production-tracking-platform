@@ -22,6 +22,13 @@ public class HarvestResponse {
     private Double calculatedYield;
     private String yieldDisplay;
     private String notes;
+    private String qualityGrade;
+    private String harvestMethod;
+    private String storageLocation;
+    private Double moistureContentPercent;
+    private Double postHarvestLossQuantity;
+    private String marketDestination;
+    private Double estimatedRevenue;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -151,5 +158,61 @@ public class HarvestResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getQualityGrade() {
+        return qualityGrade;
+    }
+
+    public void setQualityGrade(String qualityGrade) {
+        this.qualityGrade = qualityGrade;
+    }
+
+    public String getHarvestMethod() {
+        return harvestMethod;
+    }
+
+    public void setHarvestMethod(String harvestMethod) {
+        this.harvestMethod = harvestMethod;
+    }
+
+    public String getStorageLocation() {
+        return storageLocation;
+    }
+
+    public void setStorageLocation(String storageLocation) {
+        this.storageLocation = storageLocation;
+    }
+
+    public Double getMoistureContentPercent() {
+        return moistureContentPercent;
+    }
+
+    public void setMoistureContentPercent(Double moistureContentPercent) {
+        this.moistureContentPercent = moistureContentPercent;
+    }
+
+    public Double getPostHarvestLossQuantity() {
+        return postHarvestLossQuantity;
+    }
+
+    public void setPostHarvestLossQuantity(Double postHarvestLossQuantity) {
+        this.postHarvestLossQuantity = postHarvestLossQuantity;
+    }
+
+    public String getMarketDestination() {
+        return marketDestination;
+    }
+
+    public void setMarketDestination(String marketDestination) {
+        this.marketDestination = marketDestination;
+    }
+
+    public Double getEstimatedRevenue() {
+        return estimatedRevenue;
+    }
+
+    public void setEstimatedRevenue(Double estimatedRevenue) {
+        this.estimatedRevenue = estimatedRevenue;
     }
 }

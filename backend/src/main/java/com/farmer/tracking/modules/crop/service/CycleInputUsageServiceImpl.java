@@ -100,6 +100,10 @@ public class CycleInputUsageServiceImpl implements CycleInputUsageService {
                 usageDate,
                 request.getNotes()
         );
+        usage.setGrowthStage(request.getGrowthStage() != null ? request.getGrowthStage().trim() : null);
+        usage.setApplicationMethod(request.getApplicationMethod() != null ? request.getApplicationMethod().trim() : null);
+        usage.setAreaCovered(request.getAreaCovered());
+        usage.setAppliedBy(request.getAppliedBy() != null ? request.getAppliedBy().trim() : null);
 
         CycleInputUsage saved = cycleInputUsageRepository.save(usage);
         return CycleInputUsageResponse.fromEntity(saved, remainingStock);

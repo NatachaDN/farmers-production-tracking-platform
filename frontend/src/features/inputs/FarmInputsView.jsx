@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AddInputModal } from './components/AddInputModal';
 import { inputService } from './services/inputService';
 import {
   IconSprout,
@@ -12,8 +11,11 @@ import {
   IconLeaf,
   IconTrash,
   IconWarning,
-  IconInputs
+  IconInputs,
+  IconPin,
+  IconCalendar
 } from '../../shared/components/Icons';
+import { Skeleton } from '../../shared/components/Skeleton';
 
 /* ─── Type metadata ─────────────────────────────────────────────── */
 const TYPE_META = {
@@ -23,43 +25,19 @@ const TYPE_META = {
   OTHER:      { icon: IconPackage,     label: 'Other',      bg: '#F1F5F9', text: '#475569', border: '#E2E8F0' }
 };
 
-/* ─── Seed data for offline-first demo ─────────────────────────── */
-const SEED_INPUTS = [
-  {
-    id: 1, name: 'Hybrid Maize Seed 614D', type: 'SEEDS',
-    totalQuantity: 120, unit: 'kg', totalCost: 54000,
-    purchaseDate: '2026-09-10', lastUpdated: '2026-09-10'
-  },
-  {
-    id: 2, name: 'CAN Fertilizer (Calcium Ammonium Nitrate)', type: 'FERTILIZER',
-    totalQuantity: 200, unit: 'kg', totalCost: 32000,
-    purchaseDate: '2026-09-14', lastUpdated: '2026-09-14'
-  },
-  {
-    id: 3, name: 'Dimethoate Pesticide', type: 'PESTICIDE',
-    totalQuantity: 5, unit: 'L', totalCost: 8500,
-    purchaseDate: '2026-09-20', lastUpdated: '2026-09-20'
-  },
-  {
-    id: 4, name: 'NPK 17-17-17', type: 'FERTILIZER',
-    totalQuantity: 150, unit: 'kg', totalCost: 27000,
-    purchaseDate: '2026-09-22', lastUpdated: '2026-09-22'
-  },
-  {
-    id: 5, name: 'Tomato Seedlings F1', type: 'SEEDS',
-    totalQuantity: 2000, unit: 'unit', totalCost: 18000,
-    purchaseDate: '2026-10-01', lastUpdated: '2026-10-01'
-  }
-];
-
 /* ─── Single Input Card ─────────────────────────────────────────── */
 function InputCard({ input, onDelete }) {
   const meta = TYPE_META[input.type] || TYPE_META.OTHER;
   const IconComponent = meta.icon;
-  const formattedCost = (input.totalCost || 0).toLocaleString('fr-CM');
+  const stockQty = input.quantity ?? input.totalQuantity ?? 0;
+  const costVal = input.cumulativeCost ?? input.totalCost ?? input.purchasePrice ?? 0;
+  const formattedCost = costVal.toLocaleString('fr-CM');
   const formattedDate = input.purchaseDate
     ? new Date(input.purchaseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
+  const formattedExpiry = input.expiryDate
+    ? new Date(input.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
 
   return (
     <div
@@ -102,6 +80,7 @@ function InputCard({ input, onDelete }) {
             </div>
             <div style={{ fontSize: '0.75rem', color: '#788680', marginTop: '2px' }}>
               Purchased: {formattedDate}
+              {input.brand ? ` • ${input.brand}` : ''}
             </div>
           </div>
         </div>
@@ -158,7 +137,7 @@ function InputCard({ input, onDelete }) {
         <div>
           <div style={{ fontSize: '0.75rem', color: '#788680', marginBottom: '3px' }}>Stock</div>
           <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#19201C' }}>
-            {input.totalQuantity} <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#4B5752' }}>{input.unit}</span>
+            {stockQty} <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#4B5752' }}>{input.unit}</span>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -168,29 +147,79 @@ function InputCard({ input, onDelete }) {
           </div>
         </div>
       </div>
+
+      {/* Extra traceability / storage details when present */}
+      {(input.supplier || input.storageLocation || input.batchNumber || formattedExpiry || input.description) && (
+        <div style={{
+          paddingTop: '10px',
+          borderTop: '1px solid #F4EFE6',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          fontSize: '0.75rem',
+          color: '#4B5752'
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {input.supplier && (
+              <span>Supplier: <strong style={{ color: '#19201C' }}>{input.supplier}</strong></span>
+            )}
+            {input.storageLocation && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <IconPin size={12} color="#788680" />
+                {input.storageLocation}
+              </span>
+            )}
+            {input.batchNumber && (
+              <span>Lot: <strong style={{ color: '#19201C' }}>{input.batchNumber}</strong></span>
+            )}
+            {formattedExpiry && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <IconCalendar size={12} color="#788680" />
+                Exp: {formattedExpiry}
+              </span>
+            )}
+          </div>
+          {input.description && (
+            <div style={{
+              color: '#788680',
+              lineHeight: 1.4,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+              {input.description}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ─── Stat mini-card ─────────────────────────────────────────────── */
-function StatChip({ label, value, accent }) {
+function StatChip({ label, value, accent, loading }) {
   return (
     <div style={{
       backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC',
       borderRadius: '14px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '4px'
     }}>
       <div style={{ fontSize: '0.75rem', color: '#788680' }}>{label}</div>
-      <div style={{ fontSize: '1.375rem', fontWeight: 700, color: accent || '#19201C' }}>{value}</div>
+      {loading ? (
+        <Skeleton width="60%" height="28px" borderRadius="6px" />
+      ) : (
+        <div style={{ fontSize: '1.375rem', fontWeight: 700, color: accent || '#19201C' }}>{value}</div>
+      )}
     </div>
   );
 }
 
 /* ─── Main view ─────────────────────────────────────────────────── */
-export function FarmInputsView({ farmerId = 1, onNavigate }) {
-  const [inputs, setInputs] = useState(SEED_INPUTS);
+export function FarmInputsView({ farmerId, onNavigate }) {
+  const [inputs, setInputs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
   // Delete confirmation modal state
@@ -205,50 +234,20 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
   /* Load from API */
   useEffect(() => {
     async function load() {
+      if (!farmerId) return;
+      setLoading(true);
       try {
         const data = await inputService.getInputs(farmerId);
-        if (Array.isArray(data) && data.length > 0) setInputs(data);
-      } catch {
-        /* Use seed data */
+        setInputs(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to load inputs:', err);
+        setInputs([]);
+      } finally {
+        setLoading(false);
       }
     }
     load();
   }, [farmerId]);
-
-  /* Add handler */
-  const handleAddInput = async (formData) => {
-    let saved;
-    try {
-      saved = await inputService.registerOrUpdateInput(farmerId, formData);
-    } catch {
-      /* offline-first: merge into local state */
-    }
-
-    const newItem = {
-      id: saved?.id || Date.now(),
-      name: formData.name,
-      type: formData.type,
-      totalQuantity: formData.quantity,
-      unit: formData.unit,
-      totalCost: formData.purchasePrice,
-      purchaseDate: formData.purchaseDate,
-      lastUpdated: formData.purchaseDate
-    };
-
-    setInputs((prev) => {
-      if (saved?.id) {
-        const exists = prev.findIndex((i) => i.id === saved.id);
-        if (exists >= 0) {
-          const next = [...prev];
-          next[exists] = { ...next[exists], ...newItem };
-          return next;
-        }
-      }
-      return [newItem, ...prev];
-    });
-
-    showToast(`"${formData.name}" added — ${formData.quantity} ${formData.unit} @ ${Number(formData.purchasePrice).toLocaleString('fr-CM')} XAF`);
-  };
 
   /* Delete handler */
   const confirmDelete = async () => {
@@ -272,7 +271,7 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
     return matchesType && matchesSearch;
   });
 
-  const totalCost = inputs.reduce((acc, i) => acc + (i.totalCost || 0), 0);
+  const totalCost = inputs.reduce((acc, i) => acc + (i.cumulativeCost ?? i.totalCost ?? i.purchasePrice ?? 0), 0);
   const totalItems = inputs.length;
   const typeCount = (t) => inputs.filter((i) => i.type === t).length;
 
@@ -375,12 +374,6 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
         </div>
       )}
 
-      <AddInputModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddInput={handleAddInput}
-      />
-
       {/* Summary bar */}
       <div style={{
         backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC',
@@ -426,7 +419,7 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
             )}
             <button
               id="open-add-input-modal"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => onNavigate?.('create-farm-input')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
                 backgroundColor: '#3E7B52', color: '#FFFFFF', border: 'none',
@@ -445,14 +438,15 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
         </div>
 
         {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatChip label="Total inputs" value={totalItems} />
-          <StatChip label="Seeds" value={typeCount('SEEDS')} accent="#2A6740" />
-          <StatChip label="Fertilizers" value={typeCount('FERTILIZER')} accent="#92400E" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '16px' }}>
+          <StatChip label="Total inputs" value={totalItems} loading={loading} />
+          <StatChip label="Seeds" value={typeCount('SEEDS')} accent="#2A6740" loading={loading} />
+          <StatChip label="Fertilizers" value={typeCount('FERTILIZER')} accent="#92400E" loading={loading} />
           <StatChip
             label="Total cost"
             value={`${totalCost.toLocaleString('fr-CM')} XAF`}
             accent="#3E7B52"
+            loading={loading}
           />
         </div>
       </div>
@@ -517,7 +511,45 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
       </div>
 
       {/* Input cards grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #ECE7DC',
+                borderRadius: '16px',
+                padding: '20px 22px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Skeleton width="42px" height="42px" borderRadius="12px" />
+                  <div>
+                    <Skeleton width="120px" height="18px" style={{ marginBottom: '6px' }} />
+                    <Skeleton width="90px" height="12px" />
+                  </div>
+                </div>
+                <Skeleton width="75px" height="24px" borderRadius="9999px" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '10px', borderTop: '1px solid #F4EFE6' }}>
+                <div>
+                  <Skeleton width="60px" height="12px" style={{ marginBottom: '4px' }} />
+                  <Skeleton width="80px" height="18px" />
+                </div>
+                <div>
+                  <Skeleton width="60px" height="12px" style={{ marginBottom: '4px' }} />
+                  <Skeleton width="90px" height="18px" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div style={{
           backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC',
           borderRadius: '16px', padding: '60px 40px', textAlign: 'center'
@@ -540,7 +572,7 @@ export function FarmInputsView({ farmerId = 1, onNavigate }) {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {filtered.map((input) => (
             <InputCard
               key={input.id}

@@ -16,4 +16,7 @@ export const adminService = {
   inputs: () => apiClient.get('/admin/inputs'),
   audit: (limit = 200) => apiClient.get(`/admin/audit${qs({ limit })}`),
   telemetry: () => apiClient.get('/admin/telemetry'),
+  passwordRequests: (status) => apiClient.get(`/admin/password-requests${qs({ status })}`),
+  approvePasswordRequest: (id, adminNote) => apiClient.post(`/admin/password-requests/${id}/approve`, { adminNote }),
+  rejectPasswordRequest: (id, adminNote) => apiClient.post(`/admin/password-requests/${id}/reject`, { adminNote }),
 };

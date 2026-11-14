@@ -23,7 +23,7 @@ export function CropCycleCard({
       backgroundColor: 'var(--color-card-bg)',
       border: '1px solid var(--color-card-border)',
       borderRadius: 'var(--radius-xl)',
-      padding: '24px',
+      padding: '20px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -52,7 +52,7 @@ export function CropCycleCard({
                 color: 'var(--color-text-primary)',
                 letterSpacing: '-0.01em'
               }}>
-                {cropName} · {plotName}
+                {plotName ? `${cropName} · ${plotName}` : cropName}
               </h3>
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
                 {area}

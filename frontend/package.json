@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/features/**/__tests__/*.test.mjs"
   },
   "dependencies": {
+    "chart.js": "^4.6.1",
+    "leaflet": "^1.9.4",
     "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2"
   },

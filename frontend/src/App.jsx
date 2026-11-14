@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { AppLayout } from './shared/components/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { FarmsAndPlotsView } from './features/farms/FarmsAndPlotsView';
+import { CreateFarmPage } from './features/farms/CreateFarmPage';
+import { FarmDetailsView } from './features/farms/FarmDetailsView';
+import { CreatePlotPage } from './features/farms/CreatePlotPage';
+import { PlotDetailsView } from './features/farms/PlotDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
+import { CreateCropCyclePage } from './features/crops/CreateCropCyclePage';
+import { CropsCatalogPage } from './features/crops/CropsCatalogPage';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
 import { CycleIncidentsPage } from './features/crop/pages/CycleIncidentsPage';
+import { CreateIncidentPage } from './features/crop/pages/CreateIncidentPage';
 import { FarmInputsView } from './features/inputs/FarmInputsView';
+import { CreateFarmInputPage } from './features/inputs/CreateFarmInputPage';
 import { LoginView } from './features/auth/LoginView';
 import { RegisterView } from './features/auth/RegisterView';
 import { ForgotPasswordView } from './features/auth/ForgotPasswordView';
@@ -21,9 +29,19 @@ import { AdminProductionView } from './features/admin/AdminProductionView';
 import { AdminSystemView } from './features/admin/AdminSystemView';
 import { FarmerProfileSettingsView } from './features/farmer/FarmerProfileSettingsView';
 import { EditProfileModal } from './features/farmer/components/EditProfileModal';
+import { LivestockView } from './features/livestock/LivestockView';
+import { ReportsAnalyticsView } from './features/reports/ReportsAnalyticsView';
+import { ManagerDashboardView } from './features/manager/ManagerDashboardView';
+import { ManagerFarmersView } from './features/manager/ManagerFarmersView';
+import { ManagerReportsView } from './features/manager/ManagerReportsView';
 import './features/admin/admin.css';
+import './features/manager/manager.css';
 
-const homeRouteFor = (user) => (authService.isAdmin(user) ? 'admin-overview' : 'dashboard');
+const homeRouteFor = (user) => {
+  if (authService.isAdmin(user)) return 'admin-overview';
+  if (authService.isManager(user)) return 'manager-dashboard';
+  return 'dashboard';
+};
 
 const todayLabel = () =>
   new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -38,6 +56,10 @@ export function App() {
   const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [selectedFarmId, setSelectedFarmId] = useState(null);
+  const [selectedPlotId, setSelectedPlotId] = useState(null);
+  const [incidentDraft, setIncidentDraft] = useState({ mode: 'crop', cycleId: null, incident: null });
+  const [createPlotFarmId, setCreatePlotFarmId] = useState(null);
 
   useEffect(() => {
     if (currentRoute !== 'google-callback') return;
@@ -54,9 +76,25 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      authService.logout();
+      setCurrentUser(null);
+      setCurrentRoute('login');
+      setLoginError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('acrea:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('acrea:unauthorized', handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
     if (authService.isAuthenticated()) {
       authService.getCurrentUser().then((user) => {
-        if (user) setCurrentUser(user);
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
+          setCurrentRoute('login');
+        }
       }).catch(() => {});
     }
   }, []);
@@ -92,17 +130,44 @@ export function App() {
     'admin-activity': { title: 'Activity', subtitle: 'Field work and account events across the platform' },
     'admin-production': { title: 'Production', subtitle: 'Cycles, harvests and input spending' },
     'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
+    'manager-dashboard': { title: 'Supervision Dashboard', subtitle: `${todayLabel()} · Cooperative Network Production` },
+    'manager-farmers': { title: 'Supervised Farmers', subtitle: 'Member directory, crop allocations and registration approvals' },
+    'manager-reports': { title: 'Consolidated Production Reports', subtitle: 'Multi-farmer production aggregation and exports' },
     dashboard: {
       title: 'Dashboard',
-      subtitle: 'Tuesday, 2 October · Green Acres Farm'
+      subtitle: `${todayLabel()} · ${currentUser?.farmName || currentUser?.location || 'My Farm'}`
     },
     farms: {
       title: 'Farms & Plots',
       subtitle: 'Organize land, plots and active production cycles'
     },
+    'farm-details': {
+      title: 'Farm Overview & Fields',
+      subtitle: 'Field parcels, terrain profile, and operational notes'
+    },
+    'create-farm': {
+      title: 'New Farm Registration',
+      subtitle: 'Configure your farm structure, acreage, and location step-by-step'
+    },
+    'create-plot': {
+      title: 'New Plot Registration',
+      subtitle: 'Assign a cultivated plot to your farm and record its crop details'
+    },
+    'plot-details': {
+      title: 'Plot Overview & Cycles',
+      subtitle: 'Cultivated parcel details, farm assignment, and production cycles'
+    },
     crops: {
       title: 'Crop Production Cycles',
       subtitle: 'Plan and follow every crop from planting to harvest'
+    },
+    'create-crop-cycle': {
+      title: 'New Crop Production Cycle',
+      subtitle: 'Record plot assignment, crop variety, schedule, and target production'
+    },
+    'crops-catalog': {
+      title: 'My Crops Catalog',
+      subtitle: 'Manage your crops, varieties, pictures, and agronomic details'
     },
     livestock: {
       title: 'Livestock & Animal Production',
@@ -113,7 +178,7 @@ export function App() {
       subtitle: 'Record and track daily farming activities per cycle'
     },
     production: {
-      title: 'Harvest & Production Records',
+      title: 'Harvest',
       subtitle: 'Harvest tallies, batch weighings, and yield logs'
     },
     inputs: {
@@ -194,6 +259,15 @@ export function App() {
           {isAdmin && currentRoute === 'admin-activity' && <AdminActivityView />}
           {isAdmin && currentRoute === 'admin-production' && <AdminProductionView />}
           {isAdmin && currentRoute === 'admin-system' && <AdminSystemView />}
+          {currentRoute === 'manager-dashboard' && (
+            <ManagerDashboardView onNavigate={(r) => setCurrentRoute(r)} />
+          )}
+          {currentRoute === 'manager-farmers' && (
+            <ManagerFarmersView />
+          )}
+          {currentRoute === 'manager-reports' && (
+            <ManagerReportsView />
+          )}
           {currentRoute === 'dashboard' && (
             <DashboardView
               onNavigate={(r) => setCurrentRoute(r)}
@@ -202,33 +276,108 @@ export function App() {
           )}
           {currentRoute === 'farms' && (
             <FarmsAndPlotsView
-              farmerId={currentUser?.id || 1}
-              onNavigate={(r) => setCurrentRoute(r)}
-              onSelectFarm={(id) => {
-                setSelectedFarmId(id);
+              farmerId={currentUser?.id}
+              onNavigate={(r, extraId) => {
+                if (extraId) setSelectedFarmId(extraId);
+                setCurrentRoute(r);
+              }}
+              onSelectFarm={(farmId) => {
+                setSelectedFarmId(farmId);
                 setCurrentRoute('farm-details');
               }}
-            />
-          )}
-          {currentRoute === 'farms-create' && (
-            <CreateFarmView
-              onNavigate={(r) => setCurrentRoute(r)}
-              onFarmCreated={(newFarm) => {
-                setSelectedFarmId(newFarm.id);
-                setCurrentRoute('farm-details');
+              onSelectPlot={(plotId) => {
+                setSelectedPlotId(plotId);
+                setCurrentRoute('plot-details');
+              }}
+              onCreatePlot={(farmId) => {
+                setCreatePlotFarmId(farmId || null);
+                setCurrentRoute('create-plot');
               }}
             />
           )}
           {currentRoute === 'farm-details' && (
             <FarmDetailsView
               farmId={selectedFarmId}
+              farmerId={currentUser?.id}
+              user={currentUser}
+              onNavigate={(r, extraId) => {
+                if (extraId) setSelectedFarmId(extraId);
+                setCurrentRoute(r);
+              }}
+              onSelectPlot={(plotId) => {
+                setSelectedPlotId(plotId);
+                setCurrentRoute('plot-details');
+              }}
+              onCreatePlot={(farmId) => {
+                setCreatePlotFarmId(farmId || selectedFarmId || null);
+                setCurrentRoute('create-plot');
+              }}
+              onBack={() => setCurrentRoute('farms')}
+            />
+          )}
+          {currentRoute === 'create-plot' && (
+            <CreatePlotPage
+              farmerId={currentUser?.id}
+              initialFarmId={createPlotFarmId}
+              onBack={() => setCurrentRoute(createPlotFarmId ? 'farm-details' : 'farms')}
+              onNavigate={(r, extraId) => {
+                if (r === 'farm-details' && extraId) setSelectedFarmId(extraId);
+                if (r === 'plot-details' && extraId) setSelectedPlotId(extraId);
+                setCurrentRoute(r);
+              }}
+              onPlotCreated={(newPlot) => {
+                setSelectedPlotId(newPlot.id);
+                if (newPlot.farmId) setSelectedFarmId(newPlot.farmId);
+                setCurrentRoute('plot-details');
+              }}
+            />
+          )}
+          {currentRoute === 'plot-details' && (
+            <PlotDetailsView
+              plotId={selectedPlotId}
+              farmerId={currentUser?.id}
+              onSelectFarm={(farmId) => {
+                setSelectedFarmId(farmId);
+                setCurrentRoute('farm-details');
+              }}
               onNavigate={(r) => setCurrentRoute(r)}
+              onBack={(farmId) => {
+                if (farmId) {
+                  setSelectedFarmId(farmId);
+                  setCurrentRoute('farm-details');
+                } else {
+                  setCurrentRoute('farms');
+                }
+              }}
+            />
+          )}
+          {currentRoute === 'create-farm' && (
+            <CreateFarmPage
+              onNavigate={(r) => setCurrentRoute(r)}
+              initialFarmer={currentUser}
+              onFarmCreated={(newFarm) => {
+                setCurrentRoute('farms');
+              }}
             />
           )}
           {currentRoute === 'crops' && (
             <CropProductionView
-              farmerId={currentUser?.id || 1}
+              farmerId={currentUser?.id}
               onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
+          {currentRoute === 'crops-catalog' && (
+            <CropsCatalogPage
+              farmerId={currentUser?.id}
+              onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
+          {currentRoute === 'create-crop-cycle' && (
+            <CreateCropCyclePage
+              farmerId={currentUser?.id}
+              onBack={() => setCurrentRoute('crops')}
+              onNavigate={(r) => setCurrentRoute(r)}
+              onCycleCreated={() => setCurrentRoute('crops')}
             />
           )}
           {currentRoute === 'activities' && (
@@ -238,13 +387,48 @@ export function App() {
             <HarvestPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'inputs' && (
-            <FarmInputsView farmerId={currentUser?.id || 1} onNavigate={(r) => setCurrentRoute(r)} />
+            <FarmInputsView farmerId={currentUser?.id} onNavigate={(r) => setCurrentRoute(r)} />
+          )}
+          {currentRoute === 'create-farm-input' && (
+            <CreateFarmInputPage
+              farmerId={currentUser?.id}
+              onBack={() => setCurrentRoute('inputs')}
+              onCreated={() => setCurrentRoute('inputs')}
+            />
           )}
           {currentRoute === 'cycle-inputs' && (
-            <CycleInputsPage farmerId={currentUser?.id || 1} />
+            <CycleInputsPage farmerId={currentUser?.id} />
           )}
           {currentRoute === 'incidents' && (
-            <CycleIncidentsPage farmerId={currentUser?.id || 1} />
+            <CycleIncidentsPage
+              farmerId={currentUser?.id}
+              initialMode={incidentDraft.mode}
+              initialCycleId={incidentDraft.cycleId}
+              onCreateIncident={(mode, cycleId) => {
+                setIncidentDraft({ mode, cycleId, incident: null });
+                setCurrentRoute('create-incident');
+              }}
+              onEditIncident={(mode, cycleId, incident) => {
+                setIncidentDraft({ mode, cycleId, incident });
+                setCurrentRoute('create-incident');
+              }}
+            />
+          )}
+          {currentRoute === 'create-incident' && (
+            <CreateIncidentPage
+              farmerId={currentUser?.id}
+              initialMode={incidentDraft.mode}
+              initialCycleId={incidentDraft.cycleId}
+              initialIncident={incidentDraft.incident}
+              onBack={(mode, cycleId) => {
+                setIncidentDraft({ mode: mode || incidentDraft.mode, cycleId: cycleId || incidentDraft.cycleId, incident: null });
+                setCurrentRoute('incidents');
+              }}
+              onSaved={(mode, cycleId) => {
+                setIncidentDraft({ mode: mode || incidentDraft.mode, cycleId: cycleId || incidentDraft.cycleId, incident: null });
+                setCurrentRoute('incidents');
+              }}
+            />
           )}
           {currentRoute === 'settings' && (
             <FarmerProfileSettingsView
@@ -254,21 +438,11 @@ export function App() {
               }}
             />
           )}
-          {['livestock', 'reports'].includes(currentRoute) && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--color-card-border)',
-              padding: '40px',
-              textAlign: 'center'
-            }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '8px' }}>
-                {currentHeader.title}
-              </h2>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                This module follows the Acrea Design System standards.
-              </p>
-            </div>
+          {currentRoute === 'livestock' && (
+            <LivestockView user={currentUser} />
+          )}
+          {currentRoute === 'reports' && (
+            <ReportsAnalyticsView farmerId={currentUser?.id} />
           )}
 
           {/* Quick Edit Profile Modal */}

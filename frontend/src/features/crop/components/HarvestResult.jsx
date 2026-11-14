@@ -100,6 +100,90 @@ export function HarvestResult({ harvest }) {
             <div className="detail-card-value">{harvest.yieldDisplay}</div>
           </div>
         </div>
+
+        {harvest.qualityGrade && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconCheckCircle size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Quality Grade</div>
+              <div className="detail-card-value">{harvest.qualityGrade}</div>
+            </div>
+          </div>
+        )}
+
+        {harvest.harvestMethod && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconScale size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Harvest Method</div>
+              <div className="detail-card-value">{harvest.harvestMethod}</div>
+            </div>
+          </div>
+        )}
+
+        {harvest.storageLocation && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconLocation size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Storage Location</div>
+              <div className="detail-card-value">{harvest.storageLocation}</div>
+            </div>
+          </div>
+        )}
+
+        {harvest.marketDestination && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconTrendingUp size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Market / Destination</div>
+              <div className="detail-card-value">{harvest.marketDestination}</div>
+            </div>
+          </div>
+        )}
+
+        {harvest.moistureContentPercent != null && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconScale size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Moisture Content</div>
+              <div className="detail-card-value">{harvest.moistureContentPercent}%</div>
+            </div>
+          </div>
+        )}
+
+        {harvest.postHarvestLossQuantity != null && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconScale size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Post-Harvest Loss</div>
+              <div className="detail-card-value">{harvest.postHarvestLossQuantity} {unitLabel}</div>
+            </div>
+          </div>
+        )}
+
+        {harvest.estimatedRevenue != null && (
+          <div className="detail-card">
+            <span className="detail-card-icon">
+              <IconTrendingUp size={18} color="var(--color-brand-primary, #164230)" />
+            </span>
+            <div>
+              <div className="detail-card-label">Estimated Revenue</div>
+              <div className="detail-card-value">{harvest.estimatedRevenue.toLocaleString()}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notes */}
@@ -107,7 +191,7 @@ export function HarvestResult({ harvest }) {
         <div className="result-notes">
           <div className="result-notes-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <IconFileText size={15} color="currentColor" />
-            <span>Harvest Notes</span>
+            <span>Harvest Description &amp; Notes</span>
           </div>
           <div className="result-notes-text">{harvest.notes}</div>
         </div>

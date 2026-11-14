@@ -1,7 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || 'http://localhost:8080/api/v1';
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('acrea_token');
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('acrea_token') : null;
   const isFormData = options.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -20,6 +20,9 @@ async function request(endpoint, options = {}) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
+      if (response.status === 401 && typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
+        window.dispatchEvent(new CustomEvent('acrea:unauthorized'));
+      }
       const validationMsg = data?.validationErrors ? Object.values(data.validationErrors).join('. ') : null;
       const errorMessage = validationMsg || data?.message || 'Request failed';
       const error = new Error(errorMessage);

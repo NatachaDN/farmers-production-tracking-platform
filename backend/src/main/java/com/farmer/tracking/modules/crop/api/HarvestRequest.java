@@ -27,6 +27,24 @@ public class HarvestRequest {
     @Size(max = 1000, message = "Notes must not exceed 1000 characters")
     private String notes;
 
+    @Size(max = 40, message = "Quality grade must not exceed 40 characters")
+    private String qualityGrade;
+
+    @Size(max = 60, message = "Harvest method must not exceed 60 characters")
+    private String harvestMethod;
+
+    @Size(max = 140, message = "Storage location must not exceed 140 characters")
+    private String storageLocation;
+
+    private Double moistureContentPercent;
+
+    private Double postHarvestLossQuantity;
+
+    @Size(max = 120, message = "Market destination must not exceed 120 characters")
+    private String marketDestination;
+
+    private Double estimatedRevenue;
+
     public HarvestRequest() {
     }
 
@@ -69,5 +87,61 @@ public class HarvestRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getQualityGrade() {
+        return qualityGrade;
+    }
+
+    public void setQualityGrade(String qualityGrade) {
+        this.qualityGrade = qualityGrade;
+    }
+
+    public String getHarvestMethod() {
+        return harvestMethod;
+    }
+
+    public void setHarvestMethod(String harvestMethod) {
+        this.harvestMethod = harvestMethod;
+    }
+
+    public String getStorageLocation() {
+        return storageLocation;
+    }
+
+    public void setStorageLocation(String storageLocation) {
+        this.storageLocation = storageLocation;
+    }
+
+    public Double getMoistureContentPercent() {
+        return moistureContentPercent;
+    }
+
+    public void setMoistureContentPercent(Double moistureContentPercent) {
+        this.moistureContentPercent = moistureContentPercent;
+    }
+
+    public Double getPostHarvestLossQuantity() {
+        return postHarvestLossQuantity;
+    }
+
+    public void setPostHarvestLossQuantity(Double postHarvestLossQuantity) {
+        this.postHarvestLossQuantity = postHarvestLossQuantity;
+    }
+
+    public String getMarketDestination() {
+        return marketDestination;
+    }
+
+    public void setMarketDestination(String marketDestination) {
+        this.marketDestination = marketDestination;
+    }
+
+    public Double getEstimatedRevenue() {
+        return estimatedRevenue;
+    }
+
+    public void setEstimatedRevenue(Double estimatedRevenue) {
+        this.estimatedRevenue = estimatedRevenue;
     }
 }

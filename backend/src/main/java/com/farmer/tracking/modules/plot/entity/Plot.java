@@ -3,6 +3,8 @@ package com.farmer.tracking.modules.plot.entity;
 import com.farmer.tracking.modules.farm.model.Farm;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a land plot on a farmer's farm.
@@ -39,6 +41,24 @@ public class Plot {
 
     @Column(length = 80)
     private String stage;
+
+    @Column(name = "soil_type", length = 80)
+    private String soilType;
+
+    @Column(name = "irrigation_type", length = 80)
+    private String irrigationType;
+
+    @Column(length = 80)
+    private String slope;
+
+    @Column(length = 1000)
+    private String notes;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "plot_images", joinColumns = @JoinColumn(name = "plot_id"))
+    @OrderColumn(name = "image_order")
+    @Column(name = "image_url", length = 1024)
+    private List<String> imageUrls = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -158,5 +178,45 @@ public class Plot {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getSoilType() {
+        return soilType;
+    }
+
+    public void setSoilType(String soilType) {
+        this.soilType = soilType;
+    }
+
+    public String getIrrigationType() {
+        return irrigationType;
+    }
+
+    public void setIrrigationType(String irrigationType) {
+        this.irrigationType = irrigationType;
+    }
+
+    public String getSlope() {
+        return slope;
+    }
+
+    public void setSlope(String slope) {
+        this.slope = slope;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls != null ? new ArrayList<>(imageUrls) : new ArrayList<>();
     }
 }

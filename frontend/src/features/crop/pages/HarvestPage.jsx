@@ -2,47 +2,69 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HarvestForm } from '../components/HarvestForm';
 import { HarvestResult } from '../components/HarvestResult';
 import { harvestService } from '../services/harvestService';
+import { cropCycleService } from '../../crops/services/cropCycleService';
+import { animalGroupService } from '../../livestock/services/animalGroupService';
+import { AnimalProductionPanel } from '../../livestock/components/AnimalProductionPanel';
 import { MetricCard } from '../../../shared/components/MetricCard';
+import { Skeleton, SkeletonCard, SkeletonText } from '../../../shared/components/Skeleton';
 import {
   IconCrop,
   IconSprout,
   IconProduction,
   IconCheck,
   IconClose,
-  IconWheat
+  IconWheat,
+  IconLivestock
 } from '../../../shared/components/Icons';
 
-const DEMO_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)', crop: 'Maize', plot: 'Plot A', status: 'ACTIVE', area: '2.5 ha' },
-  { id: 2, name: 'Rice Season 2025 (Plot B)', crop: 'Rice', plot: 'Plot B', status: 'COMPLETED', area: '1.8 ha' },
-  { id: 3, name: 'Tomatoes (Plot C)', crop: 'Tomatoes', plot: 'Plot C', status: 'ACTIVE', area: '1.0 ha' },
-];
-
-const DEMO_COMPLETED_HARVEST = {
-  id: 1,
-  cycleId: 2,
-  cycleName: 'Rice Season 2025 (Plot B)',
-  cycleStatus: 'COMPLETED',
-  quantity: 900,
-  unit: 'KG',
-  harvestDate: '2026-09-26',
-  acreage: 1.8,
-  calculatedYield: 500.0,
-  yieldDisplay: '500.00 kg / ha',
-  notes: 'Good season — uniform grain size, minimal pest impact.',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-export function HarvestPage({ farmerId = 1 }) {
-  const [selectedCycleId, setSelectedCycleId] = useState(1);
+export function HarvestPage({ farmerId }) {
+  const [mode, setMode] = useState('crop');
+  const [cycles, setCycles] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [selectedCycleId, setSelectedCycleId] = useState(null);
   const [harvest, setHarvest] = useState(null);
+  const [isLoadingCycles, setIsLoadingCycles] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimerRef = useRef(null);
 
-  const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
+  // Load real cycles from DB
+  useEffect(() => {
+    async function fetchCycles() {
+      if (!farmerId) {
+        setIsLoadingCycles(false);
+        return;
+      }
+      setIsLoadingCycles(true);
+      setGroupsLoading(true);
+      try {
+        const [cycleRes, groupRes] = await Promise.allSettled([
+          cropCycleService.getCycles(farmerId),
+          animalGroupService.getGroups()
+        ]);
+        const list = cycleRes.status === 'fulfilled' && Array.isArray(cycleRes.value) ? cycleRes.value : [];
+        const groupList = groupRes.status === 'fulfilled' && Array.isArray(groupRes.value) ? groupRes.value : [];
+        setCycles(list);
+        setGroups(groupList);
+        if (list.length > 0) {
+          // Default to first active cycle, or first cycle
+          const first = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
+          setSelectedCycleId(first.id);
+        }
+      } catch (err) {
+        console.error('Failed to load cycles for harvest:', err);
+        setCycles([]);
+      } finally {
+        setIsLoadingCycles(false);
+        setGroupsLoading(false);
+      }
+    }
+    fetchCycles();
+  }, [farmerId]);
+
+  const selectedCycle = cycles.find((c) => c.id === selectedCycleId) || (cycles.length > 0 ? cycles[0] : null);
 
   const showToast = (text, type = 'success') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -50,7 +72,6 @@ export function HarvestPage({ farmerId = 1 }) {
     toastTimerRef.current = setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Clear any pending toast timer when the component unmounts
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -58,59 +79,41 @@ export function HarvestPage({ farmerId = 1 }) {
   }, []);
 
   const loadHarvest = async (cycleId) => {
+    if (!cycleId || !farmerId) {
+      setHarvest(null);
+      return;
+    }
     setIsLoading(true);
     try {
       const data = await harvestService.getHarvest(farmerId, cycleId);
-      if (data) {
-        setHarvest(data);
-      } else {
-        setHarvest(null);
-      }
+      setHarvest(data || null);
     } catch {
-      if (cycleId === 2) {
-        setHarvest(DEMO_COMPLETED_HARVEST);
-      } else {
-        setHarvest(null);
-      }
+      setHarvest(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadHarvest(selectedCycleId);
-  }, [selectedCycleId]);
+    if (selectedCycleId) {
+      loadHarvest(selectedCycleId);
+    } else {
+      setHarvest(null);
+    }
+  }, [selectedCycleId, farmerId]);
 
   const handleRecordHarvest = async (formData) => {
+    if (!selectedCycleId) return;
     setIsSubmitting(true);
     try {
-      let recorded;
-      try {
-        recorded = await harvestService.recordHarvest(farmerId, selectedCycleId, formData);
-      } catch {
-        const qty = formData.quantity;
-        const acreage = parseFloat(selectedCycle.area) || 2.5;
-        const calcYield = Math.round((qty / acreage) * 100) / 100;
-        recorded = {
-          id: Date.now(),
-          cycleId: selectedCycleId,
-          cycleName: selectedCycle.name,
-          cycleStatus: 'COMPLETED',
-          quantity: qty,
-          unit: formData.unit,
-          harvestDate: formData.harvestDate,
-          acreage,
-          calculatedYield: calcYield,
-          yieldDisplay: `${calcYield.toFixed(2)} ${formData.unit.toLowerCase()} / ha`,
-          notes: formData.notes || null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-      }
+      const recorded = await harvestService.recordHarvest(farmerId, selectedCycleId, formData);
       setHarvest(recorded);
+      setCycles((prev) =>
+        prev.map((c) => (c.id === selectedCycleId ? { ...c, status: 'COMPLETED' } : c))
+      );
       showToast('Harvest recorded successfully! Cycle marked as Completed.');
     } catch (err) {
-      showToast(err?.message || 'Failed to record harvest. Please try again.', 'error');
+      showToast(err?.message || 'Failed to record harvest. Please check input values.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -146,107 +149,206 @@ export function HarvestPage({ farmerId = 1 }) {
         </div>
       )}
 
-      {/* Control Bar: Cycle Selector */}
+      {/* Mode Switcher: Crop Harvest vs Animal Production */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'inline-flex', backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => setMode('crop')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'crop' ? '#164230' : 'transparent',
+              color: mode === 'crop' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconCrop size={15} color={mode === 'crop' ? '#FFFFFF' : '#4B5752'} />
+            <span>Crop Harvest ({cycles.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('animal')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'animal' ? '#164230' : 'transparent',
+              color: mode === 'animal' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconLivestock size={15} color={mode === 'animal' ? '#FFFFFF' : '#4B5752'} />
+            <span>Animal Production ({groups.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {mode === 'animal' ? (
+        <AnimalProductionPanel groups={groups} groupsLoading={groupsLoading} onToast={showToast} />
+      ) : (
+        <>
+      {/* Control Bar: Cycle Dropdown */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: '1 1 260px' }}>
+          <label
+            htmlFor="harvest-cycle-select"
+            style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+          >
             SELECT CROP CYCLE:
-          </span>
-          {DEMO_CYCLES.map((c) => {
-            const isSelected = selectedCycleId === c.id;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setSelectedCycleId(c.id)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: '0.8125rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  backgroundColor: isSelected ? 'var(--color-brand-primary)' : '#FFFFFF',
-                  color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
-                  border: isSelected ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-card-border)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)'
-                }}
-              >
-                {c.name}
-              </button>
-            );
-          })}
+          </label>
+          {isLoadingCycles ? (
+            <Skeleton width="240px" height="40px" borderRadius="10px" />
+          ) : cycles.length > 0 ? (
+            <select
+              id="harvest-cycle-select"
+              value={selectedCycleId || ''}
+              onChange={(e) => setSelectedCycleId(Number(e.target.value))}
+              style={{
+                padding: '9px 14px',
+                borderRadius: '10px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                backgroundColor: '#FFFFFF',
+                color: 'var(--color-text-primary)',
+                border: '1px solid var(--color-border-input)',
+                boxShadow: 'var(--shadow-subtle)',
+                minWidth: '220px',
+                maxWidth: '100%',
+                cursor: 'pointer'
+              }}
+            >
+              {cycles.map((c) => {
+                const label = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || `Cycle #${c.id}`;
+                return (
+                  <option key={c.id} value={c.id}>
+                    {label} — [{c.status || 'ACTIVE'}]
+                  </option>
+                );
+              })}
+            </select>
+          ) : (
+            <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+              No crop cycles registered yet
+            </span>
+          )}
         </div>
       </div>
 
-      {/* 4 Summary KPI Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '20px'
-      }}>
-        <MetricCard
-          label="Cycle"
-          value={selectedCycle.name}
-          subtext={`${selectedCycle.area} · Status: ${harvest ? 'COMPLETED' : selectedCycle.status}`}
-          icon={<IconSprout size={20} color="#2D7A52" />}
-          iconBg="#EAF4ED"
-        />
-        <MetricCard
-          label="Harvest Status"
-          value={harvest ? 'Recorded' : 'Pending'}
-          subtext={harvest ? `${harvest.quantity?.toLocaleString()} ${harvest.unit}` : 'Awaiting harvest log'}
-          icon={<IconProduction size={20} color="#0D9488" />}
-          iconBg="#E6F6F4"
-        />
-        <MetricCard
-          label="Calculated Yield"
-          value={harvest ? harvest.yieldDisplay : '—'}
-          subtext={harvest ? 'Final yield per hectare' : 'Available post-harvest'}
-          icon={<IconCrop size={20} color="#D97706" />}
-          iconBg="#FEF3C7"
-        />
-        <MetricCard
-          label="Harvest Date"
-          value={harvest?.harvestDate ? harvest.harvestDate : '—'}
-          subtext={harvest ? 'End of cycle' : 'Pending record'}
-          icon={<IconCheck size={20} color="#2D7A52" />}
-          iconBg="#E8F5E9"
-        />
-      </div>
-
-      {/* Main Content: Form or Result */}
-      {isLoading ? (
+      {isLoadingCycles ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
+            gap: '20px'
+          }}>
+            {[1, 2, 3, 4].map((n) => (
+              <SkeletonCard key={n} height="120px">
+                <SkeletonText lines={2} />
+              </SkeletonCard>
+            ))}
+          </div>
+          <SkeletonCard height="260px">
+            <SkeletonText lines={4} />
+          </SkeletonCard>
+        </div>
+      ) : cycles.length === 0 ? (
         <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid var(--color-card-border)',
-          padding: '48px 24px',
           textAlign: 'center',
-          color: 'var(--color-text-muted)'
+          padding: '48px 20px',
+          backgroundColor: '#FAF8F5',
+          borderRadius: '16px',
+          border: '1px dashed #ECE7DC'
         }}>
-          <p>Loading harvest records...</p>
-        </div>
-      ) : harvest ? (
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid var(--color-card-border)',
-          padding: '32px',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          <HarvestResult harvest={harvest} />
+          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+            No crop cycles found
+          </p>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+            Register plots and create production cycles in the Crops module before recording harvest yields.
+          </p>
         </div>
       ) : (
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid var(--color-card-border)',
-          padding: '32px',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          <HarvestForm onSubmit={handleRecordHarvest} isSubmitting={isSubmitting} />
-        </div>
+        <>
+          {/* 4 Summary KPI Cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
+            gap: '20px'
+          }}>
+            <MetricCard
+              label="Selected Cycle"
+              value={selectedCycle?.name || '—'}
+              subtext={`${selectedCycle?.acreage || selectedCycle?.area || 0} ha · Status: ${harvest ? 'COMPLETED' : (selectedCycle?.status || '—')}`}
+              icon={<IconSprout size={20} color="#2D7A52" />}
+              iconBg="#EAF4ED"
+              loading={isLoading}
+            />
+            <MetricCard
+              label="Harvest Status"
+              value={harvest ? 'Recorded' : 'Pending'}
+              subtext={harvest ? `${harvest.quantity?.toLocaleString()} ${harvest.unit}` : 'Awaiting harvest log'}
+              icon={<IconProduction size={20} color="#0D9488" />}
+              iconBg="#E6F6F4"
+              loading={isLoading}
+            />
+            <MetricCard
+              label="Calculated Yield"
+              value={harvest ? (harvest.yieldDisplay || `${harvest.calculatedYield} / ha`) : '—'}
+              subtext={harvest ? 'Final yield rate' : 'Available post-harvest'}
+              icon={<IconCrop size={20} color="#D97706" />}
+              iconBg="#FEF3C7"
+              loading={isLoading}
+            />
+            <MetricCard
+              label="Harvest Date"
+              value={harvest?.harvestDate ? harvest.harvestDate : '—'}
+              subtext={harvest ? 'End of cycle' : 'Pending record'}
+              icon={<IconCheck size={20} color="#2D7A52" />}
+              iconBg="#E8F5E9"
+              loading={isLoading}
+            />
+          </div>
+
+          {/* Main Content: Form or Result */}
+          {isLoading ? (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 'var(--radius-xl)',
+              border: '1px solid var(--color-card-border)',
+              padding: '32px',
+              boxShadow: 'var(--shadow-card)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <div className="acrea-skeleton" style={{ width: '200px', height: '24px', borderRadius: '4px' }} />
+              <div className="acrea-skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
+              <div className="acrea-skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px' }} />
+              <div className="acrea-skeleton" style={{ width: '140px', height: '40px', borderRadius: '8px', alignSelf: 'flex-end' }} />
+            </div>
+          ) : harvest ? (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 'var(--radius-xl)',
+              border: '1px solid var(--color-card-border)',
+              padding: '32px',
+              boxShadow: 'var(--shadow-card)'
+            }}>
+              <HarvestResult harvest={harvest} />
+            </div>
+          ) : (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 'var(--radius-xl)',
+              border: '1px solid var(--color-card-border)',
+              padding: '32px',
+              boxShadow: 'var(--shadow-card)'
+            }}>
+              <HarvestForm onSubmit={handleRecordHarvest} isSubmitting={isSubmitting} />
+            </div>
+          )}
+        </>
+      )}
+        </>
       )}
     </div>
   );

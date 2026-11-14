@@ -1,140 +1,129 @@
 import React, { useState, useEffect } from 'react';
 import { cycleActivityService } from '../services/cycleActivityService';
+import { cropCycleService } from '../../crops/services/cropCycleService';
+import { animalGroupService } from '../../livestock/services/animalGroupService';
+import { AnimalActivitiesPanel } from '../../livestock/components/AnimalActivitiesPanel';
 import { ActivityForm } from '../components/ActivityForm';
 import { ActivityList } from '../components/ActivityList';
+import { CycleActivityKpiCards } from '../components/CycleActivityKpiCards';
+import { CycleActivityMap } from '../components/CycleActivityMap';
+import { ConfirmModal } from '../../../shared/components/ConfirmModal';
+import { Skeleton, SkeletonCard, SkeletonText } from '../../../shared/components/Skeleton';
 import {
   IconActivities,
   IconPlus,
   IconCrop,
-  IconSprout,
-  IconWater,
-  IconCheck,
-  IconClose
+  IconClose,
+  IconLivestock
 } from '../../../shared/components/Icons';
-import { MetricCard } from '../../../shared/components/MetricCard';
 
-const DEMO_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)', crop: 'Maize', plot: 'Plot A', status: 'ACTIVE', area: '2.5 ha' },
-  { id: 2, name: 'Tomatoes (Plot B)', crop: 'Tomatoes', plot: 'Plot B', status: 'ACTIVE', area: '1.0 ha' },
-  { id: 3, name: 'Beans (Plot C)', crop: 'Beans', plot: 'Plot C', status: 'ACTIVE', area: '0.8 ha' },
-];
-
-const INITIAL_DEMO_ACTIVITIES = [
-  {
-    id: 1,
-    cycleId: 1,
-    activityType: 'FERTILIZING',
-    activityDate: '2026-10-06',
-    notes: 'Applied Field A organic compost & NPK fertilizer (15-15-15) at root depth.',
-    createdAt: '2026-10-06T09:30:00',
-  },
-  {
-    id: 2,
-    cycleId: 1,
-    activityType: 'TREATMENT',
-    activityDate: '2026-10-04',
-    notes: 'Preventative bio-fungicide treatment applied to foliage in morning.',
-    createdAt: '2026-10-04T08:15:00',
-  },
-  {
-    id: 3,
-    cycleId: 1,
-    activityType: 'WATERING',
-    activityDate: '2026-10-02',
-    notes: 'Automated drip irrigation running 45 min per zone.',
-    createdAt: '2026-10-02T07:00:00',
-  },
-  {
-    id: 4,
-    cycleId: 1,
-    activityType: 'WEEDING',
-    activityDate: '2026-09-28',
-    notes: 'Manual weeding performed between rows 1 through 12.',
-    createdAt: '2026-09-28T11:00:00',
-  },
-];
-
-export function CycleActivitiesPage({ farmerId = 1 }) {
-  const [selectedCycleId, setSelectedCycleId] = useState(1);
-  const [activities, setActivities] = useState(INITIAL_DEMO_ACTIVITIES);
+export function CycleActivitiesPage({ farmerId }) {
+  const [mode, setMode] = useState('crop');
+  const [cycles, setCycles] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [selectedCycleId, setSelectedCycleId] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [isLoadingCycles, setIsLoadingCycles] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState(null);
+  const [activityIdToDelete, setActivityIdToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
+  // Fetch cycles from database
+  useEffect(() => {
+    async function fetchCycles() {
+      if (!farmerId) {
+        setIsLoadingCycles(false);
+        return;
+      }
+      setIsLoadingCycles(true);
+      setGroupsLoading(true);
+      try {
+        const [cycleRes, groupRes] = await Promise.allSettled([
+          cropCycleService.getCycles(farmerId),
+          animalGroupService.getGroups()
+        ]);
+        const list = cycleRes.status === 'fulfilled' && Array.isArray(cycleRes.value) ? cycleRes.value : [];
+        const groupList = groupRes.status === 'fulfilled' && Array.isArray(groupRes.value) ? groupRes.value : [];
+        setCycles(list);
+        setGroups(groupList);
+        if (list.length > 0) {
+          const active = list.find((c) => (c.status || '').toUpperCase() === 'ACTIVE') || list[0];
+          setSelectedCycleId(active.id);
+        }
+      } catch (err) {
+        console.error('Failed to load cycles for activities:', err);
+        setCycles([]);
+      } finally {
+        setIsLoadingCycles(false);
+        setGroupsLoading(false);
+      }
+    }
+    fetchCycles();
+  }, [farmerId]);
+
+  const selectedCycle = cycles.find((c) => c.id === selectedCycleId) || (cycles.length > 0 ? cycles[0] : null);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Fetch activities from backend (with fallback to demo state)
+  // Fetch activities from backend
   const loadActivities = async (cycleId) => {
+    if (!cycleId || !farmerId) {
+      setActivities([]);
+      return;
+    }
     setIsLoading(true);
     try {
       const data = await cycleActivityService.getActivities(farmerId, cycleId);
-      if (Array.isArray(data) && data.length > 0) {
-        setActivities(data);
-      }
-    } catch {
-      console.info('Using active session state for activities.');
+      setActivities(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setActivities([]);
+      showToast(err?.message || 'Failed to load activities from server.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadActivities(selectedCycleId);
-  }, [selectedCycleId]);
+    if (selectedCycleId) {
+      loadActivities(selectedCycleId);
+    } else {
+      setActivities([]);
+    }
+  }, [selectedCycleId, farmerId]);
 
   // Handle Create or Update
   const handleSaveActivity = async (formData) => {
+    if (!selectedCycleId) return;
     setIsSubmitting(true);
     try {
       if (editingActivity) {
-        try {
-          const updated = await cycleActivityService.updateActivity(
-            farmerId,
-            selectedCycleId,
-            editingActivity.id,
-            formData
-          );
-          setActivities((prev) =>
-            prev.map((a) => (a.id === editingActivity.id ? { ...a, ...updated } : a))
-          );
-        } catch {
-          setActivities((prev) =>
-            prev.map((a) =>
-              a.id === editingActivity.id
-                ? { ...a, ...formData, updatedAt: new Date().toISOString() }
-                : a
-            )
-          );
-        }
+        const updated = await cycleActivityService.updateActivity(
+          farmerId,
+          selectedCycleId,
+          editingActivity.id,
+          formData
+        );
+        setActivities((prev) =>
+          prev.map((a) => (a.id === editingActivity.id ? { ...a, ...updated } : a))
+        );
         showToast('Activity intervention updated successfully.');
         setEditingActivity(null);
         setShowForm(false);
       } else {
-        try {
-          const created = await cycleActivityService.createActivity(
-            farmerId,
-            selectedCycleId,
-            formData
-          );
-          setActivities((prev) => [created, ...prev]);
-        } catch {
-          const localNew = {
-            id: Date.now(),
-            cycleId: selectedCycleId,
-            activityType: formData.activityType,
-            activityDate: formData.activityDate,
-            notes: formData.notes,
-            createdAt: new Date().toISOString(),
-          };
-          setActivities((prev) => [localNew, ...prev]);
-        }
+        const created = await cycleActivityService.createActivity(
+          farmerId,
+          selectedCycleId,
+          formData
+        );
+        setActivities((prev) => [created, ...prev]);
         showToast('New activity intervention logged successfully.');
         setShowForm(false);
       }
@@ -146,22 +135,26 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
   };
 
   // Handle Delete
-  const handleDeleteActivity = async (activityId) => {
-    if (!window.confirm('Are you sure you want to delete this activity record?')) return;
+  const handleDeleteActivity = (activityId) => {
+    setActivityIdToDelete(activityId);
+  };
+
+  const confirmDeleteActivity = async () => {
+    if (!activityIdToDelete) return;
+    setIsDeleting(true);
     try {
-      try {
-        await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityId);
-      } catch {
-        // fallback local
-      }
-      setActivities((prev) => prev.filter((a) => a.id !== activityId));
+      await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityIdToDelete);
+      setActivities((prev) => prev.filter((a) => a.id !== activityIdToDelete));
       showToast('Activity deleted successfully.');
-      if (editingActivity?.id === activityId) {
+      if (editingActivity?.id === activityIdToDelete) {
         setEditingActivity(null);
         setShowForm(false);
       }
+      setActivityIdToDelete(null);
     } catch (err) {
       showToast(err?.message || 'Failed to delete activity.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -176,180 +169,231 @@ export function CycleActivitiesPage({ farmerId = 1 }) {
   };
 
   // KPI Calculations
-  const cycleActivities = activities.filter((a) => a.cycleId === selectedCycleId);
-  const totalCount = cycleActivities.length;
-  const wateringCount = cycleActivities.filter((a) => a.activityType === 'WATERING').length;
-  const treatmentCount = cycleActivities.filter((a) => a.activityType === 'TREATMENT').length;
-  const fertilizingCount = cycleActivities.filter((a) => a.activityType === 'FERTILIZING').length;
-  const lastIntervention = cycleActivities.length > 0 ? cycleActivities[0].activityDate : 'None';
+  const totalCount = activities.length;
+  const wateringCount = activities.filter((a) => a.activityType === 'WATERING').length;
+  const treatmentCount = activities.filter((a) => a.activityType === 'TREATMENT').length;
+  const fertilizingCount = activities.filter((a) => a.activityType === 'FERTILIZING').length;
+  const lastIntervention = activities.length > 0 ? activities[0].activityDate : 'None';
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Toast Alert */}
       {toastMessage && (
         <div style={{
-          padding: '12px 20px',
-          borderRadius: 'var(--radius-lg)',
+          padding: '12px 20px', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, fontSize: '0.875rem',
           backgroundColor: toastMessage.type === 'error' ? 'var(--color-accent-red-bg)' : 'var(--color-brand-tint)',
           color: toastMessage.type === 'error' ? 'var(--color-accent-red)' : 'var(--color-brand-primary)',
-          border: `1px solid ${toastMessage.type === 'error' ? 'var(--color-accent-red-border)' : 'var(--color-brand-border)'}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontWeight: 600,
-          fontSize: '0.875rem'
+          border: `1px solid ${toastMessage.type === 'error' ? 'var(--color-accent-red-border)' : 'var(--color-brand-border)'}`
         }}>
           <span>{toastMessage.text}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
+          <button type="button" onClick={() => setToastMessage(null)} style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }}>
             <IconClose size={16} color="currentColor" />
           </button>
         </div>
       )}
 
-      {/* Control Bar: Cycle Selector & Action Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        {/* Cycle Filter Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', marginRight: '4px' }}>
-            SELECT CYCLE:
-          </span>
-          {DEMO_CYCLES.map((c) => {
-            const isSelected = selectedCycleId === c.id;
-            return (
+      {/* Mode Switcher: Crop Cycles vs Animal Groups */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'inline-flex', backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => setMode('crop')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'crop' ? '#164230' : 'transparent',
+              color: mode === 'crop' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconCrop size={15} color={mode === 'crop' ? '#FFFFFF' : '#4B5752'} />
+            <span>Crop Cycles ({cycles.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('animal')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'animal' ? '#164230' : 'transparent',
+              color: mode === 'animal' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconLivestock size={15} color={mode === 'animal' ? '#FFFFFF' : '#4B5752'} />
+            <span>Animal Groups ({groups.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {mode === 'animal' ? (
+        <AnimalActivitiesPanel groups={groups} groupsLoading={groupsLoading} onToast={showToast} />
+      ) : (
+        <>
+          {/* Control Bar: Cycle Dropdown & Action Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: '1 1 260px' }}>
+              <label
+                htmlFor="activities-cycle-select"
+                style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+              >
+                SELECT CYCLE:
+              </label>
+              {isLoadingCycles ? (
+                <Skeleton width="240px" height="40px" borderRadius="10px" />
+              ) : cycles.length > 0 ? (
+                <select
+                  id="activities-cycle-select"
+                  value={selectedCycleId || ''}
+                  onChange={(e) => setSelectedCycleId(Number(e.target.value))}
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: '10px',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    backgroundColor: '#FFFFFF',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border-input)',
+                    boxShadow: 'var(--shadow-subtle)',
+                    minWidth: '220px',
+                    maxWidth: '100%',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {cycles.map((c) => {
+                    const label = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || `Cycle #${c.id}`;
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {label} — [{c.status || 'ACTIVE'}]
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                  No crop cycles registered yet
+                </span>
+              )}
+            </div>
+
+            {/* Action Button: Record Activity */}
+            {selectedCycle && (
               <button
-                key={c.id}
-                onClick={() => setSelectedCycleId(c.id)}
+                type="button"
+                onClick={() => {
+                  setEditingActivity(null);
+                  setShowForm(!showForm);
+                }}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-pill)',
-                  fontSize: '0.8125rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  backgroundColor: isSelected ? 'var(--color-brand-primary)' : '#FFFFFF',
-                  color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
-                  border: isSelected ? '1px solid var(--color-brand-primary)' : '1px solid var(--color-card-border)',
-                  boxShadow: isSelected ? '0 2px 8px rgba(62, 123, 82, 0.25)' : 'var(--shadow-subtle)',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)'
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                  borderRadius: 'var(--radius-pill)', backgroundColor: showForm ? '#FFFFFF' : 'var(--color-brand-primary)',
+                  color: showForm ? 'var(--color-text-primary)' : '#FFFFFF',
+                  border: showForm ? '1px solid var(--color-card-border)' : 'none',
+                  fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', boxShadow: 'var(--shadow-subtle)'
                 }}
               >
-                {c.name}
+                {showForm ? <IconClose size={16} /> : <IconPlus size={16} />}
+                <span>{showForm ? 'Close Form' : 'Record Activity'}</span>
               </button>
-            );
-          })}
-        </div>
+            )}
+          </div>
 
-        {/* Action Button: Record Activity */}
-        <button
-          type="button"
-          onClick={() => {
-            setEditingActivity(null);
-            setShowForm(!showForm);
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: showForm && !editingActivity ? 'var(--color-text-muted)' : 'var(--color-brand-primary)',
-            color: '#FFFFFF',
-            padding: '10px 20px',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            boxShadow: 'var(--shadow-subtle)',
-            cursor: 'pointer',
-            transition: 'background-color var(--transition-fast)'
-          }}
-        >
-          {showForm && !editingActivity ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <IconClose size={16} color="currentColor" />
-              <span>Close Form</span>
-            </span>
-          ) : (
-            <>
-              <IconPlus size={16} />
-              <span>Record Activity</span>
-            </>
+          {/* Inline Create / Edit Form Container */}
+          {showForm && selectedCycle && (
+            <div id="activity-form-container">
+              <ActivityForm
+                onSubmit={handleSaveActivity}
+                isSubmitting={isSubmitting}
+                initialData={editingActivity}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingActivity(null);
+                }}
+              />
+            </div>
           )}
-        </button>
-      </div>
 
-      {/* 4 KPI Summary Cards Row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '20px'
-      }}>
-        <MetricCard
-          label="Active Cycle"
-          value={selectedCycle.name}
-          subtext={`${selectedCycle.area} · Status: ${selectedCycle.status}`}
-          icon={<IconSprout size={20} color="#2D7A52" />}
-          iconBg="#EAF4ED"
-        />
-        <MetricCard
-          label="Total Interventions"
-          value={totalCount}
-          subtext={`Last: ${lastIntervention}`}
-          icon={<IconActivities size={20} color="#0D9488" />}
-          iconBg="#E6F6F4"
-        />
-        <MetricCard
-          label="Watering & Nutrients"
-          value={`${wateringCount + fertilizingCount} logs`}
-          subtext={`${wateringCount} irrigation · ${fertilizingCount} feeding`}
-          icon={<IconWater size={20} color="#3A86C8" />}
-          iconBg="#EBF3FA"
-        />
-        <MetricCard
-          label="Crop Treatments"
-          value={`${treatmentCount} applied`}
-          subtext="Pest & disease controls"
-          icon={<IconCrop size={20} color="#D97706" />}
-          iconBg="#FEF3C7"
-        />
-      </div>
-
-      {/* Form Drawer / Container */}
-      {showForm && (
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid var(--color-card-border)',
-          padding: '32px',
-          boxShadow: 'var(--shadow-card)'
-        }}>
-          <ActivityForm
-            onSubmit={handleSaveActivity}
-            isSubmitting={isSubmitting}
-            initialData={editingActivity}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingActivity(null);
-            }}
+          {/* KPI Metric Summary Cards */}
+          <CycleActivityKpiCards
+            totalCount={totalCount}
+            wateringCount={wateringCount}
+            fertilizingCount={fertilizingCount}
+            treatmentCount={treatmentCount}
+            lastIntervention={lastIntervention}
+            cycleName={selectedCycle?.name || (cycles.length === 0 ? 'No cycles' : 'None')}
+            isLoading={isLoadingCycles || isLoading}
           />
-        </div>
-      )}
 
-      {/* Activities Timeline & History List */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: 'var(--radius-xl)',
-        border: '1px solid var(--color-card-border)',
-        padding: '24px 32px',
-        boxShadow: 'var(--shadow-card)'
-      }}>
-        <ActivityList
-          activities={cycleActivities}
-          isLoading={isLoading}
-          onEdit={handleEditTrigger}
-          onDelete={handleDeleteActivity}
-        />
-      </div>
+          {/* Interactive Field Interventions Map */}
+          {selectedCycle && activities.length > 0 && (
+            <CycleActivityMap
+              activities={activities}
+              cycleName={selectedCycle?.name || selectedCycle?.plotName || ''}
+            />
+          )}
+
+          {/* Activity Timeline List */}
+          <div style={{
+            backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-card-border)',
+            boxShadow: 'var(--shadow-card)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  Intervention History & Log
+                </h3>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                  Chronological log of agronomic activities applied to this crop cycle.
+                </p>
+              </div>
+            </div>
+
+            {isLoadingCycles ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <SkeletonCard height="96px">
+                  <SkeletonText lines={2} />
+                </SkeletonCard>
+                <SkeletonCard height="96px">
+                  <SkeletonText lines={2} />
+                </SkeletonCard>
+              </div>
+            ) : cycles.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '48px 20px',
+                backgroundColor: '#FAF8F5',
+                borderRadius: '12px',
+                border: '1px dashed #ECE7DC'
+              }}>
+                <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  No crop cycles registered
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                  Create a crop cycle in the Crop Production module before logging field interventions.
+                </p>
+              </div>
+            ) : (
+              <ActivityList
+                activities={activities}
+                isLoading={isLoading}
+                onEdit={handleEditTrigger}
+                onDelete={handleDeleteActivity}
+              />
+            )}
+          </div>
+
+          <ConfirmModal
+            isOpen={!!activityIdToDelete}
+            onClose={() => setActivityIdToDelete(null)}
+            onConfirm={confirmDeleteActivity}
+            title="Delete Activity"
+            message="Are you sure you want to delete this activity record?"
+            confirmText="Delete Activity"
+            isDestructive={true}
+            isLoading={isDeleting}
+          />
+        </>
+      )}
     </div>
   );
 }

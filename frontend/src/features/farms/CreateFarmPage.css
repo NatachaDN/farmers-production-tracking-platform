@@ -1,0 +1,688 @@
+/* ===================================================================
+   Acrea — Create Farm Stepped Page Styles (Mobile-First Ultra-Responsive)
+   Adheres strictly to acrea-design-system & pure-craft-anti-ai
+   =================================================================== */
+
+.create-farm-page {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 8px 16px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .create-farm-page {
+    padding: 16px 24px 80px;
+    gap: 32px;
+  }
+}
+
+/* ─── Top Header & Back Navigation ────────────────────────────── */
+.create-farm-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-farm-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-brand-primary, #3E7B52);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+  align-self: flex-start;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.create-farm-back-btn:hover {
+  opacity: 0.85;
+  transform: translateX(-2px);
+}
+
+.create-farm-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.create-farm-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .create-farm-title {
+    font-size: 2.125rem;
+  }
+}
+
+.create-farm-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted, #788680);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ─── Stepper Progress Bar ────────────────────────────────────── */
+.stepper-container {
+  background-color: var(--color-surface-card, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(22, 66, 48, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stepper-progress-track {
+  width: 100%;
+  height: 8px;
+  background-color: #F4EFE6;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.stepper-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3E7B52 0%, #2A6740 100%);
+  border-radius: 9999px;
+  transition: width 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stepper-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.step-indicator-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 180ms ease;
+  user-select: none;
+}
+
+.step-indicator-pill:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.step-indicator-pill.active {
+  background-color: #EAF4ED;
+  border-color: #C8E2D0;
+}
+
+.step-indicator-pill.completed {
+  background-color: #FFFFFF;
+}
+
+.step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  transition: all 180ms ease;
+}
+
+.step-indicator-pill.active .step-circle {
+  background-color: #3E7B52;
+  color: #FFFFFF;
+}
+
+.step-indicator-pill.completed .step-circle {
+  background-color: #2E7D32;
+  color: #FFFFFF;
+}
+
+.step-indicator-pill:not(.active):not(.completed) .step-circle {
+  background-color: #ECE7DC;
+  color: #788680;
+}
+
+.step-pill-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #19201C);
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .step-pill-label {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.step-pill-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.step-pill-badge.required {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.step-pill-badge.optional {
+  background-color: #F1F5F9;
+  color: #64748B;
+}
+
+/* ─── Main Card Canvas ────────────────────────────────────────── */
+.create-farm-card {
+  background-color: var(--color-surface-card, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 24px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 16px rgba(22, 66, 48, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+@media (min-width: 768px) {
+  .create-farm-card {
+    padding: 36px 36px;
+  }
+}
+
+.step-header-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #F4EFE6;
+}
+
+.step-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-nature-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-nature-tag.obligatory {
+  background-color: #EAF4ED;
+  color: #2A6740;
+  border: 1px solid #C8E2D0;
+}
+
+.step-nature-tag.optional {
+  background-color: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.step-heading {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.step-guidance {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary, #4B5752);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ─── Form Inputs & Cards ─────────────────────────────────────── */
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #19201C);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-helper {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #788680);
+  line-height: 1.4;
+  margin-top: -2px;
+}
+
+.form-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1.5px solid var(--color-border-input, #DFD8CA);
+  background-color: #FFFFFF;
+  color: var(--color-text-primary, #19201C);
+  font-size: 1.0rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 180ms ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: var(--color-brand-primary, #3E7B52);
+  box-shadow: 0 0 0 3px rgba(62, 123, 82, 0.15);
+}
+
+.form-input.has-error {
+  border-color: #DC2626;
+  background-color: #FEF2F2;
+}
+
+.field-error-msg {
+  font-size: 0.8125rem;
+  color: #DC2626;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Type Selector Cards (Step 1) ────────────────────────────── */
+.type-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 680px) {
+  .type-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.type-select-card {
+  background-color: #FFFFFF;
+  border: 2px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 18px;
+  padding: 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  text-align: left;
+  position: relative;
+  min-height: 140px;
+}
+
+.type-select-card:hover {
+  border-color: var(--color-brand-border, #C8E2D0);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 66, 48, 0.08);
+}
+
+.type-select-card.selected {
+  border-color: var(--color-brand-primary, #3E7B52);
+  background-color: #F8FBF8;
+  box-shadow: 0 4px 14px rgba(62, 123, 82, 0.12);
+}
+
+.type-card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-color: #EAF4ED;
+  color: #2A6740;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.type-select-card.selected .type-card-icon-wrap {
+  background-color: #3E7B52;
+  color: #FFFFFF;
+}
+
+.type-card-title {
+  font-size: 1.0rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  line-height: 1.3;
+}
+
+.type-card-desc {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #788680);
+  line-height: 1.4;
+}
+
+.type-check-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #3E7B52;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Size & Unit Row ─────────────────────────────────────────── */
+.size-unit-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 540px) {
+  .size-unit-row {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.unit-toggle-container {
+  display: flex;
+  background-color: #F4EFE6;
+  border-radius: 14px;
+  padding: 4px;
+  gap: 4px;
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.unit-toggle-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #788680);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unit-toggle-btn.active {
+  background-color: #FFFFFF;
+  color: var(--color-text-primary, #19201C);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Suggestion Chips ────────────────────────────────────────── */
+.suggestion-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.suggestion-chip {
+  background-color: #F4EFE6;
+  border: 1px solid #ECE7DC;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-primary, #19201C);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.suggestion-chip:hover {
+  background-color: #EAF4ED;
+  border-color: #C8E2D0;
+  color: #2A6740;
+}
+
+.suggestion-chip.active {
+  background-color: #3E7B52;
+  border-color: #3E7B52;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+/* ─── Optional Step 3 Badges & Cards ──────────────────────────── */
+.optional-banner {
+  background-color: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.optional-banner-text {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.skip-step-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-brand-primary, #3E7B52);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.water-options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .water-options-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.soil-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.slope-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.choice-chip-card {
+  background-color: #FFFFFF;
+  border: 1.5px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  text-align: left;
+}
+
+.choice-chip-card:hover {
+  border-color: var(--color-brand-border, #C8E2D0);
+  background-color: #FAF8F5;
+}
+
+.choice-chip-card.selected {
+  border-color: var(--color-brand-primary, #3E7B52);
+  background-color: #EAF4ED;
+}
+
+.choice-chip-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+}
+
+.choice-chip-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #788680);
+}
+
+/* ─── Review Card (Step 4) ────────────────────────────────────── */
+.review-card-summary {
+  background-color: #FBF9F5;
+  border: 1px solid var(--color-border-subtle, #ECE7DC);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.review-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ECE7DC;
+}
+
+.review-summary-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.review-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #788680);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.review-val {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #19201C);
+  text-align: right;
+  max-width: 60%;
+}
+
+/* ─── Actions Navigation Bar ──────────────────────────────────── */
+.stepper-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #F4EFE6;
+}
+
+.stepper-btn {
+  min-height: 52px;
+  padding: 12px 24px;
+  border-radius: 14px;
+  font-size: 1.0rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 180ms ease;
+  border: none;
+  touch-action: manipulation;
+}
+
+.stepper-btn-secondary {
+  background-color: #FFFFFF;
+  border: 1.5px solid var(--color-border-subtle, #ECE7DC);
+  color: var(--color-text-primary, #19201C);
+}
+
+.stepper-btn-secondary:hover {
+  background-color: #F4EFE6;
+}
+
+.stepper-btn-primary {
+  background-color: var(--color-brand-primary, #3E7B52);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(62, 123, 82, 0.25);
+  margin-left: auto;
+}
+
+.stepper-btn-primary:hover:not(:disabled) {
+  background-color: #336844;
+  transform: translateY(-1px);
+}
+
+.stepper-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.stepper-btn-skip {
+  background: transparent;
+  color: var(--color-text-muted, #788680);
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.stepper-btn-skip:hover {
+  color: var(--color-brand-primary, #3E7B52);
+}
+

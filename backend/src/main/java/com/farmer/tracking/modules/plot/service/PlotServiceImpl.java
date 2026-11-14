@@ -47,9 +47,8 @@ public class PlotServiceImpl implements PlotService {
         Farm targetFarm = null;
         if (request.getFarmId() != null) {
             targetFarm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElse(null);
-        }
-        if (targetFarm == null) {
+                    .orElseThrow(() -> new ResourceNotFoundException("Farm", request.getFarmId()));
+        } else {
             targetFarm = farmRepository.findFirstByFarmerIdAndIsDefaultTrue(farmerId)
                     .orElse(null);
         }
@@ -63,9 +62,32 @@ public class PlotServiceImpl implements PlotService {
                 request.getCropType() != null ? request.getCropType().trim() : "Unspecified",
                 request.getStage() != null ? request.getStage().trim() : "Planned"
         );
+        applySupplementaryFields(plot, request);
 
         Plot savedPlot = plotRepository.save(plot);
         return PlotResponse.fromEntity(savedPlot);
+    }
+
+    private void applySupplementaryFields(Plot plot, PlotRequest request) {
+        if (request.getSoilType() != null) {
+            plot.setSoilType(request.getSoilType().trim().isEmpty() ? null : request.getSoilType().trim());
+        }
+        if (request.getIrrigationType() != null) {
+            plot.setIrrigationType(request.getIrrigationType().trim().isEmpty() ? null : request.getIrrigationType().trim());
+        }
+        if (request.getSlope() != null) {
+            plot.setSlope(request.getSlope().trim().isEmpty() ? null : request.getSlope().trim());
+        }
+        if (request.getNotes() != null) {
+            plot.setNotes(request.getNotes().trim().isEmpty() ? null : request.getNotes().trim());
+        }
+        if (request.getImageUrls() != null) {
+            List<String> cleaned = request.getImageUrls().stream()
+                    .filter(u -> u != null && !u.trim().isEmpty())
+                    .map(String::trim)
+                    .toList();
+            plot.setImageUrls(cleaned);
+        }
     }
 
     @Override
@@ -114,6 +136,7 @@ public class PlotServiceImpl implements PlotService {
         if (request.getStage() != null) {
             plot.setStage(request.getStage().trim());
         }
+        applySupplementaryFields(plot, request);
 
         Plot savedPlot = plotRepository.save(plot);
         return PlotResponse.fromEntity(savedPlot);

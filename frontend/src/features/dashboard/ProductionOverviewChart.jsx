@@ -1,8 +1,49 @@
 import React from 'react';
+import '../../shared/components/Skeleton.css';
 
-export function ProductionOverviewChart() {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const cropHeights = [30, 45, 60, 40, 75, 55, 68, 85, 70, 95, 65, 80];
+export function ProductionOverviewChart({ data = [], totalKg = 0, loading = false }) {
+  if (loading) {
+    return (
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        border: '1px solid var(--color-card-border)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '24px',
+        boxShadow: 'var(--shadow-card)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <div className="acrea-skeleton" style={{ width: '160px', height: '22px', borderRadius: '4px' }} />
+            <div className="acrea-skeleton" style={{ width: '240px', height: '14px', borderRadius: '4px', marginTop: '6px' }} />
+          </div>
+          <div className="acrea-skeleton" style={{ width: '100px', height: '26px', borderRadius: '4px' }} />
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          height: '180px',
+          paddingTop: '30px',
+          paddingBottom: '10px',
+          borderBottom: '1px solid #F0EAE1'
+        }}>
+          {[40, 60, 30, 80, 50, 70, 90, 40, 60, 85, 30, 50].map((h, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '8px' }}>
+              <div className="acrea-skeleton" style={{ width: '6px', height: `${h}%`, borderRadius: '3px' }} />
+              <div className="acrea-skeleton" style={{ width: '20px', height: '10px', borderRadius: '2px' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // If data is passed as array of { month: 'Jan', quantityKg: 120 }
+  const months = data.length > 0
+    ? data
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => ({ month: m, quantityKg: 0 }));
+
+  const maxVal = Math.max(...months.map(d => d.quantityKg || 0), 0);
 
   return (
     <div style={{
@@ -18,7 +59,7 @@ export function ProductionOverviewChart() {
             Production Overview
           </h3>
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-            Monthly output across crops and livestock
+            Monthly harvested yield from recorded crop cycles
           </p>
         </div>
 
@@ -26,11 +67,7 @@ export function ProductionOverviewChart() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2D7A52' }} />
-              Crops
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#D97706' }} />
-              Animals
+              Harvest (kg)
             </span>
           </div>
 
@@ -57,38 +94,69 @@ export function ProductionOverviewChart() {
         paddingBottom: '10px',
         borderBottom: '1px solid #F0EAE1'
       }}>
-        {months.map((m, idx) => (
-          <div key={m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '8px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              height: '120px',
-              width: '6px',
-              position: 'relative'
-            }}>
+        {months.map((d, idx) => {
+          const val = d.quantityKg || 0;
+          const heightPercent = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0;
+          return (
+            <div
+              key={idx}
+              title={`${d.month}: ${val.toLocaleString()} kg`}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '8px', cursor: 'default' }}
+            >
               <div style={{
-                width: '3px',
-                height: `${cropHeights[idx]}%`,
-                backgroundColor: '#2D7A52',
-                borderRadius: '2px',
-                margin: '0 auto',
+                display: 'flex',
+                alignItems: 'flex-end',
+                height: '120px',
+                width: '6px',
                 position: 'relative'
               }}>
-                <span style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  left: '-2.5px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: '#2D7A52'
-                }} />
+                {val > 0 ? (
+                  <div style={{
+                    width: '3px',
+                    height: `${Math.max(heightPercent, 6)}%`,
+                    backgroundColor: '#2D7A52',
+                    borderRadius: '2px',
+                    margin: '0 auto',
+                    position: 'relative'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      top: '-4px',
+                      left: '-2.5px',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: '#2D7A52'
+                    }} />
+                  </div>
+                ) : (
+                  <div style={{
+                    width: '3px',
+                    height: '2px',
+                    backgroundColor: '#E2DCD2',
+                    borderRadius: '1px',
+                    margin: '0 auto'
+                  }} />
+                )}
               </div>
+              <span style={{ fontSize: '0.7rem', color: val > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
+                {d.month}
+              </span>
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{m}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
+      {maxVal === 0 && (
+        <p style={{
+          textAlign: 'center',
+          fontSize: '0.75rem',
+          color: 'var(--color-text-muted)',
+          marginTop: '12px',
+          marginBottom: '0'
+        }}>
+          No harvest records logged yet. Once you complete a cycle harvest, output trends will appear here.
+        </p>
+      )}
     </div>
   );
 }

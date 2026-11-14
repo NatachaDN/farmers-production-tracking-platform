@@ -1,302 +1,417 @@
 import React, { useState, useEffect } from 'react';
 import './CycleIncidentsPage.css';
 import { cycleIncidentService } from '../services/cycleIncidentService';
-import { IncidentForm } from '../components/IncidentForm';
+import { cropCycleService } from '../../crops/services/cropCycleService';
+import { animalGroupService } from '../../livestock/services/animalGroupService';
 import { IncidentList } from '../components/IncidentList';
 import { MetricCard } from '../../../shared/components/MetricCard';
-
-// ------------------------------------------------------------------ //
-//  Demo / fallback data (used when API is unreachable)                //
-// ------------------------------------------------------------------ //
-const DEMO_CYCLES = [
-  { id: 1, name: 'Maize (Plot A)',    crop: 'Maize',    plot: 'Plot A', status: 'ACTIVE', area: '2.5 ha' },
-  { id: 2, name: 'Tomatoes (Plot B)', crop: 'Tomatoes', plot: 'Plot B', status: 'ACTIVE', area: '1.0 ha' },
-  { id: 3, name: 'Beans (Plot C)',    crop: 'Beans',    plot: 'Plot C', status: 'ACTIVE', area: '0.8 ha' },
-];
-
-const INITIAL_DEMO_INCIDENTS = [
-  {
-    id: 1,
-    cycleId: 1,
-    incidentType: 'DISEASE',
-    incidentDate: '2026-10-10',
-    description: 'Early blight (Alternaria solani) detected on lower leaves of plants in rows 3–7. Yellowing margins visible on approximately 30% of foliage.',
-    severityLevel: 3,
-    actionTaken: 'Applied copper-based fungicide at 2g/L concentration across all affected rows at 08:00.',
-    createdAt: '2026-10-10T09:30:00',
-  },
-  {
-    id: 2,
-    cycleId: 1,
-    incidentType: 'PEST',
-    incidentDate: '2026-10-05',
-    description: 'Aphid infestation spotted on stems and undersides of leaves near irrigation channels. Ant activity observed suggesting honey-dew secretion.',
-    severityLevel: 2,
-    actionTaken: 'Sprayed neem oil solution (5mL/L) and released ladybug colony.',
-    createdAt: '2026-10-05T14:15:00',
-  },
-  {
-    id: 3,
-    cycleId: 1,
-    incidentType: 'WEATHER',
-    incidentDate: '2026-09-28',
-    description: 'Heavy rainfall (87mm in 4 hours) caused waterlogging in low-lying section of Plot A. Standing water observed for 18+ hours.',
-    severityLevel: 4,
-    actionTaken: 'Opened drainage channels, added emergency ridge furrows, applied potassium boost to aid root recovery.',
-    createdAt: '2026-09-28T11:00:00',
-  },
-  {
-    id: 4,
-    cycleId: 2,
-    incidentType: 'PEST',
-    incidentDate: '2026-10-08',
-    description: 'Whitefly colony detected on tomato foliage. Honeydew deposits and sooty mold beginning to develop.',
-    severityLevel: 2,
-    actionTaken: 'Yellow sticky traps deployed, insecticidal soap spray applied.',
-    createdAt: '2026-10-08T10:00:00',
-  },
-];
-
-// ------------------------------------------------------------------ //
-//  Page component                                                     //
-// ------------------------------------------------------------------ //
+import { Skeleton } from '../../../shared/components/Skeleton';
+import { ConfirmModal } from '../../../shared/components/ConfirmModal';
+import {
+  IconAlertTriangle,
+  IconShieldAlert,
+  IconBug,
+  IconAlertCircle,
+  IconClose,
+  IconPlus,
+  IconCheck,
+  IconCrop,
+  IconLivestock
+} from '../../../shared/components/Icons';
 
 /**
- * CycleIncidentsPage — Record and view incidents (disease, pest, damage) per cycle.
+ * CycleIncidentsPage — Unified Incidents & Protection view for both
+ * Crop Cycles and Animal Groups (livestock herds/flocks).
  */
-export function CycleIncidentsPage({ farmerId = 1 }) {
-  const [selectedCycleId, setSelectedCycleId] = useState(1);
-  const [incidents, setIncidents] = useState(INITIAL_DEMO_INCIDENTS);
+export function CycleIncidentsPage({
+  farmerId,
+  initialMode = 'crop',
+  initialCycleId = null,
+  onCreateIncident,
+  onEditIncident
+}) {
+  const [mode, setMode] = useState(initialMode || 'crop');
+  const [cycles, setCycles] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [targetsLoading, setTargetsLoading] = useState(true);
+  const [selectedTargetId, setSelectedTargetId] = useState(initialCycleId || null);
+  const [incidents, setIncidents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingIncident, setEditingIncident] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [incidentToDelete, setIncidentToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const selectedCycle = DEMO_CYCLES.find((c) => c.id === selectedCycleId) || DEMO_CYCLES[0];
+  // Fetch both crop cycles and animal groups
+  useEffect(() => {
+    async function fetchTargets() {
+      if (!farmerId) {
+        setTargetsLoading(false);
+        return;
+      }
+      setTargetsLoading(true);
+      try {
+        const [cycleRes, groupRes] = await Promise.allSettled([
+          cropCycleService.getCycles(farmerId),
+          animalGroupService.getGroups()
+        ]);
+        const cycleList = cycleRes.status === 'fulfilled' && Array.isArray(cycleRes.value) ? cycleRes.value : [];
+        const groupList = groupRes.status === 'fulfilled' && Array.isArray(groupRes.value) ? groupRes.value : [];
+        setCycles(cycleList);
+        setGroups(groupList);
+
+        const activeList = (initialMode || 'crop') === 'animal' ? groupList : cycleList;
+        if (activeList.length > 0) {
+          const targetId = initialCycleId && activeList.some((x) => x.id === initialCycleId)
+            ? initialCycleId
+            : (activeList.find((x) => (x.status || '').toUpperCase() === 'ACTIVE') || activeList[0]).id;
+          setSelectedTargetId(targetId);
+        } else {
+          setSelectedTargetId(null);
+        }
+      } finally {
+        setTargetsLoading(false);
+      }
+    }
+    fetchTargets();
+  }, [farmerId, initialCycleId, initialMode]);
+
+  const handleModeSwitch = (nextMode) => {
+    setMode(nextMode);
+    const list = nextMode === 'animal' ? groups : cycles;
+    if (list.length > 0) {
+      const first = list.find((x) => (x.status || '').toUpperCase() === 'ACTIVE') || list[0];
+      setSelectedTargetId(first.id);
+    } else {
+      setSelectedTargetId(null);
+    }
+  };
+
+  const targetList = mode === 'animal' ? groups : cycles;
+  const selectedTarget = targetList.find((x) => x.id === selectedTargetId) || null;
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4500);
   };
 
-  // ---- Load incidents from API ----
-  const loadIncidents = async (cycleId) => {
-    setIsLoading(true);
-    try {
-      const data = await cycleIncidentService.getIncidents(farmerId, cycleId);
-      if (Array.isArray(data) && data.length > 0) {
-        setIncidents((prev) => {
-          // Merge: keep other cycle data, replace this cycle's data
-          const others = prev.filter((i) => i.cycleId !== cycleId);
-          return [...others, ...data];
-        });
-      }
-    } catch {
-      // Fallback to demo state — already set
-      console.info('Using session state for incidents (API unreachable).');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Load incidents for selected cycle or animal group
   useEffect(() => {
-    loadIncidents(selectedCycleId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCycleId]);
-
-  // ---- Save (Create or Update) ----
-  const handleSaveIncident = async (formData) => {
-    setIsSubmitting(true);
-    try {
-      if (editingIncident) {
-        // UPDATE
-        try {
-          const updated = await cycleIncidentService.updateIncident(
-            farmerId, selectedCycleId, editingIncident.id, formData
-          );
-          setIncidents((prev) =>
-            prev.map((i) => (i.id === editingIncident.id ? { ...i, ...updated } : i))
-          );
-        } catch {
-          // Optimistic local update on API failure
-          setIncidents((prev) =>
-            prev.map((i) =>
-              i.id === editingIncident.id
-                ? { ...i, ...formData, updatedAt: new Date().toISOString() }
-                : i
-            )
-          );
-        }
-        showToast('Incident record updated successfully.');
-        setEditingIncident(null);
-        setShowForm(false);
-      } else {
-        // CREATE
-        try {
-          const created = await cycleIncidentService.createIncident(
-            farmerId, selectedCycleId, formData
-          );
-          setIncidents((prev) => [created, ...prev]);
-        } catch {
-          // Optimistic local create on API failure
-          const localNew = {
-            id: Date.now(),
-            cycleId: selectedCycleId,
-            ...formData,
-            createdAt: new Date().toISOString(),
-          };
-          setIncidents((prev) => [localNew, ...prev]);
-        }
-        showToast('Incident logged successfully to this cycle.');
-        setShowForm(false);
+    async function loadIncidents() {
+      if (!selectedTargetId || !farmerId) {
+        setIncidents([]);
+        return;
       }
-    } catch (err) {
-      showToast(err?.message || 'Failed to save incident.', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // ---- Delete ----
-  const handleDeleteIncident = async (incidentId) => {
-    if (!window.confirm('Are you sure you want to delete this incident record?')) return;
-    try {
+      setIsLoading(true);
       try {
-        await cycleIncidentService.deleteIncident(farmerId, selectedCycleId, incidentId);
+        const data = mode === 'animal'
+          ? await animalGroupService.getIncidents(selectedTargetId)
+          : await cycleIncidentService.getIncidents(farmerId, selectedTargetId);
+        setIncidents(Array.isArray(data) ? data : []);
       } catch {
-        // continue with local removal
+        setIncidents([]);
+      } finally {
+        setIsLoading(false);
       }
-      setIncidents((prev) => prev.filter((i) => i.id !== incidentId));
+    }
+    loadIncidents();
+  }, [selectedTargetId, farmerId, mode]);
+
+  const confirmDelete = async () => {
+    if (!incidentToDelete || !selectedTargetId) return;
+    setIsDeleting(true);
+    try {
+      if (mode === 'animal') {
+        await animalGroupService.deleteIncident(selectedTargetId, incidentToDelete.id);
+      } else {
+        await cycleIncidentService.deleteIncident(farmerId, selectedTargetId, incidentToDelete.id);
+      }
+      setIncidents((prev) => prev.filter((i) => i.id !== incidentToDelete.id));
       showToast('Incident record deleted.');
-      if (editingIncident?.id === incidentId) {
-        setEditingIncident(null);
-        setShowForm(false);
-      }
     } catch (err) {
       showToast(err?.message || 'Failed to delete incident.', 'error');
+    } finally {
+      setIsDeleting(false);
+      setIncidentToDelete(null);
     }
   };
 
-  // ---- Edit trigger ----
-  const handleEditTrigger = (incident) => {
-    setEditingIncident(incident);
-    setShowForm(true);
-    setTimeout(() => {
-      const el = document.getElementById('incident-form-container');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
-  };
+  // KPIs
+  const totalIncidents = incidents.length;
+  const diseaseCount = incidents.filter((i) => i.incidentType === 'DISEASE').length;
+  const thirdCardCount = mode === 'animal'
+    ? incidents.filter((i) => i.incidentType === 'MORTALITY' || i.incidentType === 'INJURY').length
+    : incidents.filter((i) => i.incidentType === 'PEST').length;
+  const highSeverity = incidents.filter((i) => i.severityLevel && i.severityLevel >= 4).length;
 
-  // ---- KPI metrics ----
-  const cycleIncidents = incidents.filter((i) => i.cycleId === selectedCycleId);
-  const totalCount     = cycleIncidents.length;
-  const diseaseCount   = cycleIncidents.filter((i) => i.incidentType === 'DISEASE').length;
-  const pestCount      = cycleIncidents.filter((i) => i.incidentType === 'PEST').length;
-  const highSeverity   = cycleIncidents.filter((i) => (i.severityLevel || 0) >= 4).length;
+  const latestIncidentDate = incidents.length > 0
+    ? incidents.map((i) => i.incidentDate).filter(Boolean).sort().reverse()[0]
+    : null;
+
+  const formattedLatestDate = latestIncidentDate
+    ? new Date(latestIncidentDate).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      })
+    : null;
+
+  const targetDisplayName = selectedTarget
+    ? mode === 'animal'
+      ? `${selectedTarget.name} (${selectedTarget.animalType})`
+      : selectedTarget.name || `${selectedTarget.cropName || 'Crop'}${selectedTarget.plotName ? ` (${selectedTarget.plotName})` : ''}`
+    : mode === 'animal' ? 'No group selected' : 'No cycle selected';
 
   return (
-    <div className="incidents-page fade-in">
-      {/* Toast */}
+    <div className="cycle-incidents-page fade-in">
       {toastMessage && (
         <div className={`toast-bar ${toastMessage.type}`}>
           <span>{toastMessage.text}</span>
-          <button
-            type="button"
-            className="toast-close-btn"
-            onClick={() => setToastMessage(null)}
-          >
-            ✕
+          <button type="button" className="toast-close-btn" onClick={() => setToastMessage(null)} aria-label="Close">
+            <IconClose size={14} />
           </button>
         </div>
       )}
 
-      {/* Control bar: cycle selector + action button */}
-      <div className="control-bar">
-        <div className="cycle-pills">
-          <span className="cycle-pills-label">Select Cycle:</span>
-          {DEMO_CYCLES.map((c) => (
-            <button
-              key={c.id}
-              className={`cycle-pill ${selectedCycleId === c.id ? 'selected' : ''}`}
-              onClick={() => setSelectedCycleId(c.id)}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
+      <ConfirmModal
+        isOpen={Boolean(incidentToDelete)}
+        title="Delete Incident Record"
+        message="Are you sure you want to remove this incident report? This action cannot be undone."
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Incident'}
+        isDestructive
+        onConfirm={confirmDelete}
+        onCancel={() => setIncidentToDelete(null)}
+      />
 
-        <button
-          type="button"
-          className="record-btn"
-          style={{
-            backgroundColor:
-              showForm && !editingIncident ? 'var(--color-text-muted)' : '#DC2626',
-          }}
-          onClick={() => {
-            setEditingIncident(null);
-            setShowForm((v) => !v);
-          }}
-        >
-          {showForm && !editingIncident ? '✕ Close Form' : '+ Record Incident'}
-        </button>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="kpi-grid">
-        <MetricCard
-          label="Active Cycle"
-          value={selectedCycle.name}
-          subtext={`${selectedCycle.area} · Status: ${selectedCycle.status}`}
-          icon={<span style={{ fontSize: '1.25rem' }}>🌱</span>}
-          iconBg="#EAF4ED"
-        />
-        <MetricCard
-          label="Total Incidents"
-          value={totalCount}
-          subtext={totalCount === 0 ? 'No problems recorded' : 'Problems encountered'}
-          icon={<span style={{ fontSize: '1.25rem' }}>⚠️</span>}
-          iconBg="#FEF3C7"
-        />
-        <MetricCard
-          label="Disease & Pest"
-          value={`${diseaseCount + pestCount} logged`}
-          subtext={`${diseaseCount} disease · ${pestCount} pest`}
-          icon={<span style={{ fontSize: '1.25rem' }}>🦠</span>}
-          iconBg="#EDE9FE"
-        />
-        <MetricCard
-          label="High Severity (4–5)"
-          value={highSeverity}
-          subtext={highSeverity === 0 ? 'No critical issues' : 'Require urgent attention'}
-          icon={<span style={{ fontSize: '1.25rem' }}>🚨</span>}
-          iconBg="#FEE2E2"
-        />
-      </div>
-
-      {/* Form drawer */}
-      {showForm && (
-        <div className="form-container">
-          <IncidentForm
-            onSubmit={handleSaveIncident}
-            isSubmitting={isSubmitting}
-            initialData={editingIncident}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingIncident(null);
+      {/* Mode Switcher: Crop Cycles vs Animal Groups */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'inline-flex', backgroundColor: '#FFFFFF', border: '1px solid #ECE7DC', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => handleModeSwitch('crop')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'crop' ? '#164230' : 'transparent',
+              color: mode === 'crop' ? '#FFFFFF' : '#4B5752'
             }}
-          />
+          >
+            <IconCrop size={15} color={mode === 'crop' ? '#FFFFFF' : '#4B5752'} />
+            <span>Crop Cycles ({cycles.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeSwitch('animal')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '8px 16px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+              fontSize: '0.8125rem', fontWeight: 600,
+              backgroundColor: mode === 'animal' ? '#164230' : 'transparent',
+              color: mode === 'animal' ? '#FFFFFF' : '#4B5752'
+            }}
+          >
+            <IconLivestock size={15} color={mode === 'animal' ? '#FFFFFF' : '#4B5752'} />
+            <span>Animal Groups ({groups.length})</span>
+          </button>
         </div>
+      </div>
+
+      {/* Dropdown Selector + Report Incident Action */}
+      <div className="incident-selector-card">
+        <div className="incident-selector-group">
+          <label htmlFor="incidents-cycle-dropdown" className="incident-selector-label">
+            {mode === 'animal' ? 'Select Animal Group:' : 'Select Crop Cycle:'}
+          </label>
+          {targetsLoading ? (
+            <Skeleton width="260px" height="40px" borderRadius="10px" />
+          ) : targetList.length > 0 ? (
+            <select
+              id="incidents-cycle-dropdown"
+              className="incident-cycle-select"
+              value={selectedTargetId || ''}
+              onChange={(e) => setSelectedTargetId(Number(e.target.value))}
+            >
+              {targetList.map((item) => {
+                const label = mode === 'animal'
+                  ? `${item.name} — ${item.animalType} (${item.currentPopulation ?? item.initialPopulation ?? 0} head)`
+                  : item.name || `${item.cropName || 'Crop'}${item.plotName ? ` (${item.plotName})` : ''}`;
+                return (
+                  <option key={item.id} value={item.id}>
+                    {label} — [{(item.status || 'ACTIVE').toUpperCase()}]
+                  </option>
+                );
+              })}
+            </select>
+          ) : (
+            <span style={{ fontSize: '0.875rem', color: '#788680' }}>
+              {mode === 'animal' ? 'No animal groups registered yet' : 'No crop cycles registered yet'}
+            </span>
+          )}
+        </div>
+
+        {!targetsLoading && targetList.length > 0 && (
+          <button
+            id="report-incident-btn"
+            type="button"
+            className="record-incident-btn"
+            onClick={() => onCreateIncident?.(mode, selectedTargetId)}
+          >
+            <IconPlus size={16} color="#FFFFFF" />
+            <span>Report Incident</span>
+          </button>
+        )}
+      </div>
+
+      {/* Incident Occurrence Indicator Banner */}
+      {!targetsLoading && selectedTarget && (
+        isLoading ? (
+          <Skeleton width="100%" height="68px" borderRadius="16px" />
+        ) : totalIncidents > 0 ? (
+          <div className="incident-status-banner has-incidents">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '12px',
+                backgroundColor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <IconAlertTriangle size={20} color="#DC2626" />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#991B1B' }}>
+                  Incidents Occurred on {targetDisplayName}
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: '#B91C1C', marginTop: '2px' }}>
+                  {totalIncidents} incident{totalIncidents > 1 ? 's' : ''} recorded
+                  {formattedLatestDate ? ` • Latest on ${formattedLatestDate}` : ''}
+                  {highSeverity > 0 ? ` • ${highSeverity} high-severity` : ''}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onCreateIncident?.(mode, selectedTargetId)}
+              style={{
+                padding: '8px 14px', borderRadius: '10px', border: '1px solid #FCA5A5',
+                backgroundColor: '#FFFFFF', color: '#991B1B', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              + Add Another Incident
+            </button>
+          </div>
+        ) : (
+          <div className="incident-status-banner no-incidents">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '12px',
+                backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <IconCheck size={20} color="#2A6740" />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#164230' }}>
+                  No Incidents Occurred on {targetDisplayName}
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: '#2A6740', marginTop: '2px' }}>
+                  {mode === 'animal'
+                    ? 'Herd / flock is currently clear — no diseases, injuries, or losses reported.'
+                    : 'No pests, diseases, weather damage, or field issues have been reported for this cycle.'}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onCreateIncident?.(mode, selectedTargetId)}
+              style={{
+                padding: '8px 14px', borderRadius: '10px', border: '1px solid #C8E2D0',
+                backgroundColor: '#FFFFFF', color: '#164230', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              + Report an Incident
+            </button>
+          </div>
+        )
       )}
 
-      {/* Incident list */}
-      <div className="list-container">
-        <IncidentList
-          incidents={cycleIncidents}
-          isLoading={isLoading}
-          onEdit={handleEditTrigger}
-          onDelete={handleDeleteIncident}
+      {/* KPI Row */}
+      <div className="kpi-grid">
+        <MetricCard
+          label="Total Incidents"
+          value={String(totalIncidents)}
+          subtext={targetDisplayName}
+          icon={<IconAlertTriangle size={20} color="#DC2626" />}
+          iconBg="#FEF2F2"
+          loading={targetsLoading || isLoading}
         />
+        <MetricCard
+          label="Disease Reports"
+          value={String(diseaseCount)}
+          subtext={mode === 'animal' ? 'Infectious / illness' : 'Fungal / bacterial / viral'}
+          icon={<IconShieldAlert size={20} color="#7C3AED" />}
+          iconBg="#EDE9FE"
+          loading={targetsLoading || isLoading}
+        />
+        <MetricCard
+          label={mode === 'animal' ? 'Mortality / Injury' : 'Pest Infestations'}
+          value={String(thirdCardCount)}
+          subtext={mode === 'animal' ? 'Trauma or animal loss' : 'Insects / mites / nematodes'}
+          icon={<IconBug size={20} color="#D97706" />}
+          iconBg="#FEF3C7"
+          loading={targetsLoading || isLoading}
+        />
+        <MetricCard
+          label="High Severity"
+          value={String(highSeverity)}
+          subtext="Level 4 (Serious) or 5 (Critical)"
+          icon={<IconAlertCircle size={20} color="#DC2626" />}
+          iconBg="#FEE2E2"
+          loading={targetsLoading || isLoading}
+        />
+      </div>
+
+      {/* Incident List */}
+      <div className="incident-list-container">
+        <div className="list-header">
+          <div>
+            <h3>{mode === 'animal' ? 'Animal Group Incident Log' : 'Cycle Incident Log'}</h3>
+            <p>
+              {mode === 'animal'
+                ? 'Health alerts, injuries, mortalities, and veterinary actions recorded for this group.'
+                : 'Pests, diseases, damages, and remedial actions recorded for this cycle.'}
+            </p>
+          </div>
+        </div>
+
+        {targetsLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <Skeleton width="100%" height="76px" borderRadius="12px" />
+            <Skeleton width="100%" height="76px" borderRadius="12px" />
+          </div>
+        ) : targetList.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '48px 20px',
+            backgroundColor: '#FAF8F5', borderRadius: '12px', border: '1px dashed #ECE7DC'
+          }}>
+            <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#19201C', margin: 0 }}>
+              {mode === 'animal' ? 'No animal groups registered' : 'No crop cycles registered'}
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: '#788680', marginTop: '4px', marginBottom: 0 }}>
+              {mode === 'animal'
+                ? 'Register an animal group in the Livestock module before logging incidents.'
+                : 'Create a crop cycle in the Crop Production module before logging incidents.'}
+            </p>
+          </div>
+        ) : (
+          <IncidentList
+            incidents={incidents}
+            isLoading={isLoading}
+            onEdit={(inc) => onEditIncident?.(mode, selectedTargetId, inc)}
+            onDelete={(id) => {
+              const target = incidents.find((i) => i.id === id);
+              if (target) setIncidentToDelete(target);
+            }}
+          />
+        )}
       </div>
     </div>
   );

@@ -41,6 +41,27 @@ public class Harvest {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "quality_grade", length = 40)
+    private String qualityGrade;
+
+    @Column(name = "harvest_method", length = 60)
+    private String harvestMethod;
+
+    @Column(name = "storage_location", length = 140)
+    private String storageLocation;
+
+    @Column(name = "moisture_content_percent")
+    private Double moistureContentPercent;
+
+    @Column(name = "post_harvest_loss_quantity")
+    private Double postHarvestLossQuantity;
+
+    @Column(name = "market_destination", length = 120)
+    private String marketDestination;
+
+    @Column(name = "estimated_revenue")
+    private Double estimatedRevenue;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -114,6 +135,62 @@ public class Harvest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getQualityGrade() {
+        return qualityGrade;
+    }
+
+    public void setQualityGrade(String qualityGrade) {
+        this.qualityGrade = qualityGrade;
+    }
+
+    public String getHarvestMethod() {
+        return harvestMethod;
+    }
+
+    public void setHarvestMethod(String harvestMethod) {
+        this.harvestMethod = harvestMethod;
+    }
+
+    public String getStorageLocation() {
+        return storageLocation;
+    }
+
+    public void setStorageLocation(String storageLocation) {
+        this.storageLocation = storageLocation;
+    }
+
+    public Double getMoistureContentPercent() {
+        return moistureContentPercent;
+    }
+
+    public void setMoistureContentPercent(Double moistureContentPercent) {
+        this.moistureContentPercent = moistureContentPercent;
+    }
+
+    public Double getPostHarvestLossQuantity() {
+        return postHarvestLossQuantity;
+    }
+
+    public void setPostHarvestLossQuantity(Double postHarvestLossQuantity) {
+        this.postHarvestLossQuantity = postHarvestLossQuantity;
+    }
+
+    public String getMarketDestination() {
+        return marketDestination;
+    }
+
+    public void setMarketDestination(String marketDestination) {
+        this.marketDestination = marketDestination;
+    }
+
+    public Double getEstimatedRevenue() {
+        return estimatedRevenue;
+    }
+
+    public void setEstimatedRevenue(Double estimatedRevenue) {
+        this.estimatedRevenue = estimatedRevenue;
     }
 
     public LocalDateTime getCreatedAt() {

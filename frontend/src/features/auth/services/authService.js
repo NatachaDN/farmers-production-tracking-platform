@@ -1,5 +1,5 @@
-import { apiClient } from '../../../shared/services/apiClient';
-import { googleAuth } from './googleAuth';
+import { apiClient } from '../../../shared/services/apiClient.js';
+import { googleAuth } from './googleAuth.js';
 
 const TOKEN_KEY = 'acrea_token';
 const USER_KEY = 'acrea_user';
@@ -21,6 +21,10 @@ export const authService = {
 
   isAdmin(user = this.getStoredUser()) {
     return user?.role === 'ROLE_ADMIN';
+  },
+
+  isManager(user = this.getStoredUser()) {
+    return user?.role === 'ROLE_MANAGER' || user?.role === 'ROLE_ADMIN';
   },
 
   async register(formData) {
@@ -49,7 +53,11 @@ export const authService = {
       const user = await apiClient.get('/auth/me');
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return user;
-    } catch {
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        this.logout();
+        return null;
+      }
       return this.getStoredUser();
     }
   },
@@ -114,6 +122,23 @@ export const authService = {
       };
     }
     return await apiClient.post('/auth/reset-password', payload);
+  },
+
+  async requestPasswordChange({ currentPassword, newPassword, confirmPassword, reason }) {
+    return await apiClient.post('/auth/me/password-change-requests', {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+      reason: reason || null,
+    });
+  },
+
+  async getMyPasswordChangeRequests() {
+    return await apiClient.get('/auth/me/password-change-requests');
+  },
+
+  async cancelPasswordChangeRequest(requestId) {
+    return await apiClient.post(`/auth/me/password-change-requests/${requestId}/cancel`);
   },
 
   logout() {

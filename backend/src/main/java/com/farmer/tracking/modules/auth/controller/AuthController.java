@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -157,5 +158,45 @@ public class AuthController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                 .contentType(MediaType.parseMediaType(contentType))
                 .body(resource);
+    }
+
+    @PostMapping("/me/password-change-requests")
+    @Operation(summary = "Submit a password change request to the administrator (verifies former password)")
+    public ResponseEntity<PasswordChangeRequestResponse> requestPasswordChange(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest http) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+        PasswordChangeRequestResponse response = authService.requestPasswordChange(userDetails.getUsername(), request);
+        auditService.record(AuditEventType.PASSWORD_CHANGE_REQUESTED, response.farmerId(),
+                response.farmerName(), "Submitted password change request for admin approval", http);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/me/password-change-requests")
+    @Operation(summary = "List password change requests submitted by the authenticated farmer")
+    public ResponseEntity<List<PasswordChangeRequestResponse>> getMyPasswordChangeRequests(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+        return ResponseEntity.ok(authService.getMyPasswordChangeRequests(userDetails.getUsername()));
+    }
+
+    @PostMapping("/me/password-change-requests/{id}/cancel")
+    @Operation(summary = "Cancel a pending password change request")
+    public ResponseEntity<PasswordChangeRequestResponse> cancelPasswordChangeRequest(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long id,
+            HttpServletRequest http) {
+        if (userDetails == null) {
+            throw new UnauthorizedException("Authentication required.");
+        }
+        PasswordChangeRequestResponse response = authService.cancelPasswordChangeRequest(userDetails.getUsername(), id);
+        auditService.record(AuditEventType.PASSWORD_CHANGE_CANCELLED, response.farmerId(),
+                response.farmerName(), "Cancelled pending password change request #" + id, http);
+        return ResponseEntity.ok(response);
     }
 }

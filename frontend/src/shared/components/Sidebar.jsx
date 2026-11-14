@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AcreaLogo,
   IconDashboard,
@@ -15,7 +15,9 @@ import {
   IconPulse,
   IconServer
 } from './Icons';
+import { cropCycleService } from '../../features/crops/services/cropCycleService';
 import './Sidebar.css';
+import './Skeleton.css';
 
 const ADMIN_NAV = [
   { id: 'admin-overview', label: 'Overview', icon: IconDashboard },
@@ -25,25 +27,61 @@ const ADMIN_NAV = [
   { id: 'admin-system', label: 'System health', icon: IconServer },
 ];
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false }) {
+const MANAGER_NAV = [
+  { id: 'manager-dashboard', label: 'Overview', icon: IconDashboard },
+  { id: 'manager-farmers', label: 'Supervised Farmers', icon: IconUsers },
+  { id: 'manager-reports', label: 'Consolidated Reports', icon: IconReports },
+];
+
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false, user = null, mobileOpen = false, onCloseMobile }) {
   const adminMode = isAdmin && activeRoute.startsWith('admin-');
+  const managerMode = (isManager || isAdmin) && activeRoute.startsWith('manager-');
+
+  const [activeCyclesCount, setActiveCyclesCount] = useState(null);
+  const [loadingCycles, setLoadingCycles] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id || adminMode || managerMode) {
+      setLoadingCycles(false);
+      return;
+    }
+    let isMounted = true;
+    cropCycleService.getCycles(user.id)
+      .then((cycles) => {
+        if (!isMounted) return;
+        const list = Array.isArray(cycles) ? cycles : [];
+        const inProgress = list.filter(c => (c.status || '').toUpperCase() === 'ACTIVE').length;
+        setActiveCyclesCount(inProgress);
+      })
+      .catch(() => {
+        if (isMounted) setActiveCyclesCount(0);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingCycles(false);
+      });
+    return () => { isMounted = false; };
+  }, [user?.id, adminMode, managerMode]);
+
   const farmerNav = [
     { id: 'dashboard', label: 'Dashboard', icon: IconDashboard },
     { id: 'farms', label: 'Farms & Plots', icon: IconFarms },
     { id: 'crops', label: 'Crop Production', icon: IconCrop },
     { id: 'livestock', label: 'Livestock', icon: IconLivestock },
     { id: 'activities', label: 'Activities', icon: IconActivities },
-    { id: 'production', label: 'Production', icon: IconProduction },
+    { id: 'production', label: 'Harvest', icon: IconProduction },
     { id: 'inputs', label: 'Farm Inputs', icon: IconInputs },
     { id: 'cycle-inputs', label: 'Cycle Inputs', icon: IconInputs },
     { id: 'incidents', label: 'Incidents', icon: IconActivities },
     { id: 'reports', label: 'Reports', icon: IconReports },
     { id: 'settings', label: 'Settings', icon: IconSettings },
   ];
-  const navItems = adminMode ? ADMIN_NAV : farmerNav;
+
+  let navItems = farmerNav;
+  if (adminMode) navItems = ADMIN_NAV;
+  else if (managerMode) navItems = MANAGER_NAV;
 
   return (
-    <aside className="acrea-sidebar" style={{
+    <aside className={`acrea-sidebar${mobileOpen ? ' open' : ''}`} style={{
       color: '#FFFFFF',
       display: 'flex',
       flexDirection: 'column',
@@ -69,12 +107,18 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeRoute === item.id;
+            const isActive =
+              activeRoute === item.id ||
+              (item.id === 'farms' &&
+                ['create-farm', 'farm-details', 'create-plot', 'plot-details'].includes(activeRoute));
 
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate && onNavigate(item.id)}
+                onClick={() => {
+                  if (onNavigate) onNavigate(item.id);
+                  if (onCloseMobile) onCloseMobile();
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -117,9 +161,9 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
         </nav>
       </div>
 
-      {/* Season Card & Footer */}
-      <div>
-        {/* Current Season Widget */}
+      {/* Footer (Admin / Manager mode controls only) */}
+      {(adminMode || managerMode || isManager || isAdmin) && (
+      <div style={{ padding: '12px 16px 20px' }}>
         {adminMode ? (
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -135,47 +179,37 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
               Read-only view of every farmer on the platform.
             </div>
           </div>
-        ) : (
-        <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '14px',
-          padding: '14px 16px',
-          marginBottom: '20px'
-        }}>
+        ) : managerMode ? (
           <div style={{
-            fontSize: '0.6875rem',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            color: 'rgba(255, 255, 255, 0.6)',
-            marginBottom: '4px'
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '14px',
+            padding: '14px 16px',
+            marginBottom: '20px'
           }}>
-            CURRENT SEASON
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '4px' }}>
+              Manager Supervision
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.45 }}>
+              Cooperative network overview, member approvals, and consolidated reports.
+            </div>
           </div>
-          <div style={{
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            color: '#FFFFFF',
-            marginBottom: '6px'
-          }}>
-            2026 Main Season
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            color: 'rgba(255, 255, 255, 0.75)'
-          }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: '#E5A638'
-            }} />
-            <span>4 cycles in progress</span>
-          </div>
-        </div>
+        ) : null}
+
+        {(isManager || isAdmin) && (
+          <button
+            onClick={() => onNavigate && onNavigate(managerMode ? 'dashboard' : 'manager-dashboard')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
+              padding: '9px 12px', marginBottom: '10px', borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.22)', color: '#FFFFFF',
+              fontSize: '0.8125rem', fontWeight: 600, transition: 'background-color var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            {managerMode ? 'Open farmer workspace' : 'Open manager console'}
+          </button>
         )}
 
         {isAdmin && (
@@ -193,28 +227,8 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             {adminMode ? 'Open farmer workspace' : 'Open admin console'}
           </button>
         )}
-
-        {/* Help & Support */}
-        <button
-          onClick={() => onNavigate && onNavigate('help')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '8px 12px',
-            color: 'var(--color-sidebar-text)',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            width: '100%',
-            transition: 'color var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-sidebar-text)'}
-        >
-          <IconHelp size={17} />
-          <span>Help & support</span>
-        </button>
       </div>
+      )}
     </aside>
   );
 }
