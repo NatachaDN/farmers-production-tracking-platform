@@ -79,6 +79,7 @@ const roleLabel = (role) => {
 export function AdminUsersView({ currentUserId }) {
   const [users, setUsers] = useState([]);
   const [farms, setFarms] = useState([]);
+  const [farmSearch, setFarmSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -123,6 +124,8 @@ export function AdminUsersView({ currentUserId }) {
   }, [roleFilter, statusFilter]);
 
   const openCreate = (defaultRole = 'ROLE_MANAGER') => {
+    setFarmSearch('');
+    setError('');
     setModal({
       mode: 'create',
       data: {
@@ -140,6 +143,8 @@ export function AdminUsersView({ currentUserId }) {
   };
 
   const openEdit = (u) => {
+    setFarmSearch('');
+    setError('');
     setModal({
       mode: 'edit',
       id: u.id,
@@ -463,54 +468,129 @@ export function AdminUsersView({ currentUserId }) {
                 <input value={modal.data.location} onChange={(e) => setModal({ ...modal, data: { ...modal.data, location: e.target.value } })} style={inputStyle} />
               </div>
             </div>
-            {modal.data.role === 'ROLE_MANAGER' && (
-              <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', backgroundColor: '#F9F6F0', border: '1px solid #ECE7DC' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>Assigned Farms (1-N Supervision)</label>
-                  <span style={{ fontSize: '0.72rem', color: '#4B5752', fontWeight: 600 }}>
-                    {(modal.data.managedFarmIds || []).length} selected
-                  </span>
-                </div>
-                {farms.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64716B' }}>No farms registered on the platform yet.</p>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                    {farms.map((farm) => {
-                      const checked = (modal.data.managedFarmIds || []).includes(farm.id);
-                      const otherManager = farm.managerId && Number(farm.managerId) !== Number(modal.id) ? farm.managerName : null;
-                      return (
-                        <label
-                          key={farm.id}
+            {modal.data.role === 'ROLE_MANAGER' && (() => {
+              const fq = farmSearch.trim().toLowerCase();
+              const filteredFarms = fq
+                ? farms.filter((farm) =>
+                    (farm.name || '').toLowerCase().includes(fq) ||
+                    (farm.farmerName || '').toLowerCase().includes(fq) ||
+                    (farm.region || '').toLowerCase().includes(fq) ||
+                    (farm.district || '').toLowerCase().includes(fq) ||
+                    (farm.managerName || '').toLowerCase().includes(fq)
+                  )
+                : farms;
+              const selectedIds = modal.data.managedFarmIds || [];
+              const allFilteredSelected =
+                filteredFarms.length > 0 && filteredFarms.every((farm) => selectedIds.includes(farm.id));
+
+              const toggleSelectAllFiltered = () => {
+                setModal((prev) => {
+                  if (!prev) return prev;
+                  const current = Array.isArray(prev.data.managedFarmIds) ? prev.data.managedFarmIds : [];
+                  const filteredIds = filteredFarms.map((f) => f.id);
+                  const next = allFilteredSelected
+                    ? current.filter((id) => !filteredIds.includes(id))
+                    : Array.from(new Set([...current, ...filteredIds]));
+                  return { ...prev, data: { ...prev.data, managedFarmIds: next } };
+                });
+              };
+
+              return (
+                <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', backgroundColor: '#F9F6F0', border: '1px solid #ECE7DC' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    <label style={{ ...labelStyle, marginBottom: 0 }}>Assigned Farms (1-N Supervision)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#4B5752', fontWeight: 600 }}>
+                        {selectedIds.length} selected
+                      </span>
+                      {filteredFarms.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={toggleSelectAllFiltered}
                           style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '8px',
-                            padding: '8px 10px',
-                            borderRadius: '10px',
-                            border: checked ? '1px solid #164230' : '1px solid #DFD8CA',
-                            backgroundColor: checked ? '#EAF4ED' : '#FFFFFF',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem',
+                            ...btnSecondary,
+                            padding: '4px 10px',
+                            fontSize: '0.72rem',
+                            backgroundColor: allFilteredSelected ? '#EAF4ED' : '#FFFFFF',
+                            borderColor: allFilteredSelected ? '#164230' : '#DFD8CA',
+                            color: '#164230',
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleManagedFarm(farm.id)}
-                            style={{ marginTop: '2px', accentColor: '#164230' }}
-                          />
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, color: '#19201C' }}>{farm.name}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#64716B' }}>
-                              Owner: {farm.farmerName || '—'}
-                              {otherManager ? ` · Current Mgr: ${otherManager}` : ''}
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
+                          {allFilteredSelected ? 'Deselect All' : 'Select All'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )}
+                  {farms.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #DFD8CA', borderRadius: '9999px', padding: '5px 12px', backgroundColor: '#FFFFFF', marginBottom: '10px' }}>
+                      <IconSearch size={13} color="#7A8680" />
+                      <input
+                        type="text"
+                        placeholder="Search farms by name, owner, region..."
+                        value={farmSearch}
+                        onChange={(e) => setFarmSearch(e.target.value)}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', width: '100%', minWidth: 0, color: '#19201C' }}
+                      />
+                      {farmSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setFarmSearch('')}
+                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, display: 'flex', color: '#7A8680' }}
+                          title="Clear search"
+                        >
+                          <IconClose size={13} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {farms.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#64716B' }}>No farms registered on the platform yet.</p>
+                  ) : filteredFarms.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#64716B' }}>No farms match "{farmSearch}".</p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                      {filteredFarms.map((farm) => {
+                        const checked = selectedIds.includes(farm.id);
+                        const otherManager = farm.managerId && Number(farm.managerId) !== Number(modal.id) ? farm.managerName : null;
+                        return (
+                          <label
+                            key={farm.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '8px',
+                              padding: '8px 10px',
+                              borderRadius: '10px',
+                              border: checked ? '1px solid #164230' : '1px solid #DFD8CA',
+                              backgroundColor: checked ? '#EAF4ED' : '#FFFFFF',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleManagedFarm(farm.id)}
+                              style={{ marginTop: '2px', accentColor: '#164230' }}
+                            />
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, color: '#19201C' }}>{farm.name}</div>
+                              <div style={{ fontSize: '0.7rem', color: '#64716B' }}>
+                                Owner: {farm.farmerName || '—'}
+                                {otherManager ? ` · Current Mgr: ${otherManager}` : ''}
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+            {error && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', borderRadius: '10px', backgroundColor: '#FEE2E2', color: '#991B1B', fontSize: '0.8rem', fontWeight: 500 }}>
+                {error}
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
