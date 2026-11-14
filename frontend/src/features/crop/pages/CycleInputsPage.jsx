@@ -177,10 +177,16 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
           </div>
           <div>
             <h3 className="cycle-selection-title">
-              {selectedCycle?.name || 'Crop Cycle Inputs'}
+              {selectedCycle ? (selectedCycle.name || `${selectedCycle.cropName} Cycle`) : 'Crop Cycle Inputs'}
             </h3>
             <p className="cycle-selection-subtitle">
-              Crop: <strong>{selectedCycle?.cropName || 'Maize'}</strong> · Cultivated Area: <strong>{selectedCycle?.acreage || 0} ha</strong> · Status: <strong>{selectedCycle?.status || 'ACTIVE'}</strong>
+              {selectedCycle ? (
+                <>
+                  Crop: <strong>{selectedCycle.cropName || '—'}</strong> · Cultivated Area: <strong>{selectedCycle.acreage || 0} ha</strong> · Status: <strong>{selectedCycle.status || 'ACTIVE'}</strong>
+                </>
+              ) : (
+                'Create a crop production cycle first to record input consumption.'
+              )}
             </p>
           </div>
         </div>
@@ -219,7 +225,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
             ) : (
               <>
                 <IconPlus size={16} />
-                <span>+ Record Input Usage</span>
+                <span>Record Input Usage</span>
               </>
             )}
           </button>

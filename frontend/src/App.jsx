@@ -7,6 +7,7 @@ import { FarmDetailsView } from './features/farms/FarmDetailsView';
 import { CreatePlotPage } from './features/farms/CreatePlotPage';
 import { PlotDetailsView } from './features/farms/PlotDetailsView';
 import { CropProductionView } from './features/crops/CropProductionView';
+import { CreateCropCyclePage } from './features/crops/CreateCropCyclePage';
 import { CycleActivitiesPage } from './features/crop/pages/CycleActivitiesPage';
 import { HarvestPage } from './features/crop/pages/HarvestPage';
 import { CycleInputsPage } from './features/crop/pages/CycleInputsPage';
@@ -154,6 +155,10 @@ export function App() {
     crops: {
       title: 'Crop Production Cycles',
       subtitle: 'Plan and follow every crop from planting to harvest'
+    },
+    'create-crop-cycle': {
+      title: 'New Crop Production Cycle',
+      subtitle: 'Record plot assignment, crop variety, schedule, and target production'
     },
     livestock: {
       title: 'Livestock & Animal Production',
@@ -350,6 +355,14 @@ export function App() {
             <CropProductionView
               farmerId={currentUser?.id}
               onNavigate={(r) => setCurrentRoute(r)}
+            />
+          )}
+          {currentRoute === 'create-crop-cycle' && (
+            <CreateCropCyclePage
+              farmerId={currentUser?.id}
+              onBack={() => setCurrentRoute('crops')}
+              onNavigate={(r) => setCurrentRoute(r)}
+              onCycleCreated={() => setCurrentRoute('crops')}
             />
           )}
           {currentRoute === 'activities' && (

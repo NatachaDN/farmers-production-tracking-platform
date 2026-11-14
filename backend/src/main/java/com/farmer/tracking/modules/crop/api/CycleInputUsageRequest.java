@@ -21,10 +21,23 @@ public class CycleInputUsageRequest {
     @Schema(description = "Date when the input was applied (defaults to today if omitted)", example = "2026-10-15")
     private LocalDate usageDate;
 
-    @Schema(description = "Optional application notes or growth stage context", example = "Top-dressing fertilizer applied along rows")
+    @Schema(description = "Crop growth stage at application", example = "Vegetative Growth")
+    private String growthStage;
+
+    @Schema(description = "Method used to apply the input", example = "Top Dressing / Side Band")
+    private String applicationMethod;
+
+    @Schema(description = "Cultivated area treated in hectares", example = "1.5")
+    private Double areaCovered;
+
+    @Schema(description = "Person or team who applied the input", example = "Farm Owner")
+    private String appliedBy;
+
+    @Schema(description = "Optional application notes, dosage/dilution rate, or weather context", example = "Applied along rows early morning")
     private String notes;
 
-    public CycleInputUsageRequest() {}
+    public CycleInputUsageRequest() {
+    }
 
     public CycleInputUsageRequest(Long inputId, Double quantityUsed, LocalDate usageDate, String notes) {
         this.inputId = inputId;
@@ -55,6 +68,38 @@ public class CycleInputUsageRequest {
 
     public void setUsageDate(LocalDate usageDate) {
         this.usageDate = usageDate;
+    }
+
+    public String getGrowthStage() {
+        return growthStage;
+    }
+
+    public void setGrowthStage(String growthStage) {
+        this.growthStage = growthStage;
+    }
+
+    public String getApplicationMethod() {
+        return applicationMethod;
+    }
+
+    public void setApplicationMethod(String applicationMethod) {
+        this.applicationMethod = applicationMethod;
+    }
+
+    public Double getAreaCovered() {
+        return areaCovered;
+    }
+
+    public void setAreaCovered(Double areaCovered) {
+        this.areaCovered = areaCovered;
+    }
+
+    public String getAppliedBy() {
+        return appliedBy;
+    }
+
+    public void setAppliedBy(String appliedBy) {
+        this.appliedBy = appliedBy;
     }
 
     public String getNotes() {

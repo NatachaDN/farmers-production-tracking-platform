@@ -23,7 +23,7 @@ export function CropCycleCard({
       backgroundColor: 'var(--color-card-bg)',
       border: '1px solid var(--color-card-border)',
       borderRadius: 'var(--radius-xl)',
-      padding: '24px',
+      padding: '20px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',

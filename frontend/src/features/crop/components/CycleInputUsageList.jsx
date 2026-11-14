@@ -7,6 +7,7 @@ import {
   IconWarning
 } from '../../../shared/components/Icons';
 import { Skeleton } from '../../../shared/components/Skeleton';
+import { ConfirmModal } from '../../../shared/components/ConfirmModal';
 
 /**
  * CycleInputUsageList displays all inputs consumed on the cycle,
@@ -19,13 +20,20 @@ export function CycleInputUsageList({
   isLoading = false
 }) {
   const [deletingId, setDeletingId] = useState(null);
+  const [usageToDelete, setUsageToDelete] = useState(null);
 
   const handleDeleteClick = (usage) => {
-    const confirmMessage = `Remove "${usage.inputName}" from this cycle? This will restore ${usage.quantityUsed} ${usage.unit} back to your available inventory stock.`;
-    if (window.confirm(confirmMessage)) {
-      setDeletingId(usage.id);
-      onDeleteUsage(usage.id).finally(() => setDeletingId(null));
-    }
+    setUsageToDelete(usage);
+  };
+
+  const confirmDeleteUsage = () => {
+    if (!usageToDelete) return;
+    const target = usageToDelete;
+    setDeletingId(target.id);
+    onDeleteUsage(target.id).finally(() => {
+      setDeletingId(null);
+      setUsageToDelete(null);
+    });
   };
 
   const totalCost = costSummary?.totalInputCost ?? usages.reduce((sum, u) => sum + (u.totalCost || 0), 0);
@@ -63,6 +71,7 @@ export function CycleInputUsageList({
                 <tr>
                   <th>Input Item</th>
                   <th>Quantity Used</th>
+                  <th>Application Details</th>
                   <th>Unit Price</th>
                   <th>Total Real Cost</th>
                   <th>Application Date</th>
@@ -102,6 +111,7 @@ export function CycleInputUsageList({
                 <tr>
                   <th>Input Item</th>
                   <th>Quantity Used</th>
+                  <th>Application Details</th>
                   <th>Unit Price</th>
                   <th>Total Real Cost</th>
                   <th>Application Date</th>
@@ -122,6 +132,13 @@ export function CycleInputUsageList({
                       <span className="quantity-badge">
                         {Number(usage.quantityUsed).toFixed(2)} {usage.unit}
                       </span>
+                    </td>
+                    <td style={{ fontSize: '0.8125rem', color: '#4B5752' }}>
+                      {usage.growthStage && <div style={{ fontWeight: 600, color: '#164230' }}>{usage.growthStage}</div>}
+                      {usage.applicationMethod && <div>{usage.applicationMethod}</div>}
+                      {usage.areaCovered != null && <div>{usage.areaCovered} ha treated</div>}
+                      {usage.appliedBy && <div style={{ color: '#788680' }}>By: {usage.appliedBy}</div>}
+                      {!usage.growthStage && !usage.applicationMethod && usage.areaCovered == null && !usage.appliedBy && '—'}
                     </td>
                     <td>
                       KES {Number(usage.unitPrice || 0).toFixed(2)} / {usage.unit}
@@ -156,6 +173,20 @@ export function CycleInputUsageList({
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(usageToDelete)}
+        onClose={() => !deletingId && setUsageToDelete(null)}
+        onConfirm={confirmDeleteUsage}
+        title="Remove Input Consumption"
+        message={
+          usageToDelete
+            ? `Remove "${usageToDelete.inputName}" from this cycle? This will restore ${usageToDelete.quantityUsed} ${usageToDelete.unit} back to your available inventory stock.`
+            : ''
+        }
+        confirmLabel="Remove & Restore Stock"
+        isSubmitting={Boolean(deletingId)}
+      />
     </div>
   );
 }

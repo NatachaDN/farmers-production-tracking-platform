@@ -30,8 +30,18 @@ export function CycleInputUsageForm({
   const [selectedInputId, setSelectedInputId] = useState('');
   const [quantityUsed, setQuantityUsed] = useState('');
   const [usageDate, setUsageDate] = useState(todayStr);
+  const [growthStage, setGrowthStage] = useState('Planting / Sowing');
+  const [applicationMethod, setApplicationMethod] = useState('Basal / Soil Incorporation');
+  const [areaCovered, setAreaCovered] = useState(() => (cycle?.acreage ? String(cycle.acreage) : ''));
+  const [appliedBy, setAppliedBy] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (cycle?.acreage && !areaCovered) {
+      setAreaCovered(String(cycle.acreage));
+    }
+  }, [cycle?.id, cycle?.acreage]);
 
   // Reset or initialize when inputs list changes
   useEffect(() => {
@@ -97,6 +107,10 @@ export function CycleInputUsageForm({
       inputId: Number(selectedInputId),
       quantityUsed: parsedQty,
       usageDate,
+      growthStage: growthStage || null,
+      applicationMethod: applicationMethod || null,
+      areaCovered: areaCovered ? parseFloat(areaCovered) : null,
+      appliedBy: appliedBy.trim() || null,
       notes: notes.trim() || null
     });
   };
@@ -319,8 +333,8 @@ export function CycleInputUsageForm({
         </div>
       )}
 
-      {/* Application Date & Notes (2 Columns on Desktop) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      {/* Application Date, Growth Stage, Application Method & Area Treated */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '16px' }}>
         <div className="form-group">
           <label htmlFor="usage-date-input" className="form-label">
             Application Date <span className="required">*</span>
@@ -341,21 +355,105 @@ export function CycleInputUsageForm({
         </div>
 
         <div className="form-group">
-          <label htmlFor="usage-notes-input" className="form-label">
-            Notes / Application Method (Optional)
+          <label htmlFor="growth-stage-select" className="form-label">
+            Crop Growth Stage
+          </label>
+          <select
+            id="growth-stage-select"
+            className="form-select"
+            value={growthStage}
+            onChange={(e) => setGrowthStage(e.target.value)}
+            disabled={!isCycleActive || isSubmitting}
+          >
+            <option value="Land Preparation">Land Preparation</option>
+            <option value="Planting / Sowing">Planting / Sowing</option>
+            <option value="Emergence / Seedling">Emergence / Seedling</option>
+            <option value="Vegetative Growth">Vegetative Growth</option>
+            <option value="Flowering / Tasseling">Flowering / Tasseling</option>
+            <option value="Fruiting / Grain Filling">Fruiting / Grain Filling</option>
+            <option value="Pre-Harvest">Pre-Harvest</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="application-method-select" className="form-label">
+            Application Method
+          </label>
+          <select
+            id="application-method-select"
+            className="form-select"
+            value={applicationMethod}
+            onChange={(e) => setApplicationMethod(e.target.value)}
+            disabled={!isCycleActive || isSubmitting}
+          >
+            <option value="Basal / Soil Incorporation">Basal / Soil Incorporation</option>
+            <option value="Top Dressing / Side Band">Top Dressing / Side Band</option>
+            <option value="Foliar Spray">Foliar Spray</option>
+            <option value="Drip / Fertigation">Drip / Fertigation</option>
+            <option value="Seed Treatment / Dressing">Seed Treatment / Dressing</option>
+            <option value="Spot / Ring Application">Spot / Ring Application</option>
+            <option value="Broadcast">Broadcast</option>
+            <option value="Manual / Direct Sowing">Manual / Direct Sowing</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Area Covered, Applied By & Field Notes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '16px' }}>
+        <div className="form-group">
+          <label htmlFor="area-covered-input" className="form-label">
+            Area Treated (ha)
           </label>
           <input
-            id="usage-notes-input"
-            type="text"
-            maxLength="500"
+            id="area-covered-input"
+            type="number"
+            step="0.01"
+            min="0.01"
             className="form-input"
-            placeholder="e.g. Épandage au pied des plants de maïs à Bandjoun le matin"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. 1.0"
+            value={areaCovered}
+            onChange={(e) => setAreaCovered(e.target.value)}
             disabled={!isCycleActive || isSubmitting}
           />
-          {errors.notes && <p className="error-text">{errors.notes}</p>}
+          {areaCovered > 0 && parsedQty > 0 && (
+            <span style={{ fontSize: '0.75rem', color: '#3E7B52', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+              Rate: {(parsedQty / Number(areaCovered)).toFixed(2)} {unit}/ha
+            </span>
+          )}
         </div>
+
+        <div className="form-group">
+          <label htmlFor="applied-by-input" className="form-label">
+            Applied By (Optional)
+          </label>
+          <input
+            id="applied-by-input"
+            type="text"
+            maxLength="100"
+            className="form-input"
+            placeholder="e.g. Farm Owner / Sprayer Team"
+            value={appliedBy}
+            onChange={(e) => setAppliedBy(e.target.value)}
+            disabled={!isCycleActive || isSubmitting}
+          />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="usage-notes-input" className="form-label">
+          Dosage, Weather &amp; Field Notes (Optional)
+        </label>
+        <input
+          id="usage-notes-input"
+          type="text"
+          maxLength="500"
+          className="form-input"
+          placeholder="e.g. 20 ml per 15L knapsack sprayer, applied early morning in dry weather"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          disabled={!isCycleActive || isSubmitting}
+        />
+        {errors.notes && <p className="error-text">{errors.notes}</p>}
       </div>
 
       {/* Actions */}

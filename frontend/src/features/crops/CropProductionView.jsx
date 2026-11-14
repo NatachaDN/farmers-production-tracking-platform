@@ -106,13 +106,14 @@ export function CropProductionView({ farmerId, onNavigate }) {
     setIsDeleting(true);
     try {
       await cropCycleService.deleteCycle(farmerId, cycleToDelete.id);
-    } catch {
-      /* Remove locally even if backend fails */
+      setCycles((prev) => prev.filter((c) => c.id !== cycleToDelete.id));
+      showToast(`"${cycleToDelete.cropName}" cycle deleted.`);
+      setCycleToDelete(null);
+    } catch (err) {
+      showToast(err.message || `Failed to delete "${cycleToDelete.cropName}" cycle.`);
+    } finally {
+      setIsDeleting(false);
     }
-    setCycles((prev) => prev.filter((c) => c.id !== cycleToDelete.id));
-    showToast(`"${cycleToDelete.cropName}" cycle removed.`);
-    setCycleToDelete(null);
-    setIsDeleting(false);
   };
 
   const filteredCycles = cycles.filter(c => {
@@ -342,7 +343,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
 
           {/* New Production Cycle Action */}
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => onNavigate ? onNavigate('create-crop-cycle') : setIsModalOpen(true)}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -421,7 +422,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
 
       {/* Crop Cycles Grid */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {[1, 2].map((n) => (
             <div key={n} style={{ border: '1px solid var(--color-card-border)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', backgroundColor: '#FFFFFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -464,7 +465,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
             Click "New Production Cycle" above to schedule planting, target outputs, and follow your crops through harvest.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => onNavigate ? onNavigate('create-crop-cycle') : setIsModalOpen(true)}
             style={{
               padding: '10px 20px',
               borderRadius: 'var(--radius-md)',
@@ -482,7 +483,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
       ) : (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
           gap: '20px'
         }}>
           {filteredCycles.map((cycle) => {

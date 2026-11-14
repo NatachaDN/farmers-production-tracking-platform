@@ -59,6 +59,18 @@ public class CycleInputUsage {
     @Column(name = "usage_date", nullable = false)
     private LocalDate usageDate;
 
+    @Column(name = "growth_stage", length = 60)
+    private String growthStage;
+
+    @Column(name = "application_method", length = 80)
+    private String applicationMethod;
+
+    @Column(name = "area_covered")
+    private Double areaCovered;
+
+    @Column(name = "applied_by", length = 100)
+    private String appliedBy;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -185,6 +197,38 @@ public class CycleInputUsage {
 
     public void setUsageDate(LocalDate usageDate) {
         this.usageDate = usageDate;
+    }
+
+    public String getGrowthStage() {
+        return growthStage;
+    }
+
+    public void setGrowthStage(String growthStage) {
+        this.growthStage = growthStage;
+    }
+
+    public String getApplicationMethod() {
+        return applicationMethod;
+    }
+
+    public void setApplicationMethod(String applicationMethod) {
+        this.applicationMethod = applicationMethod;
+    }
+
+    public Double getAreaCovered() {
+        return areaCovered;
+    }
+
+    public void setAreaCovered(Double areaCovered) {
+        this.areaCovered = areaCovered;
+    }
+
+    public String getAppliedBy() {
+        return appliedBy;
+    }
+
+    public void setAppliedBy(String appliedBy) {
+        this.appliedBy = appliedBy;
     }
 
     public String getNotes() {

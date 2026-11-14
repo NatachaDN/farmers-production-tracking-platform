@@ -46,6 +46,18 @@ public class CycleInputUsageResponse {
     @Schema(description = "Date when input was applied", example = "2026-10-15")
     private LocalDate usageDate;
 
+    @Schema(description = "Crop growth stage at application", example = "Vegetative Growth")
+    private String growthStage;
+
+    @Schema(description = "Application method", example = "Top Dressing / Side Band")
+    private String applicationMethod;
+
+    @Schema(description = "Area treated in hectares", example = "1.5")
+    private Double areaCovered;
+
+    @Schema(description = "Applied by", example = "Farm Owner")
+    private String appliedBy;
+
     @Schema(description = "Application notes", example = "Top-dressing at vegetative stage")
     private String notes;
 
@@ -77,7 +89,7 @@ public class CycleInputUsageResponse {
 
     public static CycleInputUsageResponse fromEntity(CycleInputUsage usage, Double remainingStock) {
         if (usage == null) return null;
-        return new CycleInputUsageResponse(
+        CycleInputUsageResponse resp = new CycleInputUsageResponse(
                 usage.getId(),
                 usage.getCycle() != null ? usage.getCycle().getId() : null,
                 usage.getFarmInput() != null ? usage.getFarmInput().getId() : null,
@@ -93,6 +105,11 @@ public class CycleInputUsageResponse {
                 usage.getNotes(),
                 usage.getCreatedAt()
         );
+        resp.setGrowthStage(usage.getGrowthStage());
+        resp.setApplicationMethod(usage.getApplicationMethod());
+        resp.setAreaCovered(usage.getAreaCovered());
+        resp.setAppliedBy(usage.getAppliedBy());
+        return resp;
     }
 
     public static CycleInputUsageResponse fromEntity(CycleInputUsage usage) {
@@ -193,6 +210,38 @@ public class CycleInputUsageResponse {
 
     public void setUsageDate(LocalDate usageDate) {
         this.usageDate = usageDate;
+    }
+
+    public String getGrowthStage() {
+        return growthStage;
+    }
+
+    public void setGrowthStage(String growthStage) {
+        this.growthStage = growthStage;
+    }
+
+    public String getApplicationMethod() {
+        return applicationMethod;
+    }
+
+    public void setApplicationMethod(String applicationMethod) {
+        this.applicationMethod = applicationMethod;
+    }
+
+    public Double getAreaCovered() {
+        return areaCovered;
+    }
+
+    public void setAreaCovered(Double areaCovered) {
+        this.areaCovered = areaCovered;
+    }
+
+    public String getAppliedBy() {
+        return appliedBy;
+    }
+
+    public void setAppliedBy(String appliedBy) {
+        this.appliedBy = appliedBy;
     }
 
     public String getNotes() {
