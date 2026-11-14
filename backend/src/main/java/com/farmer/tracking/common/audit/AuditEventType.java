@@ -1,7 +1,7 @@
 package com.farmer.tracking.common.audit;
 
 /**
- * Account-level events recorded for the administration console.
+ * Security and account events recorded for the administration console.
  */
 public enum AuditEventType {
     REGISTER,
@@ -13,5 +13,6 @@ public enum AuditEventType {
     PASSWORD_RESET_REQUESTED,
     PASSWORD_RESET_COMPLETED,
     PASSWORD_RESET,
-    ACCOUNT_ACCESS_CHANGED
+    ACCOUNT_ACCESS_CHANGED,
+    HARVEST_DELETED
 }

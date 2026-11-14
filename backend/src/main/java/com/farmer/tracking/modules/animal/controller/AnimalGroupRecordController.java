@@ -32,8 +32,11 @@ public class AnimalGroupRecordController {
 
     @GetMapping("/recent-production")
     @Transactional(readOnly = true)
-    public List<RecentProduction> recentProduction(@AuthenticationPrincipal UserPrincipal farmer) {
-        return records.findTop5ByGroup_Farmer_IdAndKindOrderByDateDescIdDesc(farmer.getId(), Kind.PRODUCTION)
+    public List<RecentProduction> recentProduction(@AuthenticationPrincipal UserPrincipal farmer, @RequestParam(required = false) Long farmId) {
+        var recent = farmId == null
+                ? records.findTop5ByGroup_Farmer_IdAndKindOrderByDateDescIdDesc(farmer.getId(), Kind.PRODUCTION)
+                : records.findTop5ByGroup_Farmer_IdAndGroup_Farm_IdAndKindOrderByDateDescIdDesc(farmer.getId(), farmId, Kind.PRODUCTION);
+        return recent
                 .stream().map(record -> new RecentProduction(record.getGroupName(), Row.from(record))).toList();
     }
 
@@ -42,6 +45,14 @@ public class AnimalGroupRecordController {
     public List<Row> list(@AuthenticationPrincipal UserPrincipal farmer, @PathVariable Long groupId) {
         ownedGroup(farmer, groupId);
         return records.findByGroup_IdOrderByDateDescIdDesc(groupId).stream().map(Row::from).toList();
+    }
+
+    @GetMapping("/production-report")
+    @Transactional(readOnly = true)
+    public List<ProductionRow> productionReport(@AuthenticationPrincipal UserPrincipal farmer,
+                                                 @RequestParam LocalDate from, @RequestParam LocalDate to) {
+        if (from.isAfter(to)) throw new BadRequestException("The end date must be on or after the start date.");
+        return records.productionReport(farmer.getId(), null, from, to).stream().map(ProductionRow::from).toList();
     }
 
     @PostMapping("/groups/{groupId}/records")
@@ -91,6 +102,12 @@ public class AnimalGroupRecordController {
             @NotBlank @Size(max = 24) String unit, @NotNull @PastOrPresent LocalDate date) {}
 
     public record RecentProduction(String groupName, Row record) {}
+
+    public record ProductionRow(String farm, String group, Row record) {
+        public static ProductionRow from(AnimalGroupRecord entry) {
+            return new ProductionRow(entry.getFarmName(), entry.getGroupName(), Row.from(entry));
+        }
+    }
 
     public record Row(Long id, Kind kind, String name, BigDecimal quantity, String unit, LocalDate date, Integer currentPopulation) {
         static Row from(AnimalGroupRecord record) {

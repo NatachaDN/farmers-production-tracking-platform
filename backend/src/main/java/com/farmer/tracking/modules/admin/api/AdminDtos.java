@@ -50,7 +50,7 @@ public final class AdminDtos {
                             double harvestedKg, double inputSpend, List<String> regions, List<String> crops,
                             String accessStatus, Long managerId) {}
 
-    public record FarmRow(Long id, String name, String location, Double size, boolean isDefault, long plots) {}
+    public record FarmRow(Long id, String name, String type, String location, Double size, boolean isDefault, long plots) {}
 
     public record PlotRow(Long id, String name, Double area, String location, String cropType, String stage,
                           String farmName) {}

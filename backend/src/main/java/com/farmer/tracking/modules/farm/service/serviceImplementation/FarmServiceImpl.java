@@ -3,6 +3,7 @@ package com.farmer.tracking.modules.farm.service;
 import com.farmer.tracking.common.exception.ForbiddenException;
 import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.farm.dto.CreateFarmRequest;
 import com.farmer.tracking.modules.farm.dto.FarmResponse;
@@ -40,6 +41,9 @@ public class FarmServiceImpl implements FarmService {
     @Transactional
     public FarmResponse createFarm(Long farmerId, CreateFarmRequest request) {
         ProductionRules.positiveFinite(request.getSize(), "Farm size");
+        if (request.getType() != FarmType.CROP && request.getType() != FarmType.LIVESTOCK) {
+            throw new BadRequestException("Choose either a crop farm or a livestock farm.");
+        }
         Farmer farmer = farmerRepository.findById(farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated farmer account not found with ID: " + farmerId));
 
@@ -80,8 +84,17 @@ public class FarmServiceImpl implements FarmService {
 
         validateOwnership(farm, farmerId);
 
+        if (request.getType() != farm.getType() && farm.getType() != FarmType.MIXED) {
+            throw new BadRequestException("The farm type is fixed. Create a separate farm for the other operation.");
+        }
+        if (request.getType() != FarmType.CROP && request.getType() != FarmType.LIVESTOCK) {
+            throw new BadRequestException("Choose either a crop farm or a livestock farm.");
+        }
         double capacity = request.getSizeUnit() == SizeUnit.ACRES ? request.getSize() * 0.40468564224 : request.getSize();
         Double plotArea = plotRepository.totalAreaInFarm(id, null);
+        if (request.getType() == FarmType.LIVESTOCK && plotArea != null && plotArea > 0) {
+            throw new BadRequestException("A farm with crop plots cannot be converted to livestock.");
+        }
         if (plotArea != null && plotArea > capacity + 0.000001) {
             throw new BadRequestException("Farm area cannot be smaller than its registered plots.");
         }

@@ -33,10 +33,18 @@ export const farmService = {
   /**
    * Create a new farm record for the authenticated user.
    */
-  createFarm: async (farmData) => {
+  createFarm: async (farmData, map) => {
+    if (map) {
+      const body = new FormData();
+      body.append('farm', new Blob([JSON.stringify(farmData)], { type: 'application/json' }));
+      body.append('map', map);
+      return apiClient.upload('/farms/with-map', body);
+    }
     const data = await apiClient.post('/farms', farmData);
     return data;
   },
+
+  getMapImage: id => apiClient.get(`/farms/${id}/map`, { responseType: 'blob' }),
 
   /**
    * Update an existing farm record (owner verified server-side).

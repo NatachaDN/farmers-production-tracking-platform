@@ -1,7 +1,7 @@
 import React from 'react';
 import { MetricCard } from '../../shared/components/MetricCard';
 import { IconUsers, IconCrop, IconProduction, IconActivities, IconCheckCircle, IconWarning } from '../../shared/components/Icons';
-import { adminService } from './services/adminService';
+import { adminService, managerService } from './services/adminService';
 import { Card, DataGate, EmptyState, Pill, RefreshButton, useAdminData } from './components/AdminUi';
 import { Bars, BarAxis, BreakdownBars, StackedBar, CHART_COLORS } from './components/charts';
 import { fmtDate, fmtKg, fmtNumber, fmtXaf, fmtTime, label, timeAgo } from './adminFormat';
@@ -11,7 +11,7 @@ const shortDay = (d) => new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { 
 const shortMonth = (m) => new Date(`${m}-01T00:00:00`).toLocaleDateString('en-GB', { month: 'short' });
 
 export function AdminOverviewView({ onNavigate, isAdmin }) {
-  const state = useAdminData(() => adminService.overview(), []);
+  const state = useAdminData(() => (isAdmin ? adminService : managerService).overview(), [isAdmin]);
 
   return (
     <div className="adm-stack fade-in">
@@ -84,7 +84,7 @@ function Overview({ d, onNavigate, isAdmin }) {
       </Card>
 
       <div className="adm-grid even-2">
-        <Card title="Latest field activity" flush action={<button className="adm-btn" onClick={() => onNavigate('admin-activity')}>View all</button>}>
+        <Card title="Latest field activity" flush action={<button className="adm-btn" onClick={() => onNavigate(isAdmin ? 'admin-activity' : 'manager-activity')}>View all</button>}>
           {d.recentActivities.length === 0 ? <EmptyState>No field activity has been recorded yet.</EmptyState> : (
             <ul className="adm-list">
               {d.recentActivities.map((a) => (
@@ -149,7 +149,7 @@ function Overview({ d, onNavigate, isAdmin }) {
         </div>
       </div>
 
-      {isAdmin && <Card title="Recent account events" flush action={<button className="adm-btn" onClick={() => onNavigate('admin-activity')}>View all</button>}>
+      {isAdmin && <Card title="Recent account events" flush action={<button className="adm-btn" onClick={() => onNavigate(isAdmin ? 'admin-activity' : 'manager-activity')}>View all</button>}>
         {d.recentAuditEvents.length === 0 ? <EmptyState>No sign-ins recorded yet.</EmptyState> : (
           <ul className="adm-list">
             {d.recentAuditEvents.map((e) => (

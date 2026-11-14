@@ -51,6 +51,12 @@ class CycleServiceTest {
         samplePlot.setId(plotId);
         samplePlot.setFarmerId(farmerId);
         samplePlot.setName("Plot A");
+        var farm = new com.farmer.tracking.modules.farm.model.Farm();
+        farm.setType(com.farmer.tracking.modules.auth.model.FarmType.CROP);
+        var owner = new com.farmer.tracking.modules.auth.model.Farmer();
+        owner.setId(farmerId);
+        farm.setFarmer(owner);
+        samplePlot.setFarm(farm);
         samplePlot.setArea(2.5);
         samplePlot.setLocation("North Sector");
     }

@@ -166,7 +166,7 @@ export function AddCropModal({ isOpen, onClose, onCropAdded, farmerId }) {
                     padding: '5px 10px',
                     borderRadius: '999px',
                     fontSize: '0.75rem',
-                    fontWeight: name.toLowerCase() === item.name.toLowerCase() ? 700 : 500,
+                    fontWeight: name.toLowerCase() === crop.toLowerCase() ? 700 : 500,
                     backgroundColor: name.toLowerCase() === crop.toLowerCase() ? '#EAF4ED' : '#F4EFE6',
                     color: name.toLowerCase() === crop.toLowerCase() ? '#285336' : '#4B5752',
                     border: name.toLowerCase() === crop.toLowerCase() ? '1px solid #3E7B52' : '1px solid #DFD8CA',

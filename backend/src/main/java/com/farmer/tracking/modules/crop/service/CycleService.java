@@ -10,6 +10,7 @@ import com.farmer.tracking.modules.crop.api.PlotConflictCheckResponse;
 import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleStatus;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
+import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.plot.entity.Plot;
 import com.farmer.tracking.modules.plot.repository.PlotRepository;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,10 @@ public class CycleService {
         // 1. Verify Plot ownership
         Plot plot = plotRepository.findLockedByIdAndFarmerId(request.getPlotId(), farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot not found with id: " + request.getPlotId() + " for farmer: " + farmerId));
+        if (plot.getFarm() == null || plot.getFarm().getType() != FarmType.CROP
+                || !farmerId.equals(plot.getFarm().getFarmerId())) {
+            throw new BadRequestException("Select a plot on one of your crop farms.");
+        }
 
         // 2. Check for active plot collision / conflict
         Optional<Cycle> existingActive = cycleRepository.findFirstByPlotIdAndStatusOrderByIdDesc(plot.getId(), CycleStatus.ACTIVE);

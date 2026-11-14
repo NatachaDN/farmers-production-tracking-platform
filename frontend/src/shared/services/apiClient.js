@@ -17,6 +17,7 @@ async function request(endpoint, options = {}) {
       headers,
     });
 
+    if (response.ok && options.responseType === 'blob') return response.blob();
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {

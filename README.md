@@ -304,6 +304,14 @@ npm run dev
 
 The frontend will run at `http://localhost:5173`.
 
+## Render and Vercel deployment
+
+1. In Render, create a **Web Service** with the **Docker** runtime and Root Directory `backend`. Use the included Dockerfile and leave `PORT` to Render. Set `SPRING_DATASOURCE_URL` (the MySQL JDBC URL), `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, and a stable `JWT_SECRET` (at least 32 random bytes, Base64 encoded). Set `APP_BASE_URL` to the public HTTPS Render origin for backend-generated avatar URLs.
+2. In Vercel, import the repo with Root Directory `frontend` and Framework Preset **Vite** (build `npm run build`, output `dist`). Set the Production variable `VITE_API_BASE_URL=https://<render-host>/api/v1` before building. The included rewrite serves the app on direct visits to `/auth/google/callback`.
+3. Once the production frontend URL exists, set Render's `APP_CORS_ALLOWED_ORIGINS=https://<vercel-host>` (scheme and host only, no trailing slash), and use that same frontend URL for Google sign-in below.
+
+Test first with a staging MySQL database. Verify the harvest schema upgrade adds the two snapshot columns and allows the `HARVEST_DELETED` audit event. Uploaded farm maps live in `farm_maps` and survive backend redeploys that keep using the same database. Check by uploading a map on staging, redeploying Render, and reopening the farm. Avatar uploads use the filesystem; if you need them to survive a redeploy, use a Render persistent disk and point `UPLOADS_DIR` into its mount path.
+
 ## Google sign-in and admin console
 
 ### Google sign-in (OAuth 2.0)
@@ -336,3 +344,9 @@ New registrations require approval by default. Existing accounts without a store
 Use the same-origin `/api/v1` default when a reverse proxy serves the frontend and forwards API requests to Spring Boot. Set `VITE_API_BASE_URL` at build time if the API is hosted separately, and configure the allowed frontend origin on the backend. Set a production JWT secret, configure SMTP for email password resets, and use persistent storage for avatar uploads.
 
 Run `mvn test` in `backend` and `npm ci && npm run build` in `frontend`. The GitHub workflow also tests the integration suite against a disposable MySQL database. Before upgrading a live database, verify backup restoration and the schema upgrade on a staging copy. This update adds nullable `farmers.access_status` and `farmers.manager_id` columns and a `reference_crops` table.
+
+### Farm types and map storage
+
+New farms are either Crop or Livestock. Create separate farms when tracking both. Plots require a crop farm, and animal groups require a livestock farm. Review existing mixed farms and unassigned records before rollout. Existing records are preserved and need an explicit farm assignment when their current association is missing or incompatible.
+
+Farm maps use PNG or JPEG images up to 5 MB. The first upload creates the farm and stores its map bytes in the same database transaction. Include the new `farm_maps` table in the staging schema upgrade and backups. Configure the ingress request-size limit to accommodate the multipart payload and verify a representative upload against staging MySQL.

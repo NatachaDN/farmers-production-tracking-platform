@@ -56,8 +56,9 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers("/api/v1/admin/audit", "/api/v1/admin/telemetry", "/api/v1/admin/reference-crops/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/manager/audit", "/api/v1/manager/telemetry").denyAll()
+                        .requestMatchers("/api/v1/manager/**").hasRole("MANAGER")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

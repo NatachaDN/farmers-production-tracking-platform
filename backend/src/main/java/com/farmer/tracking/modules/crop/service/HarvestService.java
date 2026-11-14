@@ -4,6 +4,9 @@ import com.farmer.tracking.common.exception.ResourceNotFoundException;
 import com.farmer.tracking.common.exception.ConflictException;
 import com.farmer.tracking.common.exception.BadRequestException;
 import com.farmer.tracking.common.security.UserPrincipal;
+import com.farmer.tracking.common.audit.AuditEvent;
+import com.farmer.tracking.common.audit.AuditEventRepository;
+import com.farmer.tracking.common.audit.AuditEventType;
 import com.farmer.tracking.modules.crop.api.HarvestCorrectionRequest;
 import com.farmer.tracking.modules.crop.entity.HarvestCorrection;
 import com.farmer.tracking.modules.crop.entity.HarvestValues;
@@ -35,11 +38,14 @@ public class HarvestService {
     private final HarvestRepository harvestRepository;
     private final CycleRepository cycleRepository;
     private final HarvestCorrectionRepository correctionRepository;
+    private final AuditEventRepository auditEventRepository;
 
-    public HarvestService(HarvestRepository harvestRepository, CycleRepository cycleRepository, HarvestCorrectionRepository correctionRepository) {
+    public HarvestService(HarvestRepository harvestRepository, CycleRepository cycleRepository,
+                          HarvestCorrectionRepository correctionRepository, AuditEventRepository auditEventRepository) {
         this.harvestRepository = harvestRepository;
         this.cycleRepository = cycleRepository;
         this.correctionRepository = correctionRepository;
+        this.auditEventRepository = auditEventRepository;
     }
 
     /**
@@ -74,6 +80,8 @@ public class HarvestService {
         // Create and save harvest
         Harvest harvest = new Harvest();
         harvest.setCycle(cycle);
+        harvest.setPreviousCycleProgress(cycle.getProgress());
+        harvest.setPreviousCycleSubStatus(cycle.getSubStatus());
         harvest.setQuantity(request.getQuantity());
         harvest.setUnit(request.getUnit());
         harvest.setHarvestDate(request.getHarvestDate());
@@ -146,6 +154,36 @@ public class HarvestService {
         cycleRepository.findByIdAndFarmerId(cycleId, farmerId).orElseThrow(() -> new ResourceNotFoundException("Cycle", cycleId));
         Harvest harvest = harvestRepository.findByCycleId(cycleId).orElseThrow(() -> new ResourceNotFoundException("No harvest recorded for this cycle."));
         return correctionRepository.findByHarvest_IdOrderByRevisionDesc(harvest.getId());
+    }
+
+    /** Removes a cycle's harvest and correction history, then reopens the cycle. */
+    @Transactional
+    public void deleteHarvest(Long farmerId, Long cycleId) {
+        Cycle cycle = cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cycle", cycleId));
+        Harvest harvest = harvestRepository.findByCycleId(cycleId)
+                .orElseThrow(() -> new ResourceNotFoundException("No harvest recorded for this cycle."));
+
+        Integer previousProgress = harvest.getPreviousCycleProgress();
+        String previousSubStatus = harvest.getPreviousCycleSubStatus();
+        Long harvestId = harvest.getId();
+        Double quantity = harvest.getQuantity();
+        String unit = harvest.getUnit().name();
+        String harvestDate = harvest.getHarvestDate().toString();
+        long correctionCount = correctionRepository.countByHarvest_Id(harvestId);
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long actorId = authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal
+                ? principal.getId() : farmerId;
+        String actorLabel = authentication == null ? "Farmer " + farmerId : authentication.getName();
+        correctionRepository.deleteByHarvest_Id(harvest.getId());
+        harvestRepository.delete(harvest);
+        auditEventRepository.save(new AuditEvent(AuditEventType.HARVEST_DELETED, actorId, actorLabel,
+                String.format("Deleted harvest %d on cycle %d: %s %s on %s; removed %d corrections",
+                        harvestId, cycleId, quantity, unit, harvestDate, correctionCount), null));
+        cycle.setStatus(CycleStatus.ACTIVE);
+        cycle.setProgress(previousProgress == null ? 0 : previousProgress);
+        cycle.setSubStatus(previousSubStatus);
+        cycleRepository.save(cycle);
     }
 
     private HarvestResponse toResponse(Harvest harvest, Cycle cycle, String yieldDisplay) {

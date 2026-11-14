@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface FarmInputRepository extends JpaRepository<FarmInput, Long> {
 
     List<FarmInput> findByFarmerId(Long farmerId);
+    List<FarmInput> findByFarmerIdIn(java.util.Collection<Long> ids);
 
     List<FarmInput> findByFarmerIdAndType(Long farmerId, InputType type);
 

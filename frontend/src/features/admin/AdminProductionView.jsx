@@ -6,15 +6,18 @@ import { ConsolidatedHarvestReport } from './components/ConsolidatedHarvestRepor
 
 const STATUSES = ['', 'ACTIVE', 'COMPLETED', 'CANCELLED'];
 
-export function AdminProductionView() {
+export function AdminProductionView({ service = adminService }) {
   const [tab, setTab] = useState('cycles');
   const [status, setStatus] = useState('');
+  const [period, setPeriod] = useState(null);
 
-  const cycles = useAdminData(() => adminService.cycles(status), [status]);
-  const harvests = useAdminData(() => adminService.harvests(), []);
-  const inputs = useAdminData(() => adminService.inputs(), []);
-  const farmers = useAdminData(() => tab === 'report' ? adminService.farmers() : Promise.resolve([]), [tab]);
-  const active = { cycles, harvests, inputs, report: farmers }[tab];
+  const cycles = useAdminData(() => service.cycles(status), [status]);
+  const harvests = useAdminData(() => service.harvests(), []);
+  const inputs = useAdminData(() => service.inputs(), []);
+  const farmers = useAdminData(() => tab === 'report' ? service.farmers() : Promise.resolve([]), [tab]);
+  const livestock = useAdminData(() => tab === 'livestock' && period
+    ? service.livestock(period.from, period.to) : Promise.resolve([]), [tab, period, service]);
+  const active = { cycles, harvests, inputs, report: farmers, livestock }[tab];
 
   return (
     <div className="adm-stack fade-in">
@@ -22,9 +25,25 @@ export function AdminProductionView() {
         <Tabs label="Production data" value={tab} onChange={setTab} tabs={[
           { id: 'cycles', label: 'Cycles' }, { id: 'harvests', label: 'Harvests' }, { id: 'inputs', label: 'Inputs' },
           { id: 'report', label: 'Consolidated report' },
+          { id: 'livestock', label: 'Livestock production' },
         ]} />
         <RefreshButton onClick={active.reload} loading={active.loading} />
       </div>
+      {tab === 'livestock' && <Card title="Livestock production">
+        <form className="workspace-form-grid" onSubmit={event => {
+          event.preventDefault();
+          const fields = new FormData(event.currentTarget);
+          setPeriod({ from: fields.get('from'), to: fields.get('to') });
+        }}>
+          <label>From<input name="from" type="date" required /></label>
+          <label>Through<input name="to" type="date" required /></label>
+          <button type="submit" className="workspace-button primary">Generate report</button>
+        </form>
+        {period && <DataGate state={livestock}>{rows => rows.length
+          ? <ul className="summary-list">{rows.map(({ farm, group, record }) =>
+              <li key={record.id}><strong>{farm} · {group}</strong> {record.date} · {record.name} · {record.quantity} {record.unit}</li>)}</ul>
+          : <EmptyState>No livestock production in this period.</EmptyState>}</DataGate>}
+      </Card>}
       {tab === 'report' && <DataGate state={farmers}>{people => (
         <DataGate state={harvests}>{rows => <ConsolidatedHarvestReport farmers={people} harvests={rows} />}</DataGate>
       )}</DataGate>}

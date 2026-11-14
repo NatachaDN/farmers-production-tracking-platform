@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface HarvestCorrectionRepository extends JpaRepository<HarvestCorrection, Long> {
     List<HarvestCorrection> findByHarvest_IdOrderByRevisionDesc(Long harvestId);
+    long countByHarvest_Id(Long harvestId);
+    void deleteByHarvest_Id(Long harvestId);
 }

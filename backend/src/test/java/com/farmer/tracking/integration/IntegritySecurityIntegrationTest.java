@@ -1,6 +1,9 @@
 package com.farmer.tracking.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.farmer.tracking.common.audit.AuditEvent;
+import com.farmer.tracking.common.audit.AuditEventType;
+import com.farmer.tracking.modules.auth.model.Farmer.AccessStatus;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.crop.entity.CycleInputUsage;
 import com.farmer.tracking.modules.crop.repository.CycleInputUsageRepository;
@@ -8,22 +11,32 @@ import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.input.entity.FarmInput;
 import com.farmer.tracking.modules.input.entity.InputType;
 import com.farmer.tracking.modules.input.repository.FarmInputRepository;
+import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.cfg.JdbcSettings;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import javax.sql.DataSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Real HTTP requests, security filters, services, transactions and row locks; no mocked repositories. */
 @ActiveProfiles("test")
@@ -33,7 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect", "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.mail.host=localhost", "spring.mail.username=", "app.admin.bootstrap-email=", "app.admin.bootstrap-password=",
-        "spring.config.import=optional:classpath:/no-test-env.properties", "spring.dotenv.enabled=false"
+        "spring.config.import=optional:classpath:/no-test-env.properties", "spring.dotenv.enabled=false",
+        "APP_CORS_ALLOWED_ORIGINS=https://acrea.example.test"
 })
 class IntegritySecurityIntegrationTest {
     @DynamicPropertySource
@@ -59,6 +73,8 @@ class IntegritySecurityIntegrationTest {
     @Autowired CycleInputUsageRepository usages;
     @Autowired FarmerRepository farmers;
     @Autowired PasswordEncoder encoder;
+    @Autowired DataSource dataSource;
+    @Autowired JdbcTemplate jdbc;
     @Autowired com.farmer.tracking.modules.auth.service.AuthServiceImpl auth;
 
     record Fixture(String email, String token, long farmer, long farm, long plot, long cycle) {
@@ -87,6 +103,55 @@ class IntegritySecurityIntegrationTest {
         return Map.of("name", "Regression Plot", "area", area, "location", "Test", "farmId", farm);
     }
 
+    @Test
+    void uploadedFarmMapPersistsAndRequiresOwnership() {
+        var owner = fixture();
+        var stranger = fixture();
+        byte[] png = Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lZkAAAAASUVORK5CYII=");
+        var parts = new org.springframework.util.LinkedMultiValueMap<String, Object>();
+        HttpHeaders json = new HttpHeaders();
+        json.setContentType(MediaType.APPLICATION_JSON);
+        parts.add("farm", new HttpEntity<>(farmBody(4), json));
+        parts.add("map", new org.springframework.core.io.ByteArrayResource(png) {
+            @Override public String getFilename() { return "farm.png"; }
+        });
+        HttpHeaders upload = new HttpHeaders();
+        upload.setContentType(MediaType.MULTIPART_FORM_DATA);
+        upload.setBearerAuth(owner.token());
+        var createdMap = http.exchange("/api/v1/farms/with-map", HttpMethod.POST, new HttpEntity<>(parts, upload), JsonNode.class);
+        assertThat(createdMap.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        long id = createdMap.getBody().path("id").asLong();
+        String map = "/farms/" + id + "/map";
+        assertThat(request(HttpMethod.GET, "/api/v1/farms/" + id, null, owner.token()).getBody().path("mapImageUrl").asText())
+                .isEqualTo(map);
+        HttpHeaders access = new HttpHeaders();
+        access.setBearerAuth(owner.token());
+        var stored = http.exchange("/api/v1" + map, HttpMethod.GET, new HttpEntity<>(access), byte[].class);
+        assertThat(stored.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(stored.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+        assertThat(stored.getBody()).isEqualTo(png);
+        assertThat(request(HttpMethod.GET, "/api/v1" + map, null, stranger.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void configuredFrontendCanPreflightAuthenticatedApiRequests() throws Exception {
+        // The default TestRestTemplate transport silently drops CORS request headers.
+        var client = HttpClient.newHttpClient();
+        var preflight = HttpRequest.newBuilder(URI.create(http.getRootUri() + "/api/v1/farmers/1/cycles/1/harvest"))
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "DELETE")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, HttpHeaders.AUTHORIZATION);
+        var allowed = client.send(preflight.setHeader(HttpHeaders.ORIGIN, "https://acrea.example.test").build(),
+                HttpResponse.BodyHandlers.discarding());
+        assertThat(allowed.statusCode()).isEqualTo(200);
+        assertThat(allowed.headers().firstValue(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN)).contains("https://acrea.example.test");
+        assertThat(allowed.headers().firstValue(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS).orElse("")).contains("DELETE");
+
+        var denied = client.send(preflight.setHeader(HttpHeaders.ORIGIN, "https://other.example.test").build(),
+                HttpResponse.BodyHandlers.discarding());
+        assertThat(denied.statusCode()).isEqualTo(403);
+    }
+
     private Map<String, Object> cycleBody(long plot, double area) {
         return new HashMap<>(Map.of("plotId", plot, "cropName", "Maize", "acreage", area,
                 "plantingDate", LocalDate.now().minusDays(30).toString(),
@@ -108,6 +173,63 @@ class IntegritySecurityIntegrationTest {
     private Map<String, Object> purchase(String name, double quantity, String unit, double price) {
         return Map.of("name", name, "type", "FERTILIZER", "quantity", quantity, "unit", unit,
                 "purchaseDate", LocalDate.now().toString(), "purchasePrice", price);
+    }
+
+    @Test
+    void adminApprovalCommitsWithAuditAfterUpgradingLegacyMysqlEnum() {
+        assumeTrue(System.getenv("ACREA_TEST_MYSQL_URL") != null && !System.getenv("ACREA_TEST_MYSQL_URL").isBlank());
+        var admin = fixture();
+        var applicant = fixture();
+        var administrator = farmers.findById(admin.farmer()).orElseThrow();
+        administrator.setRole("ROLE_ADMIN");
+        farmers.save(administrator);
+        var pending = farmers.findById(applicant.farmer()).orElseThrow();
+        pending.setAccessStatus(AccessStatus.PENDING);
+        farmers.save(pending);
+
+        jdbc.execute("ALTER TABLE audit_events MODIFY event_type ENUM("
+                + "'REGISTER','LOGIN','LOGIN_FAILED','GOOGLE_REGISTER','GOOGLE_LOGIN','GOOGLE_LOGIN_FAILED',"
+                + "'PASSWORD_RESET_REQUESTED','PASSWORD_RESET_COMPLETED','PASSWORD_RESET','FARMER_STATUS_UPDATED') NOT NULL");
+        jdbc.update("INSERT INTO audit_events (actor_id, event_type, detail, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+                admin.farmer(), "FARMER_STATUS_UPDATED", "Legacy access change");
+        String path = "/api/v1/admin/farmers/" + applicant.farmer() + "/access";
+        long pendingTokenVersion = pending.getTokenVersion();
+        assertThat(request(HttpMethod.PUT, path, Map.of("status", "ACTIVE"), admin.token()).getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        var unchanged = farmers.findById(applicant.farmer()).orElseThrow();
+        assertThat(unchanged.getAccessStatus()).isEqualTo(AccessStatus.PENDING);
+        assertThat(unchanged.getTokenVersion()).isEqualTo(pendingTokenVersion);
+
+        var schema = new Configuration()
+                .addAnnotatedClass(AuditEvent.class)
+                .setProperty("hibernate.hbm2ddl.auto", "update")
+                .setProperty("hibernate.hbm2ddl.halt_on_error", "true")
+                .setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect")
+                .setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
+        schema.getProperties().put(JdbcSettings.JAKARTA_NON_JTA_DATASOURCE, dataSource);
+        try (var ignored = schema.buildSessionFactory()) {
+            // Apply the production schema update against an existing audit table.
+        }
+        assertThat(jdbc.queryForObject("SELECT DATA_TYPE FROM information_schema.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'audit_events' AND COLUMN_NAME = 'event_type'",
+                String.class)).isEqualTo("varchar");
+
+        var approval = request(HttpMethod.PUT, path, Map.of("status", "ACTIVE"), admin.token());
+        assertThat(approval.getStatusCode()).as(approval.toString()).isEqualTo(HttpStatus.OK);
+        assertThat(farmers.findById(applicant.farmer()).orElseThrow().getAccessStatus()).isEqualTo(AccessStatus.ACTIVE);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_events WHERE event_type = ? AND actor_id = ?",
+                Integer.class, AuditEventType.ACCOUNT_ACCESS_CHANGED.name(), admin.farmer())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_events WHERE event_type = 'REGISTER' AND actor_id = ?",
+                Integer.class, applicant.farmer())).isEqualTo(1);
+        var audit = request(HttpMethod.GET, "/api/v1/admin/audit", null, admin.token());
+        assertThat(audit.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(audit.getBody()).anySatisfy(event -> {
+            assertThat(event.path("type").asText()).isEqualTo("FARMER_STATUS_UPDATED");
+            assertThat(event.path("detail").asText()).isEqualTo("Legacy access change");
+        });
+        assertThat(request(HttpMethod.POST, "/api/v1/auth/login",
+                Map.of("emailOrPhone", applicant.email(), "password", "Regression2026!"), null)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
@@ -135,15 +257,18 @@ class IntegritySecurityIntegrationTest {
         assertThat(signup.path("token").isNull()).isTrue();
         Long id = signup.path("farmer").path("id").asLong();
         var resource = "/api/v1/admin/farmers/" + id;
+        var managerResource = "/api/v1/manager/farmers/" + id;
+        assertThat(request(HttpMethod.GET, resource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.GET, "/api/v1/manager/overview", null, outsider.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(request(HttpMethod.POST, "/api/v1/auth/login", credentials, null).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(request(HttpMethod.GET, resource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(request(HttpMethod.GET, managerResource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "PENDING", "role", "ROLE_FARMER",
                 "managerId", manager.farmer()), administrator.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(request(HttpMethod.GET, resource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(request(HttpMethod.GET, "/api/v1/admin/farmers/" + outsider.farmer(), null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(request(HttpMethod.GET, managerResource, null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.GET, "/api/v1/manager/farmers/" + outsider.farmer(), null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(request(HttpMethod.GET, "/api/v1/admin/audit", null, manager.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "ACTIVE", "role", "ROLE_MANAGER"), manager.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(request(HttpMethod.PUT, resource + "/access", Map.of("status", "REJECTED"), manager.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(request(HttpMethod.PUT, managerResource + "/access", Map.of("status", "ACTIVE", "role", "ROLE_MANAGER"), manager.token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.PUT, managerResource + "/access", Map.of("status", "REJECTED"), manager.token()).getStatusCode()).isEqualTo(HttpStatus.OK);
         var denied = request(HttpMethod.POST, "/api/v1/auth/login", credentials, null);
         assertThat(denied.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(denied.getBody().path("message").asText()).contains("declined");
@@ -244,7 +369,15 @@ class IntegritySecurityIntegrationTest {
         var other = fixture();
         var today = LocalDate.now();
         var groupPath = "/api/v1/animals/groups";
-        long group = created(groupPath, Map.of("name", "Laying flock", "animalType", "POULTRY",
+        var livestock = new HashMap<>(farmBody(4));
+        livestock.put("type", "LIVESTOCK");
+        long livestockFarm = created("/api/v1/farms", livestock, farmer.token()).path("id").asLong();
+        assertThat(request(HttpMethod.POST, farmer.root() + "/plots", plotBody(livestockFarm, 1), farmer.token()).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        var groupDraft = Map.of("farmId", farmer.farm(), "name", "Flock", "animalType", "POULTRY",
+                "purpose", "Eggs", "initialPopulation", 24, "startDate", today.toString());
+        assertThat(request(HttpMethod.POST, groupPath, groupDraft, farmer.token()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        long group = created(groupPath, Map.of("farmId", livestockFarm, "name", "Laying flock", "animalType", "POULTRY",
                 "purpose", "Eggs", "initialPopulation", 24, "startDate", today.minusDays(3).toString()), farmer.token())
                 .path("id").asLong();
         String groupUrl = groupPath + "/" + group;
@@ -265,6 +398,10 @@ class IntegritySecurityIntegrationTest {
         assertThat(rows.get(1).path("kind").asText()).isEqualTo("PRODUCTION");
         var recentUrl = "/api/v1/animals/recent-production";
         var recent = request(HttpMethod.GET, recentUrl, null, farmer.token()).getBody();
+        assertThat(request(HttpMethod.GET, recentUrl + "?farmId=" + livestockFarm, null, farmer.token()).getBody().size()).isEqualTo(1);
+        String report = "/production-report?from=" + today.minusDays(3) + "&to=" + today;
+        assertThat(request(HttpMethod.GET, "/api/v1/animals" + report, null, farmer.token()).getBody().size()).isEqualTo(1);
+        assertThat(request(HttpMethod.GET, "/api/v1/animals" + report, null, other.token()).getBody().isEmpty()).isTrue();
         assertThat(recent.get(0).path("groupName").asText()).isEqualTo("Laying flock");
         assertThat(recent.get(0).path("record").path("name").asText()).isEqualTo("Eggs");
         assertThat(request(HttpMethod.GET, recentUrl, null, other.token()).getBody().isEmpty()).isTrue();
@@ -515,6 +652,26 @@ class IntegritySecurityIntegrationTest {
         assertThat(request(HttpMethod.GET, f.root() + "/summary", null, f.token()).getBody().path("harvestedKg").asDouble()).isEqualTo(900);
         assertThat(request(HttpMethod.GET, f.root() + "/summary?farmId=" + f.farm(), null, f.token()).getBody().path("harvestedKg").asDouble()).isEqualTo(900);
         assertThat(request(HttpMethod.GET, f.cyclePath() + "/harvest", null, f.token()).getBody().path("quantity").asDouble()).isEqualTo(900);
+    }
+
+    @Test void harvestDeletionReopensCycleAndAllowsAReplacement() {
+        Fixture f = fixture();
+        var before = request(HttpMethod.GET, f.cyclePath(), null, f.token()).getBody();
+        String path = f.cyclePath() + "/harvest";
+        var harvest = Map.of("quantity", 800, "unit", "KG", "harvestDate", LocalDate.now().toString());
+        created(path, harvest, f.token());
+        assertThat(request(HttpMethod.PUT, path, correction(900, 0, "Verified weight"), f.token())
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(request(HttpMethod.DELETE, path, null, fixture().token()).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(request(HttpMethod.DELETE, path, null, f.token()).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(request(HttpMethod.GET, path, null, f.token()).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        var reopened = request(HttpMethod.GET, f.cyclePath(), null, f.token()).getBody();
+        assertThat(reopened.path("status").asText()).isEqualTo("ACTIVE");
+        assertThat(reopened.path("progress")).isEqualTo(before.path("progress"));
+        assertThat(reopened.path("subStatus")).isEqualTo(before.path("subStatus"));
+        created(path, harvest, f.token());
+        assertThat(request(HttpMethod.GET, path + "/corrections", null, f.token()).getBody().isEmpty()).isTrue();
     }
 
     @Test void competingHarvestCorrectionsCannotOverwriteEachOther() throws Exception {

@@ -10,9 +10,9 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
         <h2 id="dashboard-greeting-title">{firstName ? `Hello, ${firstName}` : 'Welcome to Acrea'}</h2>
         <p>See what’s growing, what’s due for harvest, and what your farm has produced.</p>
       </div>
-      <button type="button" className="dashboard-primary-action" onClick={onRecordProduction}>
+      {onRecordProduction && <button type="button" className="dashboard-primary-action" onClick={onRecordProduction}>
         <IconPlus size={18} /> Record production <IconArrowRight size={17} />
-      </button>
+      </button>}
     </section>
   );
 }

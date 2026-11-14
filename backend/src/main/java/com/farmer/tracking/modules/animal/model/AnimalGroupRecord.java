@@ -40,6 +40,7 @@ public class AnimalGroupRecord {
 
     public Long getId() { return id; }
     public String getGroupName() { return group.getName(); }
+    public String getFarmName() { return group.getFarm().getName(); }
     public Kind getKind() { return kind; }
     public String getName() { return name; }
     public BigDecimal getQuantity() { return quantity; }

@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface HarvestRepository extends JpaRepository<Harvest, Long> {
     java.util.List<Harvest> findByCycle_FarmerId(Long farmerId);
+    java.util.List<Harvest> findByCycle_FarmerIdIn(java.util.Collection<Long> ids);
 
     Optional<Harvest> findByCycleId(Long cycleId);
 

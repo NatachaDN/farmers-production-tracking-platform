@@ -3,6 +3,14 @@
 ## Base URL
 `http://localhost:8080/api/v1`
 
+## Harvest deletion
+
+- **Endpoint:** `DELETE /api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest`
+- **Auth required:** Authenticated farmer with ownership of the farmer/cycle path.
+- **Success:** `204 No Content`. The harvest and its correction history are permanently removed; the cycle reopens with its saved pre-harvest progress and stage. Older harvests without a saved snapshot reopen at 0% with no stage.
+- **Forbidden:** `403 Forbidden` when accessing another farmer's path.
+- **Not found:** `404 Not Found` if the cycle does not belong to the farmer in the path or has no harvest.
+
 ---
 
 ## 1. Register Farmer Account
@@ -169,6 +177,14 @@
 ```
 
 ---
+
+### Farm workspace relationships
+
+- `POST /farms` creates a `CROP` or `LIVESTOCK` farm.
+- `POST /farms/with-map` accepts multipart parts `farm` (JSON matching farm creation) and `map` (PNG or JPEG, up to 5 MB). It returns the farm with a stored map reference. `GET /farms/{id}/map` returns the bytes to the farm owner.
+- New plots require an explicit `farmId` for a crop farm owned by the signed-in farmer. New cycles require a plot on that farmer's crop farm. Cycle responses include `farmId` when the plot is associated with a farm.
+- New animal groups require an explicit `farmId` for an owned livestock farm. `GET /animals/production-report?from=YYYY-MM-DD&to=YYYY-MM-DD` returns dated production entries for the signed-in farmer's livestock farms.
+- Managers use `/manager` endpoints for assigned-farmer oversight. Admin endpoints under `/admin` require the administrator role. Both consoles have a scoped `/livestock-production` report with `from` and `to` dates.
 
 ## 5. Sign in with Google
 

@@ -95,7 +95,7 @@ class FarmServiceTest {
     private UpdateFarmRequest validUpdateRequest() {
         UpdateFarmRequest req = new UpdateFarmRequest();
         req.setName("  Green Valley Organic  ");
-        req.setType(FarmType.MIXED);
+        req.setType(FarmType.CROP);
         req.setSize(40.5);
         req.setSizeUnit(SizeUnit.ACRES);
         req.setDescription("Updated holding");
@@ -249,7 +249,7 @@ class FarmServiceTest {
         FarmResponse response = farmService.updateFarm(FARM_ID, OWNER_ID, validUpdateRequest());
 
         assertThat(response.getName()).isEqualTo("Green Valley Organic");
-        assertThat(response.getType()).isEqualTo(FarmType.MIXED);
+        assertThat(response.getType()).isEqualTo(FarmType.CROP);
         assertThat(response.getSize()).isEqualTo(40.5);
         assertThat(response.getSizeUnit()).isEqualTo(SizeUnit.ACRES);
         assertThat(response.getStatus()).isEqualTo(FarmStatus.INACTIVE);

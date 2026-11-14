@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FarmSummaryOverview } from './FarmSummaryOverview';
 import { farmService } from './services/farmService';
 import { plotService } from './services/plotService';
+import { FarmMapImage } from './components/FarmMapImage';
+import { AddPlotModal } from './components/AddPlotModal';
 import {
   IconFarms,
   IconSprout,
@@ -25,6 +27,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
   const [plots, setPlots] = useState(null);
   const [plotsError, setPlotsError] = useState('');
   const [plotAttempt, setPlotAttempt] = useState(0);
+  const [addingPlot, setAddingPlot] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -128,8 +131,8 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
   const currentFarm = farm;
 
 
-  const tabs = ['Overview', 'Plots', 'Crops', 'Livestock', 'Equipment', 'Activities', 'Settings'];
-  const workspaceRoutes = { Crops: 'crops', Livestock: 'livestock', Equipment: 'equipment', Activities: 'calendar', Settings: 'settings' };
+  const tabs = ['Overview', ...(farm.type === 'CROP' ? ['Plots', 'Crops'] : farm.type === 'LIVESTOCK' ? ['Livestock'] : []), 'Settings'];
+  const workspaceRoutes = { Crops: 'crops', Livestock: 'livestock', Settings: 'settings' };
 
   return (
     <div className="workspace-screen fade-in farm-detail-workspace">
@@ -210,9 +213,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
           height: '160px',
           border: '1px solid var(--color-card-border)'
         }}>
-          {currentFarm.mapImageUrl ? <img
-            src={currentFarm.mapImageUrl}
-            alt={`Saved image for ${currentFarm.name}`}
+          {currentFarm.mapImageUrl ? <FarmMapImage farm={currentFarm}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           /> : <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: '#F4EFE6', color: 'var(--color-text-muted)' }}>No farm image saved.</div>}
         </div>
@@ -227,7 +228,7 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '6px' }}>Farm type</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.0rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
               <IconSprout size={18} color="var(--color-brand-primary)" />
-              <span>{currentFarm.type === 'CROP' ? 'Crop farm' : currentFarm.type === 'LIVESTOCK' ? 'Livestock farm' : 'Mixed farm'}</span>
+              <span>{currentFarm.type === 'CROP' ? 'Crop farm' : currentFarm.type === 'LIVESTOCK' ? 'Livestock farm' : 'Needs farm type review'}</span>
             </div>
           </div>
 
@@ -310,10 +311,16 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
             </p> : !plots ? <p role="status">Loading plots…</p> : plots.length ? <ul className="summary-list">
               {plots.map(plot => <li key={plot.id}><strong>{plot.name}</strong><span>{plot.area} ha{plot.cropType ? ` · ${plot.cropType}` : ''}</span></li>)}
             </ul> : <p className="workspace-empty">This farm has no plots yet.</p>}
-            <button className="workspace-button" type="button" onClick={() => onNavigate?.('farms')}>Manage plots</button>
+            <button className="workspace-button" type="button" onClick={() => setAddingPlot(true)}>Add plot</button>
+            {addingPlot && <AddPlotModal farmerId={user.id} isOpen farms={[farm]} initialFarmId={farm.id}
+              onClose={() => setAddingPlot(false)}
+              onAddPlot={async data => {
+                await plotService.createPlot(user.id, data);
+                setPlotAttempt(value => value + 1);
+              }} />}
           </>
         ) : (
-          <button className="workspace-button" type="button" onClick={() => onNavigate?.(workspaceRoutes[activeTab])}>
+          <button className="workspace-button" type="button" onClick={() => onNavigate?.(workspaceRoutes[activeTab], currentFarm.id)}>
             Open {activeTab.toLowerCase()}
           </button>
         )}
@@ -373,13 +380,14 @@ export function FarmDetailsView({ farmId, onNavigate, user }) {
                     Farm Type
                   </label>
                   <select
+                    disabled={farm.type !== 'MIXED'}
                     value={editFormData.type || 'CROP'}
                     onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-card-border)' }}
                   >
                     <option value="CROP">Crop farm</option>
                     <option value="LIVESTOCK">Livestock farm</option>
-                    <option value="MIXED">Mixed farm</option>
+                    {farm.type === 'MIXED' && <option value="MIXED" disabled>Choose a farm type</option>}
                   </select>
                 </div>
 

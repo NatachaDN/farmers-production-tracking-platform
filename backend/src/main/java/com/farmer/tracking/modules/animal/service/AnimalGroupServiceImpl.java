@@ -13,6 +13,7 @@ import com.farmer.tracking.modules.animal.model.AnimalGroupRecord.Kind;
 import com.farmer.tracking.modules.animal.repository.AnimalGroupRepository;
 import com.farmer.tracking.modules.animal.repository.AnimalGroupRecordRepository;
 import com.farmer.tracking.modules.auth.model.Farmer;
+import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.auth.repository.FarmerRepository;
 import com.farmer.tracking.modules.farm.model.Farm;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
@@ -64,11 +65,7 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
             throw new BadRequestException("Current population cannot be negative");
         }
 
-        Farm farm = null;
-        if (request.getFarmId() != null) {
-            farm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Farm not found with ID " + request.getFarmId() + " for this farmer"));
-        }
+        Farm farm = livestockFarm(farmerId, request.getFarmId());
 
         AnimalGroup group = new AnimalGroup();
         group.setFarmer(farmer);
@@ -127,13 +124,7 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
             throw new BadRequestException("Initial population must be greater than zero");
         }
 
-        Farm farm = group.getFarm();
-        if (request.getFarmId() != null) {
-            farm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Farm not found with ID " + request.getFarmId() + " for this farmer"));
-        } else if (request.getFarmId() == null && request.getName() != null) {
-            // Keep existing or clear if explicitly needed; if null in request, preserve unless requested
-        }
+        Farm farm = livestockFarm(farmerId, request.getFarmId() == null ? group.getFarmId() : request.getFarmId());
 
         group.setName(request.getName().trim());
         group.setAnimalType(request.getAnimalType());
@@ -192,5 +183,15 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         if (group.getFarmer() == null || !group.getFarmer().getId().equals(farmerId)) {
             throw new ForbiddenException("Data Isolation Violation: You do not have permission to access animal group " + group.getId());
         }
+    }
+
+    private Farm livestockFarm(Long farmerId, Long farmId) {
+        if (farmId == null) throw new BadRequestException("Select a livestock farm.");
+        Farm farm = farmRepository.findByIdAndFarmerId(farmId, farmerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Farm not found for this farmer."));
+        if (farm.getType() != FarmType.LIVESTOCK) {
+            throw new BadRequestException("Animal groups can only belong to livestock farms.");
+        }
+        return farm;
     }
 }

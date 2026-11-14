@@ -80,4 +80,14 @@ public class HarvestController {
         HarvestResponse response = harvestService.getHarvestByCycle(farmerId, cycleId);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping
+    @Operation(summary = "Delete a harvest and reopen its cycle",
+            description = "Permanently deletes the harvest and its correction history, then restores the cycle's previous progress state.")
+    @ApiResponse(responseCode = "204", description = "Harvest deleted and cycle reopened")
+    @ApiResponse(responseCode = "404", description = "Cycle or harvest not found")
+    public ResponseEntity<Void> deleteHarvest(@PathVariable Long farmerId, @PathVariable Long cycleId) {
+        harvestService.deleteHarvest(farmerId, cycleId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { adminService } from './services/adminService';
+import { adminService, managerService } from './services/adminService';
 import { Avatar, Card, DataGate, EmptyState, Pill, RefreshButton, useAdminData } from './components/AdminUi';
 import { FarmerDetailDrawer } from './components/FarmerDetailDrawer';
 import { fmtDate, fmtKg, fmtNumber, fmtXaf, label, timeAgo } from './adminFormat';
@@ -32,13 +32,14 @@ export function AdminFarmersView({ user }) {
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
   const isAdmin = user?.role === 'ROLE_ADMIN';
+  const service = isAdmin ? adminService : managerService;
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query.trim()), 300);
     return () => clearTimeout(id);
   }, [query]);
 
-  const state = useAdminData(() => adminService.farmers(debounced), [debounced]);
+  const state = useAdminData(() => service.farmers(debounced), [debounced, service]);
   const managers = useAdminData(() => isAdmin ? adminService.farmers() : Promise.resolve([]), [isAdmin]);
   const regions = [...new Set(state.data?.flatMap(row => row.regions ?? []) ?? [])].sort();
   const crops = [...new Set(state.data?.flatMap(row => row.crops ?? []) ?? [])].sort();
@@ -61,7 +62,7 @@ export function AdminFarmersView({ user }) {
     setSaving(true);
     setSaveError('');
     try {
-      await adminService.updateAccess(access.id, change);
+      await service.updateAccess(access.id, change);
       setAccess(null);
       state.reload();
       managers.reload();
@@ -180,7 +181,7 @@ export function AdminFarmersView({ user }) {
         </Card>
       )}</DataGate>
 
-      {selectedId && <FarmerDetailDrawer farmerId={selectedId} onClose={() => setSelectedId(null)} />}
+      {selectedId && <FarmerDetailDrawer farmerId={selectedId} service={service} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }

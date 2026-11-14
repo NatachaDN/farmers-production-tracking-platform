@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { passwordMeetsPolicy, passwordPolicyMessage } from './services/passwordRules';
 import { AuthHeroBanner } from './AuthHeroBanner';
 import { AuthMetaHeader } from './AuthMetaHeader';
-import { FarmTypeSelector } from './FarmTypeSelector';
 import { RegisterPasswordFields } from './RegisterPasswordFields';
 import { IconLocation } from '../../shared/components/Icons';
 import { authService } from './services/authService';
@@ -12,7 +11,6 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
   const [fullName, setFullName] = useState('');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [location, setLocation] = useState('');
-  const [farmType, setFarmType] = useState('MIXED');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +35,6 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
         fullName,
         emailOrPhone,
         location,
-        farmType,
         password
       });
 
@@ -177,9 +174,6 @@ export function RegisterView({ onNavigate, onRegisterSuccess }) {
                 />
               </div>
             </div>
-
-            {/* Farm Type Selector Component */}
-            <FarmTypeSelector value={farmType} onChange={setFarmType} />
 
             {/* Password & Confirm Password Component */}
             <RegisterPasswordFields

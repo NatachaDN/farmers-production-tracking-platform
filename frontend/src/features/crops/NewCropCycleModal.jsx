@@ -3,6 +3,8 @@ import { cropCycleService } from './services/cropCycleService';
 import { cropService } from './services/cropService';
 import { plotService } from '../farms/services/plotService';
 import { AddCropModal } from './components/AddCropModal';
+import { farmService } from '../farms/services/farmService';
+import { createPortal } from 'react-dom';
 import {
   IconClose,
   IconSprout,
@@ -15,7 +17,7 @@ import {
 } from '../../shared/components/Icons';
 
 
-export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId }) {
+export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId, onOpenFarms, farmId }) {
   const [plots, setPlots] = useState([]);
   const [loadingPlots, setLoadingPlots] = useState(false);
 
@@ -82,13 +84,11 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
   const loadPlots = async () => {
     setLoadingPlots(true);
     try {
-      const data = await plotService.getPlots(farmerId);
-      setPlots(data || []);
-      if (data && data.length > 0 && !selectedPlotId) {
-        handlePlotChange(data[0].id, data);
-      }
+      const [rows, farms] = await Promise.all([plotService.getPlots(farmerId), farmService.getFarms()]);
+      const cropFarmIds = new Set(farms.filter(farm => farm.type === 'CROP' && (!farmId || farm.id === farmId)).map(farm => farm.id));
+      setPlots(rows.filter(plot => cropFarmIds.has(plot.farmId)));
     } catch (err) {
-      console.error('Failed to load plots for cycle creation:', err);
+      setErrorMsg(err.message || 'Could not load crop farm plots.');
     } finally {
       setLoadingPlots(false);
     }
@@ -290,10 +290,11 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
                 fontSize: '0.8125rem',
                 color: '#92400E'
               }}>
-                No plots found. Please register a plot in Farms & Plots first.
+                No crop plots are available. <button type="button" className="workspace-button" onClick={onOpenFarms}>Open Farms &amp; Plots</button>
               </div>
             ) : (
               <select
+                aria-label="Crop farm plot"
                 value={selectedPlotId}
                 onChange={(e) => handlePlotChange(e.target.value)}
                 required
@@ -307,9 +308,10 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
                   color: 'var(--color-text-primary)'
                 }}
               >
+                <option value="">Select a crop farm plot</option>
                 {plots.map((plot) => (
                   <option key={plot.id} value={plot.id}>
-                    {plot.name} ({plot.area} ha) — {plot.location || 'Main Farm'}
+                    {plot.name} ({plot.area} ha){plot.location ? ` — ${plot.location}` : ''}
                   </option>
                 ))}
               </select>
@@ -638,13 +640,15 @@ export function NewCropCycleModal({ isOpen, onClose, onCycleCreated, farmerId })
       </div>
 
       {/* Quick Add Crop Modal */}
-      {isAddCropModalOpen && (
-        <AddCropModal
-          isOpen={isAddCropModalOpen}
-          onClose={() => setIsAddCropModalOpen(false)}
-          onCropAdded={handleCropAdded}
-          farmerId={farmerId}
-        />
+      {isAddCropModalOpen && createPortal(
+        <div onClick={event => event.stopPropagation()} onSubmit={event => event.stopPropagation()}>
+          <AddCropModal
+            isOpen={isAddCropModalOpen}
+            onClose={() => setIsAddCropModalOpen(false)}
+            onCropAdded={handleCropAdded}
+            farmerId={farmerId}
+          />
+        </div>, document.body
       )}
     </div>
   );

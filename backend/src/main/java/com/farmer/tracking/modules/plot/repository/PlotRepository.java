@@ -19,6 +19,7 @@ public interface PlotRepository extends JpaRepository<Plot, Long> {
                           @org.springframework.data.repository.query.Param("excludeId") Long excludeId);
 
     List<Plot> findByFarmerId(Long farmerId);
+    List<Plot> findByFarmerIdIn(java.util.Collection<Long> ids);
 
     Optional<Plot> findByIdAndFarmerId(Long id, Long farmerId);
 

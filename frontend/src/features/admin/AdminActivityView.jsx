@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { adminService } from './services/adminService';
+import { adminService, managerService } from './services/adminService';
 import { Card, DataGate, EmptyState, Pill, RefreshButton, Tabs, useAdminData } from './components/AdminUi';
 import { fmtDate, fmtDateTime, label, timeAgo } from './adminFormat';
 
@@ -10,7 +10,7 @@ export function AdminActivityView({ isAdmin }) {
   const [type, setType] = useState('');
   const [query, setQuery] = useState('');
 
-  const field = useAdminData(() => adminService.activities({ type, limit: 300 }), [type]);
+  const field = useAdminData(() => (isAdmin ? adminService : managerService).activities({ type, limit: 300 }), [type, isAdmin]);
   const events = useAdminData(() => isAdmin ? adminService.audit(200) : Promise.resolve([]), [isAdmin]);
   const active = tab === 'field' ? field : events;
 

@@ -15,6 +15,7 @@ import java.util.Optional;
 @Repository
 public interface CycleRepository extends JpaRepository<Cycle, Long> {
     List<Cycle> findByFarmerId(Long farmerId);
+    List<Cycle> findByFarmerIdIn(java.util.Collection<Long> ids);
     List<Cycle> findByFarmerIdAndStatus(Long farmerId, CycleStatus status);
     List<Cycle> findByFarmerIdOrderByCreatedAtDesc(Long farmerId);
     List<Cycle> findByFarmerIdAndStatusOrderByCreatedAtDesc(Long farmerId, CycleStatus status);

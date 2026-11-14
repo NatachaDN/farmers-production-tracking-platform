@@ -7,9 +7,16 @@ import { cropCycleService } from '../../crops/services/cropCycleService';
  *
  * @param {number|undefined} farmerId
  */
-export function useFarmerCycles(farmerId) {
+export function useFarmerCycles(farmerId, initialCycleId) {
   const [cycles, setCycles] = useState([]);
-  const [selectedCycleId, setSelectedCycleId] = useState(null);
+  const [selectedCycleId, setCycle] = useState(() => initialCycleId || Number(new URLSearchParams(window.location.search).get('cycle')) || null);
+  const setSelectedCycleId = id => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('cycle', id);
+    else url.searchParams.delete('cycle');
+    window.history.replaceState(window.history.state, '', url);
+    setCycle(id);
+  };
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -25,11 +32,7 @@ export function useFarmerCycles(farmerId) {
       const data = await cropCycleService.getCycles(farmerId);
       const list = Array.isArray(data) ? data : [];
       setCycles(list);
-      setSelectedCycleId((current) => {
-        if (current && list.some((c) => c.id === current)) return current;
-        const firstActive = list.find((c) => c.status === 'ACTIVE');
-        return (firstActive || list[0])?.id ?? null;
-      });
+      setCycle(current => list.some(cycle => cycle.id === current) ? current : null);
     } catch (err) {
       setCycles([]);
       setError(err?.message || 'Could not load your production cycles.');

@@ -4,6 +4,13 @@ import com.farmer.tracking.common.telemetry.SystemInfoService;
 import com.farmer.tracking.common.telemetry.TelemetryService;
 import com.farmer.tracking.modules.admin.api.AdminDtos.*;
 import com.farmer.tracking.modules.admin.service.AdminService;
+import com.farmer.tracking.common.security.UserPrincipal;
+import com.farmer.tracking.common.exception.BadRequestException;
+import com.farmer.tracking.modules.animal.controller.AnimalGroupRecordController.ProductionRow;
+import com.farmer.tracking.modules.animal.repository.AnimalGroupRecordRepository;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,18 +26,21 @@ import java.util.List;
  * Read-only administration API. Access is restricted to ROLE_ADMIN in SecurityConfig.
  */
 @RestController
-@RequestMapping("/api/v1/admin")
+@RequestMapping({"/api/v1/admin", "/api/v1/manager"})
 @Tag(name = "Administration", description = "Platform-wide statistics, activity and telemetry (administrators only)")
 public class AdminController {
 
     private final AdminService adminService;
     private final SystemInfoService systemInfoService;
     private final TelemetryService telemetryService;
+    private final AnimalGroupRecordRepository animalRecords;
 
-    public AdminController(AdminService adminService, SystemInfoService systemInfoService, TelemetryService telemetryService) {
+    public AdminController(AdminService adminService, SystemInfoService systemInfoService, TelemetryService telemetryService,
+                           AnimalGroupRecordRepository animalRecords) {
         this.adminService = adminService;
         this.systemInfoService = systemInfoService;
         this.telemetryService = telemetryService;
+        this.animalRecords = animalRecords;
     }
 
     @GetMapping("/overview")
@@ -68,6 +78,16 @@ public class AdminController {
     @Operation(summary = "All recorded harvests")
     public List<HarvestRow> harvests() {
         return adminService.harvests();
+    }
+
+    @GetMapping("/livestock-production")
+    @Transactional(readOnly = true)
+    public List<ProductionRow> livestockProduction(@AuthenticationPrincipal UserPrincipal actor,
+                                                    @RequestParam LocalDate from, @RequestParam LocalDate to) {
+        if (from.isAfter(to)) throw new BadRequestException("The end date must be on or after the start date.");
+        Long managerId = actor.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals("ROLE_MANAGER"))
+                ? actor.getId() : null;
+        return animalRecords.productionReport(null, managerId, from, to).stream().map(ProductionRow::from).toList();
     }
 
     @GetMapping("/inputs")

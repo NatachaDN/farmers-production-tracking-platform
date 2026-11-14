@@ -16,17 +16,17 @@ import {
   IconClose
 } from '../../../shared/components/Icons';
 
-export function HarvestPage({ farmerId }) {
+export function HarvestPage({ farmerId, initialCycleId }) {
   const {
     cycles, selectedCycleId, setSelectedCycleId,
     isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
-  } = useFarmerCycles(farmerId);
+  } = useFarmerCycles(farmerId, initialCycleId);
   const [filters, setFilters] = useState(emptyFilters);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimer = useRef(null);
   const results = filterProductionCycles(cycles, filters);
-  const selectedCycle = results.find(cycle => cycle.id === selectedCycleId) ?? results[0];
+  const selectedCycle = results.find(cycle => cycle.id === selectedCycleId);
 
   const showToast = (message, type = 'success') => {
     clearTimeout(toastTimer.current);
@@ -121,6 +121,25 @@ function HarvestCycleDetail({ farmerId, selectedCycle, reloadCycles, isSubmittin
     finally { setIsSubmitting(false); }
   };
 
+  const handleDeleteHarvest = async () => {
+    const confirmed = window.confirm('Delete this harvest permanently? Its correction history will also be deleted, and the cycle will return to its previous active state.');
+    if (!confirmed) return;
+    setIsSubmitting(true);
+    try {
+      await harvestService.deleteHarvest(farmerId, selectedCycleId);
+      setCorrecting(false);
+      setCorrections([]);
+      setHarvest(null);
+      showToast('Harvest deleted. The cycle has been reopened.');
+      await reloadCycles();
+      setReload(value => value + 1);
+    } catch (error) {
+      showToast(error?.message || 'Could not delete the harvest. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const cardBox = {
     backgroundColor: '#FFFFFF',
     borderRadius: 'var(--radius-xl)',
@@ -180,7 +199,12 @@ function HarvestCycleDetail({ farmerId, selectedCycle, reloadCycles, isSubmittin
             <button type="button" disabled={isSubmitting} onClick={() => setReload(value => value + 1)}>Reload latest harvest</button>
           </> : <>
             <HarvestResult harvest={harvest} cycle={selectedCycle} />
-            {harvest.cycleStatus === 'COMPLETED' && <button type="button" className="btn btn-harvest" onClick={() => setCorrecting(true)}>Correct harvest</button>}
+            {harvest.cycleStatus === 'COMPLETED' && (
+              <div className="harvest-result-actions">
+                <button type="button" className="btn btn-harvest" disabled={isSubmitting} onClick={() => setCorrecting(true)}>Correct harvest</button>
+                <button type="button" className="btn btn-harvest btn-delete-harvest" disabled={isSubmitting} onClick={handleDeleteHarvest}>{isSubmitting ? 'Deleting…' : 'Delete harvest'}</button>
+              </div>
+            )}
           </>}
           <section className="harvest-correction-history" aria-label="Harvest correction history">
             <h3>Correction history</h3>

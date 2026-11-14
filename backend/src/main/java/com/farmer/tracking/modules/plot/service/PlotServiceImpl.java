@@ -8,6 +8,7 @@ import com.farmer.tracking.modules.crop.entity.Cycle;
 import com.farmer.tracking.modules.crop.entity.CycleStatus;
 import com.farmer.tracking.modules.crop.repository.CycleRepository;
 import com.farmer.tracking.modules.farm.model.Farm;
+import com.farmer.tracking.modules.auth.model.FarmType;
 import com.farmer.tracking.modules.farm.repository.FarmRepository;
 import com.farmer.tracking.modules.plot.api.PlotRequest;
 import com.farmer.tracking.modules.plot.api.PlotResponse;
@@ -147,13 +148,15 @@ public class PlotServiceImpl implements PlotService {
     }
 
     private Farm resolveFarm(Long farmerId, Long requestedId) {
-        Long id = requestedId;
-        if (id == null) {
-            id = farmRepository.findFirstByFarmerIdAndIsDefaultTrue(farmerId)
-                    .map(Farm::getId).orElseThrow(() -> new BadRequestException("Create a farm before registering a plot."));
+        if (requestedId == null) {
+            throw new BadRequestException("Select a crop farm for the plot.");
         }
-        return farmRepository.findLockedByIdAndFarmerId(id, farmerId)
+        Farm farm = farmRepository.findLockedByIdAndFarmerId(requestedId, farmerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm not found for this farmer."));
+        if (farm.getType() != FarmType.CROP) {
+            throw new BadRequestException("Plots can only belong to crop farms.");
+        }
+        return farm;
     }
 
     private void validateFarmArea(Farm farm, Double area, Long excludeId) {

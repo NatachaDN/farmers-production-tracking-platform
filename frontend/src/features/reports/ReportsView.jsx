@@ -27,14 +27,15 @@ function ReportSection({ title, headings, rows }) {
   );
 }
 
-export function ReportsView({ farmerId }) {
+export function ReportsView({ farmerId, hasCropFarms, hasLivestockFarms }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [report, setReport] = useState(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const invalidRange = from && to && from > to;
-  const hasData = report && (report.cycles.length > 0 || report.activities.length > 0 || report.harvests.length > 0);
+  const hasCropData = report?.crop && (report.crop.cycles.length > 0 || report.crop.activities.length > 0 || report.crop.harvests.length > 0);
+  const crop = report?.crop;
 
   async function generate(event) {
     event.preventDefault();
@@ -47,7 +48,11 @@ export function ReportsView({ farmerId }) {
     setError('');
     try {
       const period = new URLSearchParams({ from: start, to: end });
-      setReport(await apiClient.get(`/farmers/${farmerId}/summary/production-report?${period}`));
+      const [crop, livestock] = await Promise.all([
+        hasCropFarms ? apiClient.get(`/farmers/${farmerId}/summary/production-report?${period}`) : null,
+        hasLivestockFarms ? apiClient.get(`/animals/production-report?${period}`) : null,
+      ]);
+      setReport({ crop, livestock, from: start, to: end });
     } catch (failure) {
       setError(failure.message || 'Could not generate the report.');
     } finally {
@@ -60,12 +65,12 @@ export function ReportsView({ farmerId }) {
       <section className="workspace-panel reports-controls" aria-labelledby="report-period">
         <header className="workspace-section-heading">
           <span className="workspace-icon" aria-hidden="true"><IconReports size={21} /></span>
-          <div><h2 id="report-period">Crop production report</h2><p>Choose a period to review crop cycles, field activities and harvest yields.</p></div>
+          <div><h2 id="report-period">Production reports</h2><p>Choose a period to review saved production records.</p></div>
         </header>
         <form className="workspace-form-grid" onSubmit={generate}>
           <label>From<input type="date" name="from" required onChange={event => setFrom(event.target.value)} disabled={pending} /></label>
           <label>Through<input type="date" name="to" required onChange={event => setTo(event.target.value)} disabled={pending} /></label>
-          <button className="workspace-button primary" disabled={pending || invalidRange} type="submit">{pending ? 'Generating…' : 'Generate report'}</button>
+          <button className="workspace-button primary" disabled={pending || invalidRange || (!hasCropFarms && !hasLivestockFarms)} type="submit">{pending ? 'Generating…' : 'Generate report'}</button>
         </form>
         {invalidRange && <p role="alert" className="workspace-error">The end date must be on or after the start date.</p>}
         {error && <p role="alert" className="workspace-error">{error}</p>}
@@ -74,23 +79,25 @@ export function ReportsView({ farmerId }) {
       {report && (
         <article className="workspace-panel report-document">
           <header className="workspace-toolbar">
-            <div><h2>Crop production report</h2><p>{report.from} to {report.to}</p></div>
-            {hasData && <button className="workspace-button report-print" type="button" onClick={() => window.print()}>Print or save as PDF</button>}
+            <div><h2>Production report</h2><p>{report.from} to {report.to}</p></div>
+            {(hasCropData || report.livestock?.length > 0) && <button className="workspace-button report-print" type="button" onClick={() => window.print()}>Print or save as PDF</button>}
           </header>
-          {hasData ? (
+          {crop && (hasCropData ? (
             <>
               <ReportSection title="Crop cycles" headings={['Cycle', 'Planted', 'Status']}
-                rows={report.cycles.map(row => [row.id, row.name, row.plantingDate || '—', label(row.status)])} />
+                rows={crop.cycles.map(row => [row.id, row.name, row.plantingDate || '—', label(row.status)])} />
               <ReportSection title="Activities" headings={['Cycle', 'Date', 'Activity', 'Notes']}
-                rows={report.activities.map(row => [row.id, row.cycleName, row.date, label(row.type), row.notes || '—'])} />
+                rows={crop.activities.map(row => [row.id, row.cycleName, row.date, label(row.type), row.notes || '—'])} />
               <ReportSection title="Harvests" headings={['Cycle', 'Date', 'Quantity', 'Yield per hectare']}
-                rows={report.harvests.map(row => [row.id, row.cycleName, row.date, `${formatNumber.format(row.quantity)} ${units[row.unit]}`,
+                rows={crop.harvests.map(row => [row.id, row.cycleName, row.date, `${formatNumber.format(row.quantity)} ${units[row.unit]}`,
                   row.yieldPerHectare == null ? '—' : `${formatNumber.format(row.yieldPerHectare)} ${units[row.unit]}/ha`])} />
             </>
-          ) : <p className="workspace-empty" role="status">No crop production records were found for this period.</p>}
+          ) : <p className="workspace-empty" role="status">No crop production records were found for this period.</p>)}
+          {report.livestock && <ReportSection title="Livestock production" headings={['Farm', 'Group', 'Date', 'Product', 'Quantity']}
+            rows={report.livestock.map(({ farm, group, record }) => [record.id, farm, group, record.date, record.name, `${formatNumber.format(record.quantity)} ${record.unit}`])} />}
         </article>
       )}
-      {hasData && <YieldComparison harvests={report.harvests} />}
+      {hasCropData && <YieldComparison harvests={crop.harvests} />}
     </div>
   );
 }

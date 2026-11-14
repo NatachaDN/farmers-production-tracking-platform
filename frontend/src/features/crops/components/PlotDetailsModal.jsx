@@ -61,7 +61,7 @@ function CycleHarvestComparison({ cycle, farmerId }) {
   return <HarvestComparison cycle={cycle} harvest={result.harvest} />;
 }
 
-export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farmerId, showHarvestComparison }) {
+export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, onCycleNavigate, farmerId, showHarvestComparison }) {
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
   if (!isOpen || !plot) return null;
@@ -392,7 +392,7 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
             flexWrap: 'wrap'
           }}>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button
+              {onGoToActivities && <button
                 onClick={() => {
                   onClose();
                   if (onGoToActivities) onGoToActivities(plot);
@@ -414,7 +414,11 @@ export function PlotDetailsModal({ isOpen, onClose, plot, onGoToActivities, farm
               >
                 <IconActivities size={16} />
                 <span>Activities & Logs →</span>
-              </button>
+              </button>}
+              {onCycleNavigate && [
+                ['cycle-inputs', 'Input usage'], ['incidents', 'Incidents'], ['production', 'Harvest records'],
+              ].map(([route, label]) => <button key={route} className="workspace-button" type="button"
+                onClick={() => { onClose(); onCycleNavigate(route, plot.id); }}>{label}</button>)}
 
               {(plot.status || '').toUpperCase() === 'ACTIVE' && (
                 <button

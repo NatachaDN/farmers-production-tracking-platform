@@ -10,11 +10,11 @@ import { useFarmerCycles, cycleLabel } from '../hooks/useFarmerCycles';
 /**
  * CycleIncidentsPage — Record and view incidents (disease, pest, damage) per cycle.
  */
-export function CycleIncidentsPage({ farmerId }) {
+export function CycleIncidentsPage({ farmerId, initialCycleId }) {
   const {
     cycles, selectedCycle, selectedCycleId, setSelectedCycleId,
     isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
-  } = useFarmerCycles(farmerId);
+  } = useFarmerCycles(farmerId, initialCycleId);
   const [incidents, setIncidents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -20,6 +20,8 @@ public class Harvest {
     @Column(name = "revision") private Long revision = 0L;
     public long getRevision() { return revision == null ? 0L : revision; }
     public void setRevision(long value) { revision = value; }
+    @Column(name = "previous_cycle_progress") private Integer previousCycleProgress;
+    @Column(name = "previous_cycle_sub_status", length = 100) private String previousCycleSubStatus;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cycle_id", nullable = false, unique = true)
@@ -70,6 +72,11 @@ public class Harvest {
     public void setId(Long id) {
         this.id = id;
     }
+
+    public Integer getPreviousCycleProgress() { return previousCycleProgress; }
+    public void setPreviousCycleProgress(Integer value) { previousCycleProgress = value; }
+    public String getPreviousCycleSubStatus() { return previousCycleSubStatus; }
+    public void setPreviousCycleSubStatus(String value) { previousCycleSubStatus = value; }
 
     public Cycle getCycle() {
         return cycle;

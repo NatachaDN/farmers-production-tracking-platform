@@ -5,8 +5,8 @@ import { adminService } from '../services/adminService';
 import { Avatar, EmptyState, ErrorBanner, LoadingBlocks, Pill, Progress, Tabs, useAdminData } from './AdminUi';
 import { fmtDate, fmtDateTime, fmtKg, fmtNumber, fmtXaf, label, timeAgo } from '../adminFormat';
 
-export function FarmerDetailDrawer({ farmerId, onClose }) {
-  const state = useAdminData(() => adminService.farmer(farmerId), [farmerId]);
+export function FarmerDetailDrawer({ farmerId, onClose, service = adminService }) {
+  const state = useAdminData(() => service.farmer(farmerId), [farmerId, service]);
   const [tab, setTab] = useState('cycles');
 
   useEffect(() => {
@@ -81,11 +81,17 @@ export function FarmerDetailDrawer({ farmerId, onClose }) {
               ))}
 
               {tab === 'land' && (d.plots.length === 0 && d.farms.length === 0 ? <EmptyState>No farms or plots registered.</EmptyState> : (
+                <>
+                <ul className="summary-list">{d.farms.map(farm => <li key={farm.id}>
+                  <strong>{farm.name}</strong><span>{farm.type === 'CROP' ? 'Crop farm' : farm.type === 'LIVESTOCK' ? 'Livestock farm' : 'Needs farm type review'}</span>
+                  <span>{farm.location}</span>
+                </li>)}</ul>
                 <div className="adm-table-wrap"><table className="adm-table"><thead><tr><th>Plot</th><th>Farm</th><th>Crop</th><th className="num">Area</th></tr></thead><tbody>
                   {d.plots.map((p) => (
                     <tr key={p.id}><td className="strong">{p.name}</td><td>{p.farmName || '—'}</td><td>{p.cropType || '—'}{p.stage && <div className="muted">{p.stage}</div>}</td><td className="num">{fmtNumber(p.area)} ha</td></tr>
                   ))}
                 </tbody></table></div>
+                </>
               ))}
 
               {tab === 'activity' && (d.activities.length === 0 ? <EmptyState>No field activity recorded.</EmptyState> : (

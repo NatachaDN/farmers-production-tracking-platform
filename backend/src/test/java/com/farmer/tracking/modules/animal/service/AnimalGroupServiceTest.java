@@ -73,6 +73,7 @@ class AnimalGroupServiceTest {
         farm.setId(FARM_ID);
         farm.setName("Green Acres Farm");
         farm.setFarmer(owner);
+        farm.setType(com.farmer.tracking.modules.auth.model.FarmType.LIVESTOCK);
 
         ownedGroup = new AnimalGroup();
         ownedGroup.setId(GROUP_ID);
@@ -137,7 +138,9 @@ class AnimalGroupServiceTest {
         request.setName("Boer Goats");
         request.setAnimalType(AnimalType.GOATS);
         request.setInitialPopulation(15);
-        request.setCurrentPopulation(null); // omitted
+        request.setCurrentPopulation(null);
+        request.setFarmId(FARM_ID);
+        when(farmRepository.findByIdAndFarmerId(FARM_ID, OWNER_ID)).thenReturn(Optional.of(farm));
 
         when(farmerRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(animalGroupRepository.save(any(AnimalGroup.class))).thenAnswer(inv -> {
@@ -273,6 +276,7 @@ class AnimalGroupServiceTest {
         request.setAnimalType(AnimalType.CATTLE);
         request.setBreed("Holstein Friesian");
         request.setCurrentPopulation(28); // 2 transferred/culled
+        when(farmRepository.findByIdAndFarmerId(FARM_ID, OWNER_ID)).thenReturn(Optional.of(farm));
         request.setLocation("Barn 2 — East Section");
         request.setPurpose("Commercial Dairy");
         request.setStatus(AnimalGroupStatus.ACTIVE);

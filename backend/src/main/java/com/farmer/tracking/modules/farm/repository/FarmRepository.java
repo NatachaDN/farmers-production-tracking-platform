@@ -27,6 +27,9 @@ public interface FarmRepository extends JpaRepository<Farm, Long> {
     @Query("select f from Farm f where f.farmer.id = :farmerId order by f.createdAt desc")
     List<Farm> findByFarmerIdOrderByCreatedAtDesc(@Param("farmerId") Long farmerId);
 
+    @Query("select f from Farm f join fetch f.farmer where f.farmer.id in :ids")
+    List<Farm> findForFarmers(@Param("ids") java.util.Collection<Long> ids);
+
     @Query("select f from Farm f where f.id = :id and f.farmer.id = :farmerId")
     Optional<Farm> findByIdAndFarmerId(@Param("id") Long id, @Param("farmerId") Long farmerId);
 

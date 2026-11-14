@@ -20,7 +20,7 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
   const {
     cycles, selectedCycle, selectedCycleId, setSelectedCycleId,
     isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
-  } = useFarmerCycles(farmerId);
+  } = useFarmerCycles(farmerId, initialCycleId);
   const [availableInputs, setAvailableInputs] = useState([]);
   const [usages, setUsages] = useState([]);
   const [costSummary, setCostSummary] = useState(null);
@@ -37,13 +37,6 @@ export function CycleInputsPage({ farmerId, initialCycleId = null }) {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4500);
   };
-
-  // 1. Honour a cycle pre-selected by the caller once the real cycles are loaded
-  useEffect(() => {
-    if (initialCycleId && cycles.some((c) => c.id === Number(initialCycleId))) {
-      setSelectedCycleId(Number(initialCycleId));
-    }
-  }, [initialCycleId, cycles, setSelectedCycleId]);
 
   // 2. Load the farmer's inventory inputs
   const loadInventory = async () => {

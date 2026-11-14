@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { CropTypeSelect } from './CropTypeSelect';
 import { IconPlus, IconCheck, IconClose, IconWarning } from '../../../shared/components/Icons';
 
-export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
+export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot, farms, initialFarmId = '', onCreateFarm }) {
+  const [farmId, setFarmId] = useState(initialFarmId);
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [location, setLocation] = useState('');
@@ -21,6 +22,10 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
     const trimmedName = name.trim();
     const trimmedLocation = location.trim();
     const numericArea = parseFloat(area);
+    if (!farms.some(farm => String(farm.id) === String(farmId))) {
+      setValidationError('Select a crop farm.');
+      return;
+    }
 
     if (!trimmedName) {
       setValidationError('Please enter a valid plot name.');
@@ -40,6 +45,7 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
     setIsSubmitting(true);
     try {
       await onAddPlot({
+        farmId: Number(farmId),
         name: trimmedName,
         area: numericArea,
         location: trimmedLocation,
@@ -52,6 +58,7 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
       setLocation('');
       setCropType('');
       setStage('Planting');
+      setFarmId(initialFarmId);
       onClose();
     } catch (err) {
       setValidationError(err.message || 'Failed to register plot. Please check inputs.');
@@ -147,6 +154,14 @@ export function AddPlotModal({ farmerId, isOpen, onClose, onAddPlot }) {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <label>
+            Crop farm
+            <select required value={farmId} onChange={event => setFarmId(event.target.value)}>
+              <option value="">Select a crop farm</option>
+              {farms.map(farm => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
+            </select>
+          </label>
+          {farms.length === 0 && <button type="button" onClick={onCreateFarm}>Create a crop farm</button>}
           {/* Plot Name */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary, #19201C)' }}>

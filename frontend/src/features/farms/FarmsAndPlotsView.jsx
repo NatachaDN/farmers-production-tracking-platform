@@ -110,17 +110,9 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
   }, [farmerId]);
 
   const handleAddPlot = async (plotData) => {
-    try {
-      const saved = await plotService.createPlot(farmerId, {
-        ...plotData,
-        farmId: farms[0]?.id
-      });
-      setPlots((prev) => [mapPlot(saved), ...prev]);
-      showNotification(`Plot "${plotData.name}" (${plotData.area} ha) successfully added!`);
-    } catch (err) {
-      console.error('Failed to create plot:', err);
-      showNotification(err.message || 'Failed to create plot.');
-    }
+    const saved = await plotService.createPlot(farmerId, plotData);
+    setPlots((prev) => [mapPlot(saved), ...prev]);
+    showNotification(`Plot "${saved.name}" successfully added.`);
   };
 
   // Errors are re-thrown so EditPlotModal can show them and stay open.
@@ -183,12 +175,14 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm }) {
         </div>
       )}
 
-      <AddPlotModal
+      {isAddPlotModalOpen && <AddPlotModal
         farmerId={farmerId}
+        farms={farms.filter(farm => farm.type === 'CROP')}
+        onCreateFarm={() => onNavigate?.('farms-create')}
         isOpen={isAddPlotModalOpen}
         onClose={() => setIsAddPlotModalOpen(false)}
         onAddPlot={handleAddPlot}
-      />
+      />}
 
       <EditPlotModal
         farmerId={farmerId}

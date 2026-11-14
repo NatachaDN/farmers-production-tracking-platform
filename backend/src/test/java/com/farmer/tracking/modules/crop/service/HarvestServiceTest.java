@@ -35,6 +35,7 @@ class HarvestServiceTest {
     @Mock
     private CycleRepository cycleRepository;
     @Mock private com.farmer.tracking.modules.crop.repository.HarvestCorrectionRepository correctionRepository;
+    @Mock private com.farmer.tracking.common.audit.AuditEventRepository auditEventRepository;
 
     @InjectMocks
     private HarvestService harvestService;
@@ -247,5 +248,26 @@ class HarvestServiceTest {
         assertThatThrownBy(() -> harvestService.getHarvestByCycle(farmerId, cycleId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("No harvest record found");
+    }
+
+    @Test
+    @DisplayName("Deleting a harvest removes correction rows and restores the cycle's previous state")
+    void shouldDeleteHarvestAndReopenCycle() {
+        completedCycle.setProgress(100);
+        completedCycle.setSubStatus("Completed");
+        savedHarvest.setPreviousCycleProgress(65);
+        savedHarvest.setPreviousCycleSubStatus("Flowering");
+        when(cycleRepository.findLockedByIdAndFarmerId(cycleId, farmerId)).thenReturn(Optional.of(completedCycle));
+        when(harvestRepository.findByCycleId(cycleId)).thenReturn(Optional.of(savedHarvest));
+
+        harvestService.deleteHarvest(farmerId, cycleId);
+
+        verify(correctionRepository).deleteByHarvest_Id(harvestId);
+        verify(harvestRepository).delete(savedHarvest);
+        verify(auditEventRepository).save(any(com.farmer.tracking.common.audit.AuditEvent.class));
+        verify(cycleRepository).save(completedCycle);
+        assertThat(completedCycle.getStatus()).isEqualTo(CycleStatus.ACTIVE);
+        assertThat(completedCycle.getProgress()).isEqualTo(65);
+        assertThat(completedCycle.getSubStatus()).isEqualTo("Flowering");
     }
 }

@@ -68,6 +68,9 @@
 .production-feedback { display: flex; justify-content: space-between; align-items: center; }
 .production-feedback button { cursor: pointer; }
 .production-feedback[role="alert"] { color: var(--color-accent-red); }
+.harvest-result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.btn-harvest.btn-delete-harvest { color: #991b1b; background: var(--color-surface-card); border: 1px solid var(--color-accent-red-border); }
+.btn-harvest.btn-delete-harvest:hover:not(:disabled) { background: var(--color-accent-red-bg); }
 .harvest-correction-history { margin-top: 24px; border-top: 1px solid #ece7dc; padding-top: 20px; overflow-wrap: anywhere; }
 .harvest-correction-history li { margin: 12px 0; padding: 12px 0; border-bottom: 1px solid #ece7dc; }
 .harvest-correction-history p { margin: 8px 0; }

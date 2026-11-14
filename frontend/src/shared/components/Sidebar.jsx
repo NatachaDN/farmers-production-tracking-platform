@@ -2,7 +2,7 @@ import React from 'react';
 import {
   AcreaLogo, IconDashboard, IconFarms, IconCrop, IconLivestock, IconActivities,
   IconProduction, IconInputs, IconReports, IconSettings, IconUsers,
-  IconPulse, IconServer, IconWarning, IconClipboard, IconArrowRight, IconPackage, IconCalendar, IconScale
+  IconPulse, IconServer, IconWarning, IconClipboard
 } from './Icons';
 import './Sidebar.css';
 
@@ -15,15 +15,12 @@ const FARMER_NAV = [
     ['crops', 'Crop cycles', IconCrop],
     ['livestock', 'Livestock', IconLivestock],
     ['activities', 'Activities', IconActivities],
-    ['calendar', 'Activity calendar', IconCalendar],
     ['production', 'Harvest records', IconProduction],
   ]],
   ['Records & insights', [
     ['inputs', 'Input inventory', IconInputs],
-    ['equipment', 'Equipment', IconPackage],
     ['cycle-inputs', 'Input usage', IconClipboard],
     ['incidents', 'Incidents', IconWarning],
-    ['finances', 'Finances', IconScale],
     ['reports', 'Reports', IconReports],
   ]],
 ];
@@ -37,10 +34,18 @@ const ADMIN_NAV = [['Administration', [
   ['admin-system', 'System health', IconServer],
 ]]];
 
-export function Sidebar({ activeRoute = 'dashboard', onNavigate, role }) {
+const MANAGER_NAV = [['Manager workspace', [
+  ['manager-overview', 'Overview', IconDashboard],
+  ['manager-farmers', 'Assigned farmers', IconUsers],
+  ['manager-activity', 'Field activity', IconPulse],
+  ['manager-reports', 'Production reports', IconReports],
+]]];
+const CROP_ROUTES = new Set(['crops', 'activities', 'production', 'inputs', 'cycle-inputs', 'incidents']);
+
+export function Sidebar({ activeRoute = 'dashboard', onNavigate, role, hasLivestockFarms, hasCropFarms }) {
   const isAdmin = role === 'ROLE_ADMIN';
-  const canUseConsole = isAdmin || role === 'ROLE_MANAGER';
-  const adminMode = canUseConsole && activeRoute.startsWith('admin-');
+  const isManager = role === 'ROLE_MANAGER';
+  const navigation = isAdmin ? ADMIN_NAV : isManager ? MANAGER_NAV : FARMER_NAV;
   const currentItem = ['farms-create', 'farm-details'].includes(activeRoute) ? 'farms' : activeRoute;
 
   const renderItem = ([route, label, Icon]) => (
@@ -57,19 +62,21 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, role }) {
   return (
     <aside className="acrea-sidebar">
       <div className="sidebar-brand"><AcreaLogo size={36} showTagline={false} /></div>
-      <nav className="sidebar-navigation" aria-label={adminMode ? 'Admin console' : 'Farm workspace'}>
+      <nav className="sidebar-navigation" aria-label={isAdmin ? 'Admin console' : isManager ? 'Manager workspace' : 'Farm workspace'}>
         <div className="sidebar-groups">
-          {(adminMode ? ADMIN_NAV : FARMER_NAV).map(([label, items]) => (
+          {navigation.map(([label, items]) => {
+            const visible = items.filter(([route]) => (route !== 'livestock' || hasLivestockFarms)
+              && (!CROP_ROUTES.has(route) || hasCropFarms));
+            return visible.length > 0 && (
             <div className="sidebar-group" key={label}>
               <p>{label}</p>
-              <ul aria-label={label}>{items.filter(([route]) => isAdmin || !['admin-system', 'admin-crops'].includes(route)).map(renderItem)}</ul>
+              <ul aria-label={label}>{visible.map(renderItem)}</ul>
             </div>
-          ))}
+            );
+          })}
         </div>
         <ul className="sidebar-utilities">
-          {!adminMode && renderItem(['settings', 'Settings', IconSettings])}
-          {canUseConsole && renderItem([adminMode ? 'dashboard' : 'admin-overview',
-            adminMode ? 'Farmer workspace' : 'Management console', IconArrowRight])}
+          {!isAdmin && !isManager && renderItem(['settings', 'Settings', IconSettings])}
         </ul>
       </nav>
     </aside>

@@ -5,7 +5,10 @@ import { apiClient } from '../../../shared/services/apiClient';
  */
 export const cropService = {
   async getCropChoices(farmerId) {
-    const [personal, reference] = await Promise.all([this.getCrops(farmerId), apiClient.get('/reference-crops')]);
+    const [personal, reference] = await Promise.all([
+      this.getCrops(farmerId),
+      apiClient.get('/reference-crops').catch(() => []),
+    ]);
     const byLabel = new Map();
     for (const crop of [...personal, ...reference.map(crop => ({ ...crop, id: `reference-${crop.id}` }))]) {
       const label = (crop.displayName || crop.name).toLowerCase();

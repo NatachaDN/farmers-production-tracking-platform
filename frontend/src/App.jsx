@@ -28,13 +28,14 @@ import './features/auth/auth.css';
 import './shared/components/Workspace.css';
 import { LivestockView } from './features/livestock/LivestockView';
 import { ReportsView } from './features/reports/ReportsView';
-import { EquipmentView } from './features/farms/EquipmentView';
-import { FarmCalendar } from './features/farms/FarmCalendar';
-import { FarmFinances } from './features/farms/FarmFinances';
 import { AdminReferenceCrops } from './features/admin/AdminReferenceCrops';
+import { managerService } from './features/admin/services/adminService';
+import { farmService } from './features/farms/services/farmService';
 
 const hasConsoleAccess = user => ['ROLE_ADMIN', 'ROLE_MANAGER'].includes(user?.role);
-const homeRouteFor = user => hasConsoleAccess(user) ? 'admin-overview' : 'dashboard';
+const homeRouteFor = user => user?.role === 'ROLE_MANAGER' ? 'manager-overview' : user?.role === 'ROLE_ADMIN' ? 'admin-overview' : 'dashboard';
+const routeParams = () => new URLSearchParams(window.location.search);
+const cycleRoutes = new Set(['activities', 'production', 'cycle-inputs', 'incidents']);
 
 const todayLabel = () =>
   new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -43,13 +44,55 @@ export function App() {
   const [currentUser, setCurrentUser] = useState(() => authService.getStoredUser());
   const [currentRoute, setCurrentRoute] = useState(() => {
     if (googleAuth.isCallback()) return 'google-callback';
-    return authService.isAuthenticated() ? homeRouteFor(authService.getStoredUser()) : 'login';
+    return authService.isAuthenticated() ? routeParams().get('page') || homeRouteFor(authService.getStoredUser()) : 'login';
   });
-  const [selectedFarmId, setSelectedFarmId] = useState(null);
+  const [selectedFarmId, setSelectedFarmId] = useState(() => Number(routeParams().get('farm')) || null);
+  const [linkedCycleId, setLinkedCycleId] = useState(() => Number(routeParams().get('cycle')) || null);
+  const [farms, setFarms] = useState([]);
+  const [farmsError, setFarmsError] = useState('');
+  const [farmsAttempt, setFarmsAttempt] = useState(0);
   const [loginError, setLoginError] = useState('');
   const [loginSuccessMessage, setLoginSuccessMessage] = useState('');
   const [loginPrefilledIdentifier, setLoginPrefilledIdentifier] = useState('');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser?.id || hasConsoleAccess(currentUser)) return;
+    let active = true;
+    setFarmsError('');
+    farmService.getFarms().then(rows => { if (active) setFarms(rows); })
+      .catch(error => { if (active) setFarmsError(error.message); });
+    return () => { active = false; };
+  }, [currentUser?.id, currentUser?.role, farmsAttempt]);
+
+  useEffect(() => {
+    if (currentRoute === 'google-callback') return;
+    const url = new URL(window.location.href);
+    if (['login', 'register', 'forgot-password'].includes(currentRoute)) {
+      url.searchParams.delete('page');
+      url.searchParams.delete('farm');
+    } else {
+      url.searchParams.set('page', currentRoute);
+      if (selectedFarmId && ['farm-details', 'livestock', 'crops'].includes(currentRoute)) {
+        url.searchParams.set('farm', selectedFarmId);
+      } else url.searchParams.delete('farm');
+    }
+    if (!cycleRoutes.has(currentRoute)) url.searchParams.delete('cycle');
+    else if (linkedCycleId) url.searchParams.set('cycle', linkedCycleId);
+    else if (routeParams().get('page') !== currentRoute) url.searchParams.delete('cycle');
+    if (url.href !== window.location.href) window.history.pushState({}, '', url);
+  }, [currentRoute, selectedFarmId, linkedCycleId]);
+
+  useEffect(() => {
+    const restore = () => {
+      if (!authService.isAuthenticated()) return;
+      setSelectedFarmId(Number(routeParams().get('farm')) || null);
+      setLinkedCycleId(Number(routeParams().get('cycle')) || null);
+      setCurrentRoute(routeParams().get('page') || homeRouteFor(authService.getStoredUser()));
+    };
+    window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
+  }, []);
 
   useEffect(() => {
     const expireSession = () => {
@@ -115,6 +158,10 @@ export function App() {
   };
 
   const routeHeaders = {
+    'manager-overview': { title: 'Manager overview', subtitle: 'Production across your assigned farmers' },
+    'manager-farmers': { title: 'Assigned farmers', subtitle: 'Review your assigned accounts and farms' },
+    'manager-activity': { title: 'Assigned farmer activity', subtitle: 'Field work across your assigned farms' },
+    'manager-reports': { title: 'Manager reports', subtitle: 'Production records for your assigned farmers' },
     'farms-create': { title: 'Create farm', subtitle: 'Register your land and farm details' },
     'farm-details': { title: 'Farm details', subtitle: 'Saved farm information and production records' },
     'admin-overview': { title: 'Platform overview', subtitle: `${todayLabel()} · Every farmer, one view` },
@@ -174,8 +221,12 @@ export function App() {
 
   const currentHeader = routeHeaders[currentRoute] || routeHeaders.dashboard;
   const isAdmin = authService.isAdmin(currentUser);
-  const canUseConsole = hasConsoleAccess(currentUser);
+  const isManager = currentUser?.role === 'ROLE_MANAGER';
   const isAdminRoute = currentRoute.startsWith('admin-');
+  const isManagerRoute = currentRoute.startsWith('manager-');
+  const canOpenRoute = isAdminRoute ? isAdmin : isManagerRoute ? isManager : !isAdmin && !isManager;
+  const livestockFarms = farms.filter(farm => farm.type === 'LIVESTOCK');
+  const hasCropFarms = farms.some(farm => farm.type === 'CROP');
 
   if (currentRoute === 'google-callback') {
     return <GoogleCallbackView />;
@@ -186,7 +237,11 @@ export function App() {
       {/* Screen Views */}
       {currentRoute === 'login' ? (
         <LoginView
-          onNavigate={(r) => setCurrentRoute(r)}
+          onNavigate={(r) => {
+            setSelectedFarmId(null);
+            setLinkedCycleId(null);
+            setCurrentRoute(r);
+          }}
           onLoginSuccess={handleLoginSuccess}
           initialError={loginError}
           initialIdentifier={loginPrefilledIdentifier}
@@ -208,33 +263,47 @@ export function App() {
       ) : (
         <AppLayout
           activeRoute={currentRoute}
-          onNavigate={(r) => setCurrentRoute(r)}
+          onNavigate={(r) => {
+            setSelectedFarmId(null);
+            setLinkedCycleId(null);
+            setCurrentRoute(r);
+          }}
           title={currentHeader.title}
           subtitle={currentHeader.subtitle}
           user={currentUser}
+          hasLivestockFarms={livestockFarms.length > 0}
+          hasCropFarms={hasCropFarms}
           onLogout={handleLogout}
           onEditProfile={() => setIsEditProfileModalOpen(true)}
           onUserUpdate={(updated) => setCurrentUser(updated)}
         >
-          {isAdminRoute && !canUseConsole && (
+          {!canOpenRoute ? (
             <div style={{
               backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-card-border)',
               padding: '40px', textAlign: 'center'
             }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '8px' }}>Administrators only</h2>
               <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                Your account does not have access to the admin console.
+                Your account does not have access to this workspace.
               </p>
+              <button type="button" onClick={() => setCurrentRoute(homeRouteFor(currentUser))}>Return to your workspace</button>
             </div>
-          )}
-          {canUseConsole && currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={(r) => setCurrentRoute(r)} isAdmin={isAdmin} />}
-          {canUseConsole && currentRoute === 'admin-farmers' && <AdminFarmersView user={currentUser} />}
-          {canUseConsole && currentRoute === 'admin-activity' && <AdminActivityView isAdmin={isAdmin} />}
-          {canUseConsole && currentRoute === 'admin-production' && <AdminProductionView />}
+          ) : <>
+          {farmsError && !hasConsoleAccess(currentUser) && <p role="alert">{farmsError} <button type="button" onClick={() => setFarmsAttempt(value => value + 1)}>Retry loading farms</button></p>}
+          {currentRoute === 'manager-overview' && <AdminOverviewView onNavigate={setCurrentRoute} isAdmin={false} />}
+          {currentRoute === 'manager-farmers' && <AdminFarmersView user={currentUser} />}
+          {currentRoute === 'manager-activity' && <AdminActivityView isAdmin={false} />}
+          {currentRoute === 'manager-reports' && <AdminProductionView service={managerService} />}
+          {currentRoute === 'admin-overview' && <AdminOverviewView onNavigate={setCurrentRoute} isAdmin />}
+          {currentRoute === 'admin-farmers' && <AdminFarmersView user={currentUser} />}
+          {currentRoute === 'admin-activity' && <AdminActivityView isAdmin />}
+          {currentRoute === 'admin-production' && <AdminProductionView />}
           {isAdmin && currentRoute === 'admin-system' && <AdminSystemView />}
           {isAdmin && currentRoute === 'admin-crops' && <AdminReferenceCrops />}
           {currentRoute === 'dashboard' && (
             <DashboardView
+              hasCropFarms={hasCropFarms}
+              livestockFarms={livestockFarms}
               onNavigate={(r) => setCurrentRoute(r)}
               user={currentUser}
             />
@@ -253,6 +322,7 @@ export function App() {
             <CreateFarmView
               onNavigate={(r) => setCurrentRoute(r)}
               onFarmCreated={(newFarm) => {
+                setFarms(current => [newFarm, ...current]);
                 setSelectedFarmId(newFarm.id);
                 setCurrentRoute('farm-details');
               }}
@@ -262,29 +332,36 @@ export function App() {
             <FarmDetailsView
               user={currentUser}
               farmId={selectedFarmId}
-              onNavigate={(r) => setCurrentRoute(r)}
+              onNavigate={(r, farmId) => {
+                if (farmId) setSelectedFarmId(farmId);
+                setCurrentRoute(r);
+              }}
             />
           )}
           {currentRoute === 'crops' && (
             <CropProductionView
               farmerId={currentUser?.id}
-              onNavigate={(r) => setCurrentRoute(r)}
+              farmId={selectedFarmId}
+              onNavigate={(r, cycleId) => {
+                setLinkedCycleId(cycleId || null);
+                setCurrentRoute(r);
+              }}
             />
           )}
           {currentRoute === 'activities' && (
-            <CycleActivitiesPage farmerId={currentUser?.id} />
+            <CycleActivitiesPage key={linkedCycleId || 'activities'} farmerId={currentUser?.id} initialCycleId={linkedCycleId} />
           )}
           {currentRoute === 'production' && (
-            <HarvestPage farmerId={currentUser?.id} />
+            <HarvestPage key={linkedCycleId || 'production'} farmerId={currentUser?.id} initialCycleId={linkedCycleId} />
           )}
           {currentRoute === 'inputs' && (
             <FarmInputsView farmerId={currentUser?.id} onNavigate={(r) => setCurrentRoute(r)} />
           )}
           {currentRoute === 'cycle-inputs' && (
-            <CycleInputsPage farmerId={currentUser?.id} />
+            <CycleInputsPage key={linkedCycleId || 'cycle-inputs'} farmerId={currentUser?.id} initialCycleId={linkedCycleId} />
           )}
           {currentRoute === 'incidents' && (
-            <CycleIncidentsPage farmerId={currentUser?.id} />
+            <CycleIncidentsPage key={linkedCycleId || 'incidents'} farmerId={currentUser?.id} initialCycleId={linkedCycleId} />
           )}
           {currentRoute === 'settings' && (
             <FarmerProfileSettingsView
@@ -294,11 +371,18 @@ export function App() {
               }}
             />
           )}
-          {currentRoute === 'livestock' && <LivestockView key={currentUser?.id} />}
-          {currentRoute === 'reports' && <ReportsView key={currentUser?.id} farmerId={currentUser?.id} />}
-          {currentRoute === 'equipment' && <EquipmentView key={currentUser?.id} farmerId={currentUser?.id} />}
-          {currentRoute === 'calendar' && <FarmCalendar key={currentUser?.id} farmerId={currentUser?.id} />}
-          {currentRoute === 'finances' && <FarmFinances key={currentUser?.id} farmerId={currentUser?.id} />}
+          {currentRoute === 'livestock' && (livestockFarms.length
+            ? <LivestockView farms={livestockFarms} initialFarmId={selectedFarmId || ''} onSelectFarm={setSelectedFarmId}
+                onCreateFarm={() => setCurrentRoute('farms-create')} />
+            : <button type="button" onClick={() => setCurrentRoute('farms-create')}>Create a livestock farm</button>)}
+          {currentRoute === 'reports' && <ReportsView key={currentUser?.id} farmerId={currentUser?.id}
+            hasCropFarms={hasCropFarms} hasLivestockFarms={livestockFarms.length > 0} />}
+          {['equipment', 'calendar', 'finances'].includes(currentRoute) && <section className="workspace-panel">
+            <h2>This workspace is currently unavailable</h2>
+            <p>Equipment, calendar, and finance records need a farm assignment before they can be managed here.</p>
+            <button className="workspace-button" type="button" onClick={() => setCurrentRoute('farms')}>Open farms</button>
+          </section>}
+          </>}
 
           {/* Quick Edit Profile Modal */}
           <EditProfileModal

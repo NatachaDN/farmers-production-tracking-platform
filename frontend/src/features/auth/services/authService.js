@@ -3,6 +3,7 @@ import { googleAuth } from './googleAuth';
 
 const TOKEN_KEY = 'acrea_token';
 const USER_KEY = 'acrea_user';
+let currentUserRequest;
 
 function persistSession(response) {
   if (response?.token) {
@@ -45,17 +46,23 @@ export const authService = {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return null;
 
-    try {
-      const user = await apiClient.get('/auth/me');
+    if (currentUserRequest?.token === token) return currentUserRequest.promise;
+    const promise = apiClient.get('/auth/me').then(user => {
+      if (localStorage.getItem(TOKEN_KEY) !== token) return null;
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return user;
-    } catch (error) {
+    }).catch(error => {
+      if (localStorage.getItem(TOKEN_KEY) !== token) return null;
       if (error.status === 401 || error.status === 403) {
         this.logout();
         return null;
       }
       return this.getStoredUser();
-    }
+    }).finally(() => {
+      if (currentUserRequest?.promise === promise) currentUserRequest = undefined;
+    });
+    currentUserRequest = { token, promise };
+    return promise;
   },
 
   getStoredUser() {

@@ -39,7 +39,7 @@ function formatDateDisplay(dateStr) {
   }
 }
 
-export function CropProductionView({ farmerId, onNavigate }) {
+export function CropProductionView({ farmerId, onNavigate, farmId }) {
   const [activeTab, setActiveTab] = useState('Active');
   const [cycles, setCycles] = useState([]);
   const [loadError, setLoadError] = useState(null);
@@ -63,7 +63,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
 
   useEffect(() => {
     loadCycles();
-  }, [farmerId]);
+  }, [farmerId, farmId]);
 
   const loadCycles = async () => {
     if (!farmerId) return;
@@ -71,7 +71,7 @@ export function CropProductionView({ farmerId, onNavigate }) {
     setLoadError(null);
     try {
       const data = await cropCycleService.getCycles(farmerId);
-      setCycles(Array.isArray(data) ? data : []);
+      setCycles(Array.isArray(data) ? data.filter(cycle => !farmId || cycle.farmId === farmId) : []);
     } catch (err) {
       setCycles([]);
       setLoadError(err?.message || 'Could not load your production cycles.');
@@ -488,6 +488,8 @@ export function CropProductionView({ farmerId, onNavigate }) {
         onClose={() => setIsModalOpen(false)}
         onCycleCreated={handleCycleCreated}
         farmerId={farmerId}
+        farmId={farmId}
+        onOpenFarms={() => onNavigate?.('farms')}
       />
 
       {/* Plot Details Pop-up Modal */}
@@ -500,8 +502,10 @@ export function CropProductionView({ farmerId, onNavigate }) {
         plot={selectedPlotDetails}
         farmerId={farmerId}
         showHarvestComparison
+        onCycleNavigate={onNavigate}
         onGoToActivities={(plotItem) => {
-          if (onNavigate) onNavigate('activities');
+          const cycleId = plotItem?.id;
+          if (cycleId) onNavigate?.('activities', cycleId);
         }}
       />
 

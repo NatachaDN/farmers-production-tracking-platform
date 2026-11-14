@@ -14,11 +14,11 @@ import { MetricCard } from '../../../shared/components/MetricCard';
 import { CycleSelector } from '../components/CycleSelector';
 import { useFarmerCycles, cycleLabel } from '../hooks/useFarmerCycles';
 
-export function CycleActivitiesPage({ farmerId }) {
+export function CycleActivitiesPage({ farmerId, initialCycleId }) {
   const {
     cycles, selectedCycle, selectedCycleId, setSelectedCycleId,
     isLoading: cyclesLoading, error: cyclesError, reload: reloadCycles
-  } = useFarmerCycles(farmerId);
+  } = useFarmerCycles(farmerId, initialCycleId);
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

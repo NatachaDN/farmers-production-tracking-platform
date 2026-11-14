@@ -8,7 +8,7 @@ const types = ['CATTLE', 'POULTRY', 'GOATS', 'SHEEP', 'PIGS', 'RABBITS', 'BEES',
 const statuses = ['ACTIVE', 'INACTIVE', 'ARCHIVED', 'SOLD'];
 const label = value => value ? value[0] + value.slice(1).toLowerCase() : '—';
 
-export function LivestockView() {
+export function LivestockView({ farms, initialFarmId = '', onCreateFarm, onSelectFarm }) {
   const [groups, setGroups] = useState(null);
   const [editing, setEditing] = useState(null);
   const [recordsGroup, setRecordsGroup] = useState(null);
@@ -18,6 +18,13 @@ export function LivestockView() {
   const [notice, setNotice] = useState('');
   const [recent, setRecent] = useState(null);
   const [productionRefresh, setProductionRefresh] = useState(0);
+  const [farmId, setFarmId] = useState(String(initialFarmId));
+
+  useEffect(() => {
+    setFarmId(String(initialFarmId));
+    setEditing(null);
+    setRecordsGroup(null);
+  }, [initialFarmId]);
 
   useEffect(() => {
     let current = true;
@@ -29,14 +36,17 @@ export function LivestockView() {
 
   useEffect(() => {
     let current = true;
-    apiClient.get('/animals/recent-production')
+    setRecent(null);
+    if (!farmId) return;
+    apiClient.get(`/animals/recent-production?farmId=${encodeURIComponent(farmId)}`)
       .then(rows => { if (current) setRecent(rows); })
       .catch(() => { if (current) setRecent(false); });
     return () => { current = false; };
-  }, [productionRefresh]);
+  }, [farmId, productionRefresh]);
 
-  const visible = groups?.filter(group => !status || group.status === status);
-  const active = groups?.filter(group => group.status === 'ACTIVE') ?? [];
+  const farmGroups = groups?.filter(group => String(group.farmId ?? '') === farmId) ?? [];
+  const visible = farmGroups.filter(group => !status || group.status === status);
+  const active = farmGroups.filter(group => group.status === 'ACTIVE');
   const alerts = active.filter(group => group.currentPopulation === 0);
 
   function onSaved(saved) {
@@ -54,29 +64,38 @@ export function LivestockView() {
         <header className="workspace-toolbar">
           <div className="workspace-section-heading">
             <span className="workspace-icon" aria-hidden="true"><IconLivestock size={22} /></span>
-            <div><h2>Animal groups</h2><p>{groups ? `${active.length} active · ${groups.length} total` : 'Manage herds, flocks and other groups.'}</p></div>
+            <div><h2>Animal groups</h2><p>{farmId ? `${active.length} active · ${farmGroups.length} total` : 'Select a livestock farm to see its groups.'}</p></div>
           </div>
-          {groups && !editing && !recordsGroup && <button type="button" className="workspace-button primary" onClick={() => { setNotice(''); setEditing({}); }}>
+          {groups && farmId && !editing && !recordsGroup && <button type="button" className="workspace-button primary" onClick={() => { setNotice(''); setEditing({ farmId }); }}>
             <IconPlus size={16} /> Add animal group
           </button>}
         </header>
+        {farms.length ? <label>Livestock farm <select value={farmId} disabled={Boolean(editing || recordsGroup)}
+          onChange={event => {
+            setFarmId(event.target.value);
+            onSelectFarm?.(event.target.value ? Number(event.target.value) : null);
+            setNotice('');
+          }}>
+          <option value="">Select a farm</option>
+          {farms.map(farm => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
+        </select></label> : <button type="button" onClick={onCreateFarm}>Create a farm</button>}
         {error ? <div role="alert" className="workspace-error">{error} <button type="button" className="workspace-button"
           onClick={() => { setError(''); setAttempt(value => value + 1); }}>Try again</button></div>
           : !groups && <p role="status">Loading animal groups…</p>}
         {notice && <p role="status" className="workspace-success">{notice}</p>}
       </section>
-      {editing && <AnimalGroupForm group={editing} onCancel={() => setEditing(null)} onSaved={onSaved} />}
+      {editing && <AnimalGroupForm group={editing} farms={farms} onCancel={() => setEditing(null)} onSaved={onSaved} />}
       {recordsGroup && <AnimalGroupRecords key={recordsGroup.id} group={recordsGroup} onClose={() => setRecordsGroup(null)}
         onProductionRecorded={() => setProductionRefresh(value => value + 1)}
         onPopulationChange={currentPopulation => {
           setGroups(previous => previous.map(group => group.id === recordsGroup.id ? { ...group, currentPopulation } : group));
           setRecordsGroup({ ...recordsGroup, currentPopulation });
         }} />}
-      {groups?.length > 0 && !recordsGroup && !editing && (
+      {farmId && farmGroups.length > 0 && !recordsGroup && !editing && (
         <section className="workspace-panel">
           <h2>Livestock summary</h2>
           <dl className="workspace-facts">
-            <div><dt>Active groups</dt><dd>{active.length} of {groups.length}</dd></div>
+            <div><dt>Active groups</dt><dd>{active.length} of {farmGroups.length}</dd></div>
             <div><dt>Animals in active groups</dt><dd>{active.reduce((total, group) => total + group.currentPopulation, 0).toLocaleString()}</dd></div>
           </dl>
           <h3>Alerts</h3>
@@ -86,7 +105,7 @@ export function LivestockView() {
           <h3>Recent production</h3>
           {recent === false ? <p className="workspace-error" role="alert">Could not load recent production.</p>
             : recent === null ? <p role="status">Loading recent production…</p>
-            : recent.length === 0 ? <p className="workspace-muted">No production recorded yet.</p>
+            : recent.length === 0 ? <p className="workspace-muted">No production recorded for this farm.</p>
             : <ul className="summary-list">{recent.map(({ groupName, record }) => (
               <li key={record.id}><strong>{record.name} · {groupName}</strong>
                 <time dateTime={record.date}>{record.date}</time><span>{record.quantity} {record.unit}</span></li>
@@ -125,7 +144,7 @@ export function LivestockView() {
   );
 }
 
-function AnimalGroupForm({ group, onCancel, onSaved }) {
+function AnimalGroupForm({ group, farms, onCancel, onSaved }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const formRef = React.useRef(null);
@@ -142,6 +161,7 @@ function AnimalGroupForm({ group, onCancel, onSaved }) {
       name: fields.name.trim(),
       purpose: fields.purpose.trim(),
       initialPopulation: Number(fields.initialPopulation),
+      farmId: Number(fields.farmId),
     };
     if (!payload.name || !payload.purpose) {
       setError('Enter a group name and production purpose.');
@@ -166,6 +186,10 @@ function AnimalGroupForm({ group, onCancel, onSaved }) {
       <h2 id="animal-group-form-title">{group.id ? 'Edit animal group' : 'New animal group'}</h2>
       <form onSubmit={save} ref={formRef}>
         <fieldset className="workspace-form-grid" disabled={pending} aria-label="Animal group details">
+          <label>Livestock farm<select name="farmId" defaultValue={group.farmId || ''} required>
+            <option value="">Select a farm</option>
+            {farms.map(farm => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
+          </select></label>
           <label>Group name<input name="name" defaultValue={group.name} maxLength={120} required /></label>
           <label>Animal type<select name="animalType" defaultValue={group.animalType || ''} required>
             <option value="" disabled>Choose a type</option>{types.map(value => <option key={value} value={value}>{label(value)}</option>)}

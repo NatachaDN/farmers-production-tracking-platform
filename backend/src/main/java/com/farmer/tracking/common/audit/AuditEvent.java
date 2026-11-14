@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Immutable record of an authentication-related event (sign-up, sign-in, failed sign-in).
+ * Immutable record of a security or account event shown in the administration console.
  */
 @Entity
 @Table(name = "audit_events", indexes = {
@@ -17,9 +17,9 @@ public class AuditEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
+    // Keep historical event names readable and let new names fit without extending a MySQL ENUM.
     @Column(name = "event_type", nullable = false, length = 40)
-    private AuditEventType eventType;
+    private String eventType;
 
     /** Farmer id when the actor is known (null for failed sign-ins). */
     @Column(name = "actor_id")
@@ -40,7 +40,7 @@ public class AuditEvent {
     protected AuditEvent() {}
 
     public AuditEvent(AuditEventType eventType, Long actorId, String actorLabel, String detail, String ipAddress) {
-        this.eventType = eventType;
+        this.eventType = eventType.name();
         this.actorId = actorId;
         this.actorLabel = actorLabel;
         this.detail = detail;
@@ -53,7 +53,7 @@ public class AuditEvent {
     }
 
     public Long getId() { return id; }
-    public AuditEventType getEventType() { return eventType; }
+    public String getEventType() { return eventType; }
     public Long getActorId() { return actorId; }
     public String getActorLabel() { return actorLabel; }
     public String getDetail() { return detail; }

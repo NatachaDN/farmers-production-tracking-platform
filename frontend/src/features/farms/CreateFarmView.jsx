@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { farmService } from './services/farmService';
 import {
   IconFarms,
   IconCheck,
-  IconUpload,
   IconSprout,
   IconWater,
   IconMapPin
@@ -14,6 +13,31 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [mapFile, setMapFile] = useState(null);
+  const [mapPreview, setMapPreview] = useState('');
+  const [mapError, setMapError] = useState('');
+
+  useEffect(() => {
+    if (!mapFile) {
+      setMapPreview('');
+      return;
+    }
+    const url = URL.createObjectURL(mapFile);
+    setMapPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [mapFile]);
+
+  function selectMap(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type) || !file.size || file.size > 5 * 1024 * 1024) {
+      setMapError('Choose a PNG or JPEG image up to 5 MB.');
+      event.target.value = '';
+      return;
+    }
+    setMapError('');
+    setMapFile(file);
+  }
 
   const [formData, setFormData] = useState({
     name: '',
@@ -44,7 +68,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
     if (step === 1) {
       if (!formData.name.trim()) errors.name = 'Farm name is required';
       if (!formData.type) errors.type = 'Farm type is required';
-      if (!formData.size || Number(formData.size) <= 0) errors.size = 'Valid positive farm size is required';
+      if (!Number.isFinite(Number(formData.size)) || Number(formData.size) <= 0) errors.size = 'Enter a positive farm size.';
       if (!formData.sizeUnit) errors.sizeUnit = 'Size unit is required';
     } else if (step === 2) {
       if (!formData.country.trim()) errors.country = 'Country is required';
@@ -67,8 +91,9 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (!validateStep(1) || !validateStep(2)) {
-      setErrorMessage('Please complete all required fields correctly before submitting.');
+    const invalidStep = [1, 2].find(step => !validateStep(step));
+    if (invalidStep) {
+      setActiveStep(invalidStep);
       return;
     }
 
@@ -87,13 +112,13 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
         region: formData.region.trim(),
         district: formData.district.trim(),
         mapImageUrl: formData.mapImageUrl ? formData.mapImageUrl.trim() : null,
-        soilType: formData.soilType || null,
-        slope: formData.slope || null,
+        soilType: formData.type === 'CROP' ? formData.soilType : null,
+        slope: formData.type === 'CROP' ? formData.slope : null,
         accessToWater: formData.accessToWater || null,
         additionalNotes: formData.additionalNotes ? formData.additionalNotes.trim() : null
       };
 
-      const createdFarm = await farmService.createFarm(payload);
+      const createdFarm = await farmService.createFarm(payload, mapFile);
       if (onFarmCreated) {
         onFarmCreated(createdFarm);
       } else if (onNavigate) {
@@ -113,7 +138,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
   const steps = [
     { number: 1, title: 'Basic information', desc: 'Name, type, size & status' },
     { number: 2, title: 'Location & boundaries', desc: 'Country, region & map boundary' },
-    { number: 3, title: 'Land details', desc: 'Soil, slope & water access' },
+    { number: 3, title: 'Farm details', desc: formData.type === 'CROP' ? 'Soil, slope & water access' : 'Facilities & water access' },
     { number: 4, title: 'Review & create', desc: 'Verify and submit farm details' }
   ];
 
@@ -227,7 +252,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
           )}
 
           {/* STEP 1: BASIC INFORMATION */}
-          <div style={{
+          <div hidden={activeStep !== 1} style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid var(--color-card-border)',
             borderRadius: 'var(--radius-xl)',
@@ -269,6 +294,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                 }}>
                   <IconFarms size={18} color="var(--color-text-muted)" />
                   <input
+                    aria-label="Farm name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
@@ -305,6 +331,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                 }}>
                   <IconSprout size={18} color="var(--color-text-muted)" />
                   <select
+                    aria-label="Farm type"
                     value={formData.type}
                     onChange={(e) => handleChange('type', e.target.value)}
                     style={{
@@ -318,7 +345,6 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                   >
                     <option value="CROP">Crop farm</option>
                     <option value="LIVESTOCK">Livestock farm</option>
-                    <option value="MIXED">Mixed farm</option>
                   </select>
                 </div>
               </div>
@@ -330,6 +356,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                 </label>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <input
+                    aria-label="Farm size"
                     type="number"
                     min="0.1"
                     step="0.1"
@@ -456,7 +483,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
           </div>
 
           {/* STEP 2: LOCATION & BOUNDARIES */}
-          <div style={{
+          <div hidden={activeStep !== 2} style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid var(--color-card-border)',
             borderRadius: 'var(--radius-xl)',
@@ -498,6 +525,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                 }}>
                   <IconMapPin size={18} color="var(--color-text-muted)" />
                   <input
+                    aria-label="Country"
                     type="text"
                     value={formData.country}
                     onChange={(e) => handleChange('country', e.target.value)}
@@ -505,6 +533,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                     style={{ border: 'none', outline: 'none', fontSize: '0.875rem', color: 'var(--color-text-primary)', width: '100%' }}
                   />
                 </div>
+                {validationErrors.country && <p className="workspace-error" role="alert">{validationErrors.country}</p>}
               </div>
 
               {/* Region */}
@@ -513,6 +542,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                   Region *
                 </label>
                 <input
+                  aria-label="Region"
                   type="text"
                   value={formData.region}
                   onChange={(e) => handleChange('region', e.target.value)}
@@ -528,6 +558,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                     outline: 'none'
                   }}
                 />
+                {validationErrors.region && <p className="workspace-error" role="alert">{validationErrors.region}</p>}
               </div>
 
               {/* District */}
@@ -536,6 +567,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                   District *
                 </label>
                 <input
+                  aria-label="District"
                   type="text"
                   value={formData.district}
                   onChange={(e) => handleChange('district', e.target.value)}
@@ -551,85 +583,28 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                     outline: 'none'
                   }}
                 />
+                {validationErrors.district && <p className="workspace-error" role="alert">{validationErrors.district}</p>}
               </div>
             </div>
 
-            {/* Map Upload & Boundaries Container */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
-                Upload farm map (optional)
-              </label>
-              <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: '20px' }}>
-                {/* Drag and Drop Zone */}
-                <div style={{
-                  border: '2px dashed var(--color-card-border)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '32px 20px',
-                  textAlign: 'center',
-                  backgroundColor: '#FAF8F5',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px'
-                }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--color-brand-tint)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <IconUpload size={20} color="var(--color-brand-primary)" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                      Click to upload or drag and drop
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                      PNG, JPG or PDF (max 10MB)
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Preview Image Thumbnail (only when a map has been provided) */}
-                {formData.mapImageUrl && (
-                <div style={{
-                  position: 'relative',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                  border: '1px solid var(--color-card-border)',
-                  height: '140px'
-                }}>
-                  <img
-                    src={formData.mapImageUrl}
-                    alt="Farm aerial boundary map"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '8px',
-                    left: '8px',
-                    backgroundColor: 'rgba(22, 66, 48, 0.85)',
-                    color: '#FFFFFF',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    borderRadius: '9999px',
-                    backdropFilter: 'blur(4px)'
-                  }}>
-                    Boundary polygon mapped
-                  </div>
-                </div>
-                )}
-              </div>
+              <label htmlFor="farm-map">Farm map image (optional)</label>
+              <p className="workspace-muted">PNG or JPEG, up to 5 MB. The image is uploaded when you create the farm.</p>
+              <input id="farm-map" type="file" accept="image/png,image/jpeg" onChange={selectMap} />
+              {mapError && <p className="workspace-error" role="alert">{mapError}</p>}
+              {mapPreview && <>
+                <img src={mapPreview} alt="Selected farm map" style={{ display: 'block', maxWidth: '100%', maxHeight: 200, marginTop: 12 }} />
+                <p role="status">{mapFile.name} selected.</p>
+                <button className="workspace-button" type="button" onClick={() => {
+                  setMapFile(null);
+                  setMapError('');
+                  document.getElementById('farm-map').value = '';
+                }}>Remove image</button>
+              </>}
             </div>
           </div>
-
           {/* STEP 3: LAND DETAILS */}
-          <div style={{
+          <div hidden={activeStep !== 3} style={{
             backgroundColor: '#FFFFFF',
             border: '1px solid var(--color-card-border)',
             borderRadius: 'var(--radius-xl)',
@@ -650,13 +625,13 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                 fontWeight: 700
               }}>3</div>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                Land details
+                {formData.type === 'CROP' ? 'Land details' : 'Livestock facilities'}
               </h2>
             </div>
 
             <div className="acrea-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
               {/* Soil Type */}
-              <div>
+              <div hidden={formData.type !== 'CROP'}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
                   Soil type
                 </label>
@@ -685,7 +660,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
               </div>
 
               {/* Slope */}
-              <div>
+              <div hidden={formData.type !== 'CROP'}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
                   Slope
                 </label>
@@ -749,7 +724,7 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
                 maxLength={500}
                 value={formData.additionalNotes}
                 onChange={(e) => handleChange('additionalNotes', e.target.value)}
-                placeholder="Near a small river. Good for irrigation."
+                placeholder={formData.type === 'CROP' ? 'Near a small river. Good for irrigation.' : 'e.g. Covered poultry house with a water tank'}
                 style={{
                   width: '100%',
                   backgroundColor: '#FFFFFF',
@@ -764,6 +739,25 @@ export function CreateFarmView({ onNavigate, onFarmCreated }) {
               />
             </div>
           </div>
+
+          {activeStep === 4 && <section className="workspace-panel">
+            <h2>Review farm details</h2>
+            <dl className="workspace-facts">
+              <div><dt>Farm name</dt><dd>{formData.name}</dd></div>
+              <div><dt>Farm type</dt><dd>{formData.type === 'CROP' ? 'Crop' : 'Livestock'}</dd></div>
+              <div><dt>Size</dt><dd>{formData.size} {formData.sizeUnit.toLowerCase()}</dd></div>
+              <div><dt>Status</dt><dd>{formData.status.toLowerCase()}</dd></div>
+              <div><dt>Location</dt><dd>{formData.district}, {formData.region}, {formData.country}</dd></div>
+              <div><dt>Map</dt><dd>{mapFile?.name || 'No image selected'}</dd></div>
+              {formData.type === 'CROP' && <>
+                <div><dt>Soil</dt><dd>{formData.soilType.toLowerCase()}</dd></div>
+                <div><dt>Slope</dt><dd>{formData.slope.toLowerCase()}</dd></div>
+              </>}
+              <div><dt>Water access</dt><dd>{formData.accessToWater.toLowerCase()}</dd></div>
+              {formData.description && <div><dt>Description</dt><dd>{formData.description}</dd></div>}
+              {formData.additionalNotes && <div><dt>Notes</dt><dd>{formData.additionalNotes}</dd></div>}
+            </dl>
+          </section>}
 
           {/* ACTION BUTTONS FOOTER */}
           <div style={{

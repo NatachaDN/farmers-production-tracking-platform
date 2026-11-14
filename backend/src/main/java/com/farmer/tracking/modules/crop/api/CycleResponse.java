@@ -17,6 +17,9 @@ public class CycleResponse {
 
     @Schema(description = "Associated Plot ID", example = "2")
     private Long plotId;
+    private Long farmId;
+
+    public Long getFarmId() { return farmId; }
 
     @Schema(description = "Name of the plot", example = "Plot A")
     private String plotName;
@@ -68,6 +71,7 @@ public class CycleResponse {
         resp.setFarmerId(cycle.getFarmerId());
         if (cycle.getPlot() != null) {
             resp.setPlotId(cycle.getPlot().getId());
+            if (cycle.getPlot().getFarm() != null) resp.farmId = cycle.getPlot().getFarm().getId();
             resp.setPlotName(cycle.getPlot().getName());
         }
         resp.setCropName(cycle.getCropName());

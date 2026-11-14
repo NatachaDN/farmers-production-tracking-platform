@@ -198,7 +198,7 @@ public class AdminService {
         Map<Long, Long> plotsPerFarm = d.plots.stream().filter(p -> p.getFarm() != null)
                 .collect(Collectors.groupingBy(p -> p.getFarm().getId(), Collectors.counting()));
         List<FarmRow> farms = d.farms.stream().filter(f -> id.equals(f.getFarmerId()))
-                .map(f -> new FarmRow(f.getId(), f.getName(), f.getLocation(), f.getSize(),
+                .map(f -> new FarmRow(f.getId(), f.getName(), f.getType().name(), f.getLocation(), f.getSize(),
                         Boolean.TRUE.equals(f.getIsDefault()), plotsPerFarm.getOrDefault(f.getId(), 0L)))
                 .toList();
         List<PlotRow> plots = d.plots.stream().filter(p -> id.equals(p.getFarmerId()))
@@ -322,7 +322,7 @@ public class AdminService {
     }
 
     private static AuditRow toAuditRow(AuditEvent e) {
-        return new AuditRow(e.getId(), e.getEventType().name(), e.getActorId(), e.getActorLabel(), e.getDetail(),
+        return new AuditRow(e.getId(), e.getEventType(), e.getActorId(), e.getActorLabel(), e.getDetail(),
                 e.getIpAddress(), instant(e.getCreatedAt()));
     }
 
@@ -434,12 +434,10 @@ public class AdminService {
         if (managerId != null) {
             var assigned = farmerRepository.findByManagerIdAndRole(managerId, "ROLE_FARMER");
             var ids = assigned.stream().map(Farmer::getId).collect(Collectors.toSet());
-            return new Data(assigned, farmRepository.findAll().stream().filter(f -> ids.contains(f.getFarmerId())).toList(),
-                    plotRepository.findAll().stream().filter(p -> ids.contains(p.getFarmerId())).toList(),
-                    cycleRepository.findAll().stream().filter(c -> ids.contains(c.getFarmerId())).toList(),
-                    activityRepository.findAll().stream().filter(a -> ids.contains(a.getCycle().getFarmerId())).toList(),
-                    harvestRepository.findAll().stream().filter(h -> ids.contains(h.getCycle().getFarmerId())).toList(),
-                    inputRepository.findAll().stream().filter(i -> ids.contains(i.getFarmerId())).toList());
+            if (ids.isEmpty()) return new Data(assigned, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+            return new Data(assigned, farmRepository.findForFarmers(ids), plotRepository.findByFarmerIdIn(ids),
+                    cycleRepository.findByFarmerIdIn(ids), activityRepository.findByCycle_FarmerIdIn(ids),
+                    harvestRepository.findByCycle_FarmerIdIn(ids), inputRepository.findByFarmerIdIn(ids));
         }
         return new Data(
                 farmerRepository.findAll(), farmRepository.findAll(), plotRepository.findAll(),

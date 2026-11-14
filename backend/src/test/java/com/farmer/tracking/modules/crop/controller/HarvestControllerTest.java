@@ -205,4 +205,12 @@ class HarvestControllerTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("No harvest record found for cycle id: 10"));
     }
+
+    @Test
+    @DisplayName("DELETE removes harvest and returns 204")
+    void shouldDeleteHarvest() throws Exception {
+        mockMvc.perform(delete("/api/v1/farmers/{farmerId}/cycles/{cycleId}/harvest", farmerId, cycleId))
+                .andExpect(status().isNoContent());
+        verify(harvestService).deleteHarvest(farmerId, cycleId);
+    }
 }

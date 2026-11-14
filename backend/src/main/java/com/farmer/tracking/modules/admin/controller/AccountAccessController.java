@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/admin/farmers")
+@RequestMapping({"/api/v1/admin/farmers", "/api/v1/manager/farmers"})
 public class AccountAccessController {
     private final FarmerRepository accounts;
     private final AuditService audit;
@@ -64,7 +64,7 @@ public class AccountAccessController {
         account.setRole(role);
         account.setManagerId(managerId);
         account.setTokenVersion(account.getTokenVersion() + 1);
-        audit.record(AuditEventType.ACCOUNT_ACCESS_CHANGED, actor.getId(), actor.getUsername(),
+        audit.recordRequired(AuditEventType.ACCOUNT_ACCESS_CHANGED, actor.getId(), actor.getUsername(),
                 "Account " + id + " set to " + role + " / " + request.status()
                         + (managerId == null ? "" : ", manager " + managerId), http);
     }
