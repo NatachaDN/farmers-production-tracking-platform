@@ -4,14 +4,59 @@
 
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
-.acrea-main>* {
+.acrea-main > * {
   min-width: 0;
   max-width: 100%;
+}
+
+/* Mobile-first Greeting Header */
+.acrea-greeting-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.acrea-greeting-cta {
+  width: 100%;
+}
+
+@media (min-width: 540px) {
+  .acrea-greeting-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .acrea-greeting-cta {
+    width: auto;
+  }
+}
+
+/* Mobile-first KPI Grid (1 -> 2 -> 4 columns) */
+.acrea-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 480px) {
+  .acrea-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .acrea-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
 }
 
 /* Responsive grid utility classes */
@@ -33,16 +78,60 @@ body {
   gap: 16px;
 }
 
+/* Mobile-first Dashboard Split & Triple Grids */
 .acrea-dashboard-split {
   display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .acrea-dashboard-triple {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .acrea-dashboard-triple {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .acrea-dashboard-triple > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .acrea-dashboard-split {
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .acrea-dashboard-triple {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .acrea-dashboard-triple > :first-child {
+    grid-column: auto;
+  }
+}
+
+/* Large & Ultrawide Screens */
+@media (min-width: 1440px) {
+  :root {
+    --sidebar-width: 260px;
+  }
+
+  .acrea-topbar,
+  .acrea-main {
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
 }
 
 .acrea-mobile-bottom-nav {

@@ -15,14 +15,10 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
     : (user?.emailOrPhone ? user.emailOrPhone.split('@')[0] : 'Farmer');
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}>
+    <div className="acrea-greeting-header">
       <div>
         <h2 style={{
-          fontSize: '1.5rem',
+          fontSize: 'clamp(1.25rem, 2.2vw, 1.5rem)',
           fontWeight: 700,
           color: 'var(--color-text-primary)',
           letterSpacing: '-0.02em'
@@ -39,10 +35,12 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
       </div>
 
       <button
+        className="acrea-greeting-cta"
         onClick={onRecordProduction}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: '8px',
           backgroundColor: 'var(--color-brand-primary)',
           color: '#FFFFFF',
@@ -53,7 +51,8 @@ export function DashboardGreetingHeader({ user, onRecordProduction }) {
           boxShadow: 'var(--shadow-subtle)',
           border: 'none',
           cursor: 'pointer',
-          transition: 'background-color var(--transition-fast)'
+          transition: 'background-color var(--transition-fast)',
+          whiteSpace: 'nowrap',
         }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-brand-hover)')}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-brand-primary)')}
