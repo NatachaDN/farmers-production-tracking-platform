@@ -205,7 +205,20 @@ export function App() {
 
   const currentHeader = routeHeaders[currentRoute] || routeHeaders.dashboard;
   const isAdmin = authService.isAdmin(currentUser);
+  const isManager = authService.isManager(currentUser) && !isAdmin;
   const isAdminRoute = currentRoute.startsWith('admin-');
+
+  const navigateGuarded = (route) => {
+    if (isAdmin && !String(route).startsWith('admin-')) {
+      setCurrentRoute('admin-overview');
+      return;
+    }
+    if (isManager && !String(route).startsWith('manager-')) {
+      setCurrentRoute('manager-dashboard');
+      return;
+    }
+    setCurrentRoute(route);
+  };
 
   if (currentRoute === 'google-callback') {
     return <GoogleCallbackView />;
@@ -235,7 +248,7 @@ export function App() {
       ) : (
         <AppLayout
           activeRoute={currentRoute}
-          onNavigate={(r) => setCurrentRoute(r)}
+          onNavigate={navigateGuarded}
           title={currentHeader.title}
           subtitle={currentHeader.subtitle}
           user={currentUser}

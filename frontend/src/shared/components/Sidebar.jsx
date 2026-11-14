@@ -34,8 +34,8 @@ const MANAGER_NAV = [
 ];
 
 export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false, isManager = false, user = null, mobileOpen = false, onCloseMobile }) {
-  const adminMode = isAdmin && activeRoute.startsWith('admin-');
-  const managerMode = (isManager || isAdmin) && activeRoute.startsWith('manager-');
+  const adminMode = isAdmin;
+  const managerMode = isManager && !isAdmin;
 
   const [activeCyclesCount, setActiveCyclesCount] = useState(null);
   const [loadingCycles, setLoadingCycles] = useState(true);
@@ -161,8 +161,8 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
         </nav>
       </div>
 
-      {/* Footer (Admin / Manager mode controls only) */}
-      {(adminMode || managerMode || isManager || isAdmin) && (
+      {/* Footer (Admin / Manager console label only — no cross-dashboard switching) */}
+      {(adminMode || managerMode) && (
       <div style={{ padding: '12px 16px 20px' }}>
         {adminMode ? (
           <div style={{
@@ -170,7 +170,6 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '14px',
             padding: '14px 16px',
-            marginBottom: '20px'
           }}>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '4px' }}>
               Admin console
@@ -179,13 +178,12 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
               Read-only view of every farmer on the platform.
             </div>
           </div>
-        ) : managerMode ? (
+        ) : (
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '14px',
             padding: '14px 16px',
-            marginBottom: '20px'
           }}>
             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', marginBottom: '4px' }}>
               Manager Supervision
@@ -194,38 +192,6 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
               Cooperative network overview, member approvals, and consolidated reports.
             </div>
           </div>
-        ) : null}
-
-        {(isManager || isAdmin) && (
-          <button
-            onClick={() => onNavigate && onNavigate(managerMode ? 'dashboard' : 'manager-dashboard')}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-              padding: '9px 12px', marginBottom: '10px', borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.22)', color: '#FFFFFF',
-              fontSize: '0.8125rem', fontWeight: 600, transition: 'background-color var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            {managerMode ? 'Open farmer workspace' : 'Open manager console'}
-          </button>
-        )}
-
-        {isAdmin && (
-          <button
-            onClick={() => onNavigate && onNavigate(adminMode ? 'dashboard' : 'admin-overview')}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-              padding: '9px 12px', marginBottom: '10px', borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.22)', color: '#FFFFFF',
-              fontSize: '0.8125rem', fontWeight: 600, transition: 'background-color var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-sidebar-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            {adminMode ? 'Open farmer workspace' : 'Open admin console'}
-          </button>
         )}
       </div>
       )}
