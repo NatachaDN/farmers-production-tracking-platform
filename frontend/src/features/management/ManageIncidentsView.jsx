@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
 import { IconSearch, IconClose } from '../../shared/components/Icons';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -70,12 +71,24 @@ export function ManageIncidentsView() {
   const [actionModal, setActionModal] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    totalPages,
+    pagedItems: pagedIncidents,
+    resetPage,
+  } = usePagination(incidents, 9);
+
   const loadIncidents = async () => {
     setLoading(true);
     setError('');
     try {
       const list = await managerService.listIncidents({ kind, status, search });
       setIncidents(Array.isArray(list) ? list : []);
+      resetPage();
     } catch (err) {
       setError(err.message || 'Failed to load incidents.');
     } finally {
@@ -179,48 +192,62 @@ export function ManageIncidentsView() {
       ) : incidents.length === 0 ? (
         <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No incidents match your filters.</p></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '16px' }}>
-          {incidents.map((inc) => (
-            <div key={`${inc.kind}-${inc.id}`} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#3E7B52', textTransform: 'uppercase' }}>
-                    {inc.kind} · {inc.incidentType}
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '16px' }}>
+            {pagedIncidents.map((inc) => (
+              <div key={`${inc.kind}-${inc.id}`} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#3E7B52', textTransform: 'uppercase' }}>
+                      {inc.kind} · {inc.incidentType}
+                    </span>
+                    <h3 style={{ margin: '2px 0 0', fontSize: '1rem', fontWeight: 700, color: '#19201C' }}>
+                      {inc.targetName}
+                    </h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      Farmer: <strong>{inc.farmerName}</strong> · {inc.incidentDate}
+                    </p>
+                  </div>
+                  <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, ...statusBadgeStyle(inc.status) }}>
+                    {inc.status || 'OPEN'}
                   </span>
-                  <h3 style={{ margin: '2px 0 0', fontSize: '1rem', fontWeight: 700, color: '#19201C' }}>
-                    {inc.targetName}
-                  </h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    Farmer: <strong>{inc.farmerName}</strong> · {inc.incidentDate}
-                  </p>
                 </div>
-                <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, ...statusBadgeStyle(inc.status) }}>
-                  {inc.status || 'OPEN'}
-                </span>
-              </div>
 
-              <p style={{ fontSize: '0.8125rem', color: '#4B5752', margin: '8px 0', lineHeight: 1.45 }}>
-                {inc.description}
-              </p>
+                <p style={{ fontSize: '0.8125rem', color: '#4B5752', margin: '8px 0', lineHeight: 1.45 }}>
+                  {inc.description}
+                </p>
 
-              <div style={{ fontSize: '0.75rem', color: '#64716B', display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                {inc.severityLevel != null && <span>Severity: <strong>{inc.severityLevel}/5</strong></span>}
-                {inc.affectedCount != null && <span>Affected: <strong>{inc.affectedCount}</strong></span>}
-              </div>
-
-              {inc.actionTaken && (
-                <div style={{ padding: '8px 10px', borderRadius: '8px', backgroundColor: '#F9F6F0', border: '1px solid #ECE7DC', fontSize: '0.8125rem', marginBottom: '12px' }}>
-                  <strong>Action Taken:</strong> {inc.actionTaken}
-                  {inc.resolvedBy && <div style={{ fontSize: '0.7rem', color: '#64716B', marginTop: '2px' }}>By {inc.resolvedBy}</div>}
+                <div style={{ fontSize: '0.75rem', color: '#64716B', display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  {inc.severityLevel != null && <span>Severity: <strong>{inc.severityLevel}/5</strong></span>}
+                  {inc.affectedCount != null && <span>Affected: <strong>{inc.affectedCount}</strong></span>}
                 </div>
-              )}
 
-              <button type="button" style={btnPrimary} onClick={() => openActionModal(inc)}>
-                Take Action
-              </button>
-            </div>
-          ))}
-        </div>
+                {inc.actionTaken && (
+                  <div style={{ padding: '8px 10px', borderRadius: '8px', backgroundColor: '#F9F6F0', border: '1px solid #ECE7DC', fontSize: '0.8125rem', marginBottom: '12px' }}>
+                    <strong>Action Taken:</strong> {inc.actionTaken}
+                    {inc.resolvedBy && <div style={{ fontSize: '0.7rem', color: '#64716B', marginTop: '2px' }}>By {inc.resolvedBy}</div>}
+                  </div>
+                )}
+
+                <button type="button" style={btnPrimary} onClick={() => openActionModal(inc)}>
+                  Take Action
+                </button>
+              </div>
+            ))}
+          </div>
+          <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[6, 9, 12, 24]}
+              itemLabel="incidents"
+            />
+          </div>
+        </>
       )}
 
       {actionModal && (

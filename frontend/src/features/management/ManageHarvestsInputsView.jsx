@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash } from '../../shared/components/Icons';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -77,6 +78,9 @@ export function ManageHarvestsInputsView() {
   const [inputModal, setInputModal] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const harvestsPagination = usePagination(harvests, 9);
+  const inputsPagination = usePagination(inputs, 9);
+
   const flash = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3500);
@@ -94,6 +98,8 @@ export function ManageHarvestsInputsView() {
       ]);
       setHarvests(Array.isArray(hList) ? hList : []);
       setInputs(Array.isArray(iList) ? iList : []);
+      harvestsPagination.resetPage();
+      inputsPagination.resetPage();
       setCycles(Array.isArray(cList) ? cList : []);
       setFarmers(Array.isArray(fList) ? fList : []);
     } catch (err) {
@@ -316,72 +322,104 @@ export function ManageHarvestsInputsView() {
       {loading ? (
         <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>Loading {tab}…</p></div>
       ) : tab === 'harvests' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
-          {harvests.length === 0 ? (
-            <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No harvests recorded yet.</p></div>
-          ) : harvests.map((h) => (
-            <div key={h.id} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{h.cropName || h.cycleName}</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    Farmer: <strong>{h.farmerName}</strong> · {h.harvestDate}
-                  </p>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
+            {harvests.length === 0 ? (
+              <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No harvests recorded yet.</p></div>
+            ) : harvestsPagination.pagedItems.map((h) => (
+              <div key={h.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{h.cropName || h.cycleName}</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      Farmer: <strong>{h.farmerName}</strong> · {h.harvestDate}
+                    </p>
+                  </div>
+                  <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#EAF4ED', color: '#164230' }}>
+                    {h.quantity} {h.unit}
+                  </span>
                 </div>
-                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#EAF4ED', color: '#164230' }}>
-                  {h.quantity} {h.unit}
-                </span>
+                <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  {h.qualityGrade && <span>Quality: <strong>{h.qualityGrade}</strong></span>}
+                  {h.marketDestination && <span>Market: {h.marketDestination}</span>}
+                  {h.notes && <span>Notes: {h.notes}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => openEditHarvest(h)}>
+                    <IconEdit size={13} /> Edit
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px', color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteHarvest(h)}>
+                    <IconTrash size={13} /> Delete
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                {h.qualityGrade && <span>Quality: <strong>{h.qualityGrade}</strong></span>}
-                {h.marketDestination && <span>Market: {h.marketDestination}</span>}
-                {h.notes && <span>Notes: {h.notes}</span>}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
-                <button type="button" style={btnSecondary} onClick={() => openEditHarvest(h)}>
-                  <IconEdit size={13} /> Edit
-                </button>
-                <button type="button" style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteHarvest(h)}>
-                  <IconTrash size={13} /> Delete
-                </button>
-              </div>
+            ))}
+          </div>
+          {harvests.length > 0 && (
+            <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+              <PaginationBar
+                page={harvestsPagination.page}
+                totalPages={harvestsPagination.totalPages}
+                totalItems={harvestsPagination.totalItems}
+                pageSize={harvestsPagination.pageSize}
+                onPageChange={harvestsPagination.setPage}
+                onPageSizeChange={harvestsPagination.setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="harvests"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
-          {inputs.length === 0 ? (
-            <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No farm inputs found.</p></div>
-          ) : inputs.map((i) => (
-            <div key={i.id} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{i.name}</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    Farmer: <strong>{i.farmerName}</strong>
-                  </p>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
+            {inputs.length === 0 ? (
+              <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No farm inputs found.</p></div>
+            ) : inputsPagination.pagedItems.map((i) => (
+              <div key={i.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{i.name}</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      Farmer: <strong>{i.farmerName}</strong>
+                    </p>
+                  </div>
+                  <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#F4EFE6', color: '#164230' }}>
+                    {i.type}
+                  </span>
                 </div>
-                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#F4EFE6', color: '#164230' }}>
-                  {i.type}
-                </span>
+                <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  <span>Quantity: <strong>{i.quantity} {i.unit}</strong></span>
+                  <span>Total Cost: <strong>{Math.round(i.cumulativeCost || 0).toLocaleString()} XAF</strong></span>
+                  {i.supplier && <span>Supplier: {i.supplier}</span>}
+                  <span>Purchased: {i.purchaseDate}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => openEditInput(i)}>
+                    <IconEdit size={13} /> Edit
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px', color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteInput(i)}>
+                    <IconTrash size={13} /> Delete
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                <span>Quantity: <strong>{i.quantity} {i.unit}</strong></span>
-                <span>Total Cost: <strong>{Math.round(i.cumulativeCost || 0).toLocaleString()} XAF</strong></span>
-                {i.supplier && <span>Supplier: {i.supplier}</span>}
-                <span>Purchased: {i.purchaseDate}</span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
-                <button type="button" style={btnSecondary} onClick={() => openEditInput(i)}>
-                  <IconEdit size={13} /> Edit
-                </button>
-                <button type="button" style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteInput(i)}>
-                  <IconTrash size={13} /> Delete
-                </button>
-              </div>
+            ))}
+          </div>
+          {inputs.length > 0 && (
+            <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+              <PaginationBar
+                page={inputsPagination.page}
+                totalPages={inputsPagination.totalPages}
+                totalItems={inputsPagination.totalItems}
+                pageSize={inputsPagination.pageSize}
+                onPageChange={inputsPagination.setPage}
+                onPageSizeChange={inputsPagination.setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="inputs"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {harvestModal && (

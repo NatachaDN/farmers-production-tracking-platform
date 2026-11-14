@@ -3,6 +3,7 @@ import { managerService } from '../manager/services/managerService';
 import { adminService } from '../admin/services/adminService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
 import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -83,6 +84,9 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
   const [detailItem, setDetailItem] = useState(null); // null | { type: 'farm'|'plot', data }
   const [saving, setSaving] = useState(false);
 
+  const farmsPagination = usePagination(farms, 9);
+  const plotsPagination = usePagination(plots, 9);
+
   const notify = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3500);
@@ -104,6 +108,8 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
       setFarmers(Array.isArray(farmerList) ? farmerList : []);
       setAnimalGroups(Array.isArray(groupList) ? groupList : []);
       setManagers(Array.isArray(managerList) ? managerList : []);
+      farmsPagination.resetPage();
+      plotsPagination.resetPage();
     } catch (err) {
       setError(err.message || 'Failed to load farms and plots.');
     } finally {
@@ -356,84 +362,116 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
           <p style={{ margin: 0, color: '#64716B' }}>Loading {tab}…</p>
         </div>
       ) : tab === 'farms' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
-          {farms.length === 0 ? (
-            <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No farms found.</p></div>
-          ) : farms.map((farm) => (
-            <div key={farm.id} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{farm.name}</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    Owner: <strong>{farm.farmerName}</strong>
-                  </p>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
+            {farms.length === 0 ? (
+              <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No farms found.</p></div>
+            ) : farmsPagination.pagedItems.map((farm) => (
+              <div key={farm.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{farm.name}</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      Owner: <strong>{farm.farmerName}</strong>
+                    </p>
+                  </div>
+                  <span style={{
+                    padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700,
+                    backgroundColor: farm.status === 'ACTIVE' ? '#EAF4ED' : '#F4EFE6',
+                    color: farm.status === 'ACTIVE' ? '#164230' : '#64716B',
+                  }}>
+                    {farm.status}
+                  </span>
                 </div>
-                <span style={{
-                  padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700,
-                  backgroundColor: farm.status === 'ACTIVE' ? '#EAF4ED' : '#F4EFE6',
-                  color: farm.status === 'ACTIVE' ? '#164230' : '#64716B',
-                }}>
-                  {farm.status}
-                </span>
+                <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  <span>Assigned Manager: <strong>{farm.managerName || 'Unassigned'}</strong></span>
+                  <span>Type: <strong>{farm.type}</strong> · Size: <strong>{farm.size} {farm.sizeUnit?.toLowerCase()}</strong></span>
+                  <span>Location: {[farm.district, farm.region, farm.country].filter(Boolean).join(', ')}</span>
+                  <span>Registered Plots: <strong>{farm.plotCount}</strong></span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => setDetailItem({ type: 'farm', data: farm })}>
+                    <IconEye size={13} /> View
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => openEditFarm(farm)}>
+                    <IconEdit size={13} /> Edit
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px', color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteFarm(farm)}>
+                    <IconTrash size={13} /> Delete
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                <span>Assigned Manager: <strong>{farm.managerName || 'Unassigned'}</strong></span>
-                <span>Type: <strong>{farm.type}</strong> · Size: <strong>{farm.size} {farm.sizeUnit?.toLowerCase()}</strong></span>
-                <span>Location: {[farm.district, farm.region, farm.country].filter(Boolean).join(', ')}</span>
-                <span>Registered Plots: <strong>{farm.plotCount}</strong></span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
-                <button type="button" style={btnSecondary} onClick={() => setDetailItem({ type: 'farm', data: farm })}>
-                  <IconEye size={13} /> View
-                </button>
-                <button type="button" style={btnSecondary} onClick={() => openEditFarm(farm)}>
-                  <IconEdit size={13} /> Edit
-                </button>
-                <button type="button" style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteFarm(farm)}>
-                  <IconTrash size={13} /> Delete
-                </button>
-              </div>
+            ))}
+          </div>
+          {farms.length > 0 && (
+            <div style={{ ...cardStyle, padding: 0, marginTop: '16px', overflow: 'hidden' }}>
+              <PaginationBar
+                page={farmsPagination.page}
+                totalPages={farmsPagination.totalPages}
+                totalItems={farmsPagination.totalItems}
+                pageSize={farmsPagination.pageSize}
+                onPageChange={farmsPagination.setPage}
+                onPageSizeChange={farmsPagination.setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="farms"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
-          {plots.length === 0 ? (
-            <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No plots found.</p></div>
-          ) : plots.map((plot) => (
-            <div key={plot.id} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{plot.name}</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    {plot.farmerName} {plot.farmName ? `· ${plot.farmName}` : ''}
-                  </p>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
+            {plots.length === 0 ? (
+              <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No plots found.</p></div>
+            ) : plotsPagination.pagedItems.map((plot) => (
+              <div key={plot.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{plot.name}</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      {plot.farmerName} {plot.farmName ? `· ${plot.farmName}` : ''}
+                    </p>
+                  </div>
+                  <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#EAF4ED', color: '#2A6740' }}>
+                    {plot.stage || 'Planned'}
+                  </span>
                 </div>
-                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#EAF4ED', color: '#2A6740' }}>
-                  {plot.stage || 'Planned'}
-                </span>
+                <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  <span>Crop: <strong>{plot.cropType || 'Unspecified'}</strong> · Area: <strong>{plot.area} ha</strong></span>
+                  <span>Sector: {plot.location}</span>
+                  {plot.animalGroupName && (
+                    <span>Linked Animal Group: <strong>{plot.animalGroupName}</strong></span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => setDetailItem({ type: 'plot', data: plot })}>
+                    <IconEye size={13} /> View
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => openEditPlot(plot)}>
+                    <IconEdit size={13} /> Edit
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px', color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deletePlot(plot)}>
+                    <IconTrash size={13} /> Delete
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                <span>Crop: <strong>{plot.cropType || 'Unspecified'}</strong> · Area: <strong>{plot.area} ha</strong></span>
-                <span>Sector: {plot.location}</span>
-                {plot.animalGroupName && (
-                  <span>Linked Animal Group: <strong>{plot.animalGroupName}</strong></span>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
-                <button type="button" style={btnSecondary} onClick={() => setDetailItem({ type: 'plot', data: plot })}>
-                  <IconEye size={13} /> View
-                </button>
-                <button type="button" style={btnSecondary} onClick={() => openEditPlot(plot)}>
-                  <IconEdit size={13} /> Edit
-                </button>
-                <button type="button" style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deletePlot(plot)}>
-                  <IconTrash size={13} /> Delete
-                </button>
-              </div>
+            ))}
+          </div>
+          {plots.length > 0 && (
+            <div style={{ ...cardStyle, padding: 0, marginTop: '16px', overflow: 'hidden' }}>
+              <PaginationBar
+                page={plotsPagination.page}
+                totalPages={plotsPagination.totalPages}
+                totalItems={plotsPagination.totalItems}
+                pageSize={plotsPagination.pageSize}
+                onPageChange={plotsPagination.setPage}
+                onPageSizeChange={plotsPagination.setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="plots"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* Farm Modal */}

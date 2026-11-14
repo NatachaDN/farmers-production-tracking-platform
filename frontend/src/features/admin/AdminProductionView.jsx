@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { adminService } from './services/adminService';
 import { Card, DataGate, EmptyState, Pill, Progress, RefreshButton, Tabs, useAdminData } from './components/AdminUi';
 import { fmtDate, fmtKg, fmtNumber, fmtXaf, label } from './adminFormat';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const STATUSES = ['', 'ACTIVE', 'COMPLETED', 'CANCELLED'];
 
@@ -12,6 +13,9 @@ export function AdminProductionView() {
   const cycles = useAdminData(() => adminService.cycles(status), [status]);
   const harvests = useAdminData(() => adminService.harvests(), []);
   const inputs = useAdminData(() => adminService.inputs(), []);
+  const cyclesPagination = usePagination(cycles.data || [], 10);
+  const harvestsPagination = usePagination(harvests.data || [], 10);
+  const inputsPagination = usePagination(inputs.data || [], 10);
   const active = { cycles, harvests, inputs }[tab];
 
   const handleCycleStatusChange = async (cycle, nextStatus) => {
@@ -63,10 +67,11 @@ export function AdminProductionView() {
             <Card flush title={`${rows.length} production ${rows.length === 1 ? 'cycle' : 'cycles'}`}
               subtitle="Cycles with a past harvest date, or no field work in 14 days, are flagged">
               {rows.length === 0 ? <EmptyState>No production cycle matches this filter.</EmptyState> : (
-                <div className="adm-table-wrap"><table className="adm-table">
+                <>
+                  <div className="adm-table-wrap"><table className="adm-table">
                   <thead><tr><th>Crop</th><th>Farmer</th><th>Status</th><th>Stage</th><th>Progress</th><th>Started</th><th>Harvest due</th><th className="num">Activities</th><th className="num">Yield</th><th>Actions</th></tr></thead>
                   <tbody>
-                    {rows.map((c) => (
+                    {cyclesPagination.pagedItems.map((c) => (
                       <tr key={c.id}>
                         <td><div className="strong">{c.cropName || c.name}</div><div className="muted">{c.plotName || (c.cropName ? c.name : '—')}</div></td>
                         <td>{c.farmerName}</td>
@@ -78,7 +83,7 @@ export function AdminProductionView() {
                         <td className="num">{c.activityCount}</td>
                         <td className="num">{c.harvest ? `${fmtNumber(c.harvest.quantity)} ${label(c.harvest.unit)}` : '—'}</td>
                         <td>
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', whiteSpace: 'nowrap' }}>
                             <select
                               aria-label="Cycle status"
                               value={c.status}
@@ -97,6 +102,16 @@ export function AdminProductionView() {
                     ))}
                   </tbody>
                 </table></div>
+                <PaginationBar
+                  page={cyclesPagination.page}
+                  totalPages={cyclesPagination.totalPages}
+                  totalItems={cyclesPagination.totalItems}
+                  pageSize={cyclesPagination.pageSize}
+                  onPageChange={cyclesPagination.setPage}
+                  onPageSizeChange={cyclesPagination.setPageSize}
+                  itemLabel="cycles"
+                />
+                </>
               )}
             </Card>
           )}</DataGate>
@@ -111,10 +126,11 @@ export function AdminProductionView() {
             <Card flush title={`${rows.length} ${rows.length === 1 ? 'harvest' : 'harvests'}`}
               subtitle={`${fmtKg(kg)} by weight${bags ? ` and ${fmtNumber(bags)} bags` : ''}`}>
               {rows.length === 0 ? <EmptyState>No harvest has been recorded yet.</EmptyState> : (
-                <div className="adm-table-wrap"><table className="adm-table">
+                <>
+                  <div className="adm-table-wrap"><table className="adm-table">
                   <thead><tr><th>Crop</th><th>Farmer</th><th>Harvested on</th><th className="num">Quantity</th><th className="num">Yield</th><th>Notes</th><th>Actions</th></tr></thead>
                   <tbody>
-                    {rows.map((h) => (
+                    {harvestsPagination.pagedItems.map((h) => (
                       <tr key={h.id}>
                         <td className="strong">{h.cropName}</td><td>{h.farmerName}</td><td>{fmtDate(h.harvestDate)}</td>
                         <td className="num">{fmtNumber(h.quantity)} {label(h.unit)}</td>
@@ -127,6 +143,16 @@ export function AdminProductionView() {
                     ))}
                   </tbody>
                 </table></div>
+                <PaginationBar
+                  page={harvestsPagination.page}
+                  totalPages={harvestsPagination.totalPages}
+                  totalItems={harvestsPagination.totalItems}
+                  pageSize={harvestsPagination.pageSize}
+                  onPageChange={harvestsPagination.setPage}
+                  onPageSizeChange={harvestsPagination.setPageSize}
+                  itemLabel="harvests"
+                />
+                </>
               )}
             </Card>
           );
@@ -138,10 +164,11 @@ export function AdminProductionView() {
           <Card flush title={`${rows.length} input ${rows.length === 1 ? 'item' : 'items'}`}
             subtitle={`${fmtXaf(rows.reduce((s, i) => s + (i.cumulativeCost || 0), 0))} spent in total`}>
             {rows.length === 0 ? <EmptyState>No input has been purchased yet.</EmptyState> : (
-              <div className="adm-table-wrap"><table className="adm-table">
+              <>
+                <div className="adm-table-wrap"><table className="adm-table">
                 <thead><tr><th>Input</th><th>Type</th><th>Farmer</th><th>Last purchase</th><th className="num">Stock</th><th className="num">Last price</th><th className="num">Total spent</th></tr></thead>
                 <tbody>
-                  {rows.map((i) => (
+                  {inputsPagination.pagedItems.map((i) => (
                     <tr key={i.id}>
                       <td className="strong">{i.name}</td><td><Pill value={i.type} /></td><td>{i.farmerName}</td><td>{fmtDate(i.purchaseDate)}</td>
                       <td className="num">{fmtNumber(i.quantity)} {i.unit}</td>
@@ -150,6 +177,16 @@ export function AdminProductionView() {
                   ))}
                 </tbody>
               </table></div>
+              <PaginationBar
+                page={inputsPagination.page}
+                totalPages={inputsPagination.totalPages}
+                totalItems={inputsPagination.totalItems}
+                pageSize={inputsPagination.pageSize}
+                onPageChange={inputsPagination.setPage}
+                onPageSizeChange={inputsPagination.setPageSize}
+                itemLabel="inputs"
+              />
+              </>
             )}
           </Card>
         )}</DataGate>

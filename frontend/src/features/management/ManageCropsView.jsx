@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
 import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -73,6 +74,17 @@ export function ManageCropsView() {
   const [detailCrop, setDetailCrop] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    totalPages,
+    pagedItems: pagedCrops,
+    resetPage,
+  } = usePagination(crops, 9);
+
   const flash = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3500);
@@ -88,6 +100,7 @@ export function ManageCropsView() {
       ]);
       setCrops(Array.isArray(cList) ? cList : []);
       setFarmers(Array.isArray(fList) ? fList : []);
+      resetPage();
     } catch (err) {
       setError(err.message || 'Failed to load crops.');
     } finally {
@@ -229,46 +242,62 @@ export function ManageCropsView() {
       {loading ? (
         <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>Loading crops…</p></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
-          {crops.length === 0 ? (
-            <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No crops found.</p></div>
-          ) : crops.map((c) => (
-            <div key={c.id} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>
-                    {c.name}{c.variety ? ` (${c.variety})` : ''}
-                  </h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    Farmer: <strong>{c.farmerName}</strong>
-                  </p>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
+            {crops.length === 0 ? (
+              <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No crops found.</p></div>
+            ) : pagedCrops.map((c) => (
+              <div key={c.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>
+                      {c.name}{c.variety ? ` (${c.variety})` : ''}
+                    </h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      Farmer: <strong>{c.farmerName}</strong>
+                    </p>
+                  </div>
+                  {c.category && (
+                    <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#EAF4ED', color: '#2A6740' }}>
+                      {c.category}
+                    </span>
+                  )}
                 </div>
-                {c.category && (
-                  <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700, backgroundColor: '#EAF4ED', color: '#2A6740' }}>
-                    {c.category}
-                  </span>
-                )}
+                <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  {c.growthDurationDays != null && <span>Duration: <strong>{c.growthDurationDays} days</strong></span>}
+                  {c.expectedYieldPerHectare != null && <span>Expected Yield: <strong>{c.expectedYieldPerHectare} {c.yieldUnit || 'kg/ha'}</strong></span>}
+                  {c.plantingSeason && <span>Season: {c.plantingSeason}</span>}
+                  {c.waterRequirement && <span>Water: {c.waterRequirement}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => setDetailCrop(c)}>
+                    <IconEye size={13} /> View
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => openEdit(c)}>
+                    <IconEdit size={13} /> Edit
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px', color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteCrop(c)}>
+                    <IconTrash size={13} /> Delete
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                {c.growthDurationDays != null && <span>Duration: <strong>{c.growthDurationDays} days</strong></span>}
-                {c.expectedYieldPerHectare != null && <span>Expected Yield: <strong>{c.expectedYieldPerHectare} {c.yieldUnit || 'kg/ha'}</strong></span>}
-                {c.plantingSeason && <span>Season: {c.plantingSeason}</span>}
-                {c.waterRequirement && <span>Water: {c.waterRequirement}</span>}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
-                <button type="button" style={btnSecondary} onClick={() => setDetailCrop(c)}>
-                  <IconEye size={13} /> View
-                </button>
-                <button type="button" style={btnSecondary} onClick={() => openEdit(c)}>
-                  <IconEdit size={13} /> Edit
-                </button>
-                <button type="button" style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteCrop(c)}>
-                  <IconTrash size={13} /> Delete
-                </button>
-              </div>
+            ))}
+          </div>
+          {crops.length > 0 && (
+            <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="crops"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {modal && (

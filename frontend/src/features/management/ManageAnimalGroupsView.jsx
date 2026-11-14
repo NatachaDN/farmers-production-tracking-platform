@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
 import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
 import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
+import { PaginationBar, usePagination } from '../../shared/components/PaginationBar';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -75,6 +76,17 @@ export function ManageAnimalGroupsView() {
   const [detailGroup, setDetailGroup] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    totalPages,
+    pagedItems: pagedGroups,
+    resetPage,
+  } = usePagination(groups, 9);
+
   const notify = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3500);
@@ -92,6 +104,7 @@ export function ManageAnimalGroupsView() {
       setGroups(Array.isArray(gList) ? gList : []);
       setFarmers(Array.isArray(farmerList) ? farmerList : []);
       setFarms(Array.isArray(farmList) ? farmList : []);
+      resetPage();
     } catch (err) {
       setError(err.message || 'Failed to load animal groups.');
     } finally {
@@ -236,46 +249,62 @@ export function ManageAnimalGroupsView() {
       {loading ? (
         <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>Loading animal groups…</p></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
-          {groups.length === 0 ? (
-            <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No animal groups found.</p></div>
-          ) : groups.map((g) => (
-            <div key={g.id} style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{g.name}</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
-                    {g.farmerName} {g.farmName ? `· ${g.farmName}` : ''}
-                  </p>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
+            {groups.length === 0 ? (
+              <div style={cardStyle}><p style={{ margin: 0, color: '#64716B' }}>No animal groups found.</p></div>
+            ) : pagedGroups.map((g) => (
+              <div key={g.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#164230' }}>{g.name}</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#64716B' }}>
+                      {g.farmerName} {g.farmName ? `· ${g.farmName}` : ''}
+                    </p>
+                  </div>
+                  <span style={{
+                    padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700,
+                    backgroundColor: g.status === 'ACTIVE' ? '#EAF4ED' : '#F4EFE6',
+                    color: g.status === 'ACTIVE' ? '#164230' : '#64716B',
+                  }}>
+                    {g.status}
+                  </span>
                 </div>
-                <span style={{
-                  padding: '3px 9px', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 700,
-                  backgroundColor: g.status === 'ACTIVE' ? '#EAF4ED' : '#F4EFE6',
-                  color: g.status === 'ACTIVE' ? '#164230' : '#64716B',
-                }}>
-                  {g.status}
-                </span>
+                <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  <span>Species: <strong>{g.animalType}</strong> {g.breed ? `(${g.breed})` : ''}</span>
+                  <span>Population: <strong>{g.currentPopulation}</strong> head (initial: {g.initialPopulation})</span>
+                  {g.location && <span>Housing / Location: {g.location}</span>}
+                  {g.healthStatus && <span>Health: {g.healthStatus}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => setDetailGroup(g)}>
+                    <IconEye size={13} /> View
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px' }} onClick={() => openEdit(g)}>
+                    <IconEdit size={13} /> Edit
+                  </button>
+                  <button type="button" style={{ ...btnSecondary, padding: '6px 11px', color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteGroup(g)}>
+                    <IconTrash size={13} /> Delete
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#4B5752', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                <span>Species: <strong>{g.animalType}</strong> {g.breed ? `(${g.breed})` : ''}</span>
-                <span>Population: <strong>{g.currentPopulation}</strong> head (initial: {g.initialPopulation})</span>
-                {g.location && <span>Housing / Location: {g.location}</span>}
-                {g.healthStatus && <span>Health: {g.healthStatus}</span>}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
-                <button type="button" style={btnSecondary} onClick={() => setDetailGroup(g)}>
-                  <IconEye size={13} /> View
-                </button>
-                <button type="button" style={btnSecondary} onClick={() => openEdit(g)}>
-                  <IconEdit size={13} /> Edit
-                </button>
-                <button type="button" style={{ ...btnSecondary, color: '#B91C1C', borderColor: '#FECACA' }} onClick={() => deleteGroup(g)}>
-                  <IconTrash size={13} /> Delete
-                </button>
-              </div>
+            ))}
+          </div>
+          {groups.length > 0 && (
+            <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="animal groups"
+              />
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {modal && (
