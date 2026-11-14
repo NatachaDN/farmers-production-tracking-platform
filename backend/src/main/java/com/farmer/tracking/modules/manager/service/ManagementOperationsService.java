@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,12 +86,36 @@ public class ManagementOperationsService {
     @Transactional(readOnly = true)
     public List<ManagedFarmRow> listFarms(String search) {
         String q = search != null ? search.trim().toLowerCase() : "";
-        Map<Long, Long> plotCounts = plotRepository.findAll().stream()
+        List<Farmer> allPeople = farmerRepository.findAll();
+        Map<Long, Farmer> peopleById = allPeople.stream()
+                .collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
+        List<RelatedPersonSummary> platformManagers = allPeople.stream()
+                .filter(p -> "ROLE_MANAGER".equalsIgnoreCase(p.getRole()))
+                .map(p -> new RelatedPersonSummary(p.getId(), p.getFullName(), p.getEmailOrPhone(), p.getRole()))
+                .toList();
+
+        List<Plot> allPlots = plotRepository.findAll();
+        Map<Long, List<Plot>> plotsByFarm = allPlots.stream()
                 .filter(p -> p.getFarm() != null)
-                .collect(Collectors.groupingBy(p -> p.getFarm().getId(), Collectors.counting()));
+                .collect(Collectors.groupingBy(p -> p.getFarm().getId()));
+
+        List<AnimalGroup> allGroups = animalGroupRepository.findAll();
+        Map<Long, AnimalGroup> groupById = allGroups.stream()
+                .collect(Collectors.toMap(AnimalGroup::getId, Function.identity(), (a, b) -> a));
+        Map<Long, List<AnimalGroup>> groupsByFarm = allGroups.stream()
+                .filter(g -> g.getFarm() != null)
+                .collect(Collectors.groupingBy(g -> g.getFarm().getId()));
+
+        List<Crop> allCrops = cropRepository.findAll();
+        List<Cycle> allCycles = cycleRepository.findAll();
+        Map<Long, List<Cycle>> cyclesByPlot = allCycles.stream()
+                .filter(c -> c.getPlot() != null)
+                .collect(Collectors.groupingBy(c -> c.getPlot().getId()));
 
         return farmRepository.findAll().stream()
-                .map(f -> toFarmRow(f, plotCounts.getOrDefault(f.getId(), 0L).intValue()))
+                .map(f -> toRichFarmRow(f, plotsByFarm.getOrDefault(f.getId(), List.of()),
+                        groupsByFarm.getOrDefault(f.getId(), List.of()), groupById,
+                        allCrops, cyclesByPlot, peopleById, platformManagers))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
                         || r.farmerName().toLowerCase().contains(q)
@@ -162,8 +187,131 @@ public class ManagementOperationsService {
                 f.getDistrict(),
                 f.getDescription(),
                 plotCount,
-                f.getCreatedAt()
+                f.getCreatedAt(),
+                List.of(), List.of(), List.of(), List.of(), List.of()
         );
+    }
+
+    private ManagedFarmRow toRichFarmRow(
+            Farm f,
+            List<Plot> farmPlots,
+            List<AnimalGroup> directGroups,
+            Map<Long, AnimalGroup> groupById,
+            List<Crop> allCrops,
+            Map<Long, List<Cycle>> cyclesByPlot,
+            Map<Long, Farmer> peopleById,
+            List<RelatedPersonSummary> platformManagers) {
+
+        Map<Long, RelatedPersonSummary> farmerMap = new LinkedHashMap<>();
+        Map<Long, RelatedPersonSummary> managerMap = new LinkedHashMap<>();
+
+        Consumer<Farmer> addPerson = (person) -> {
+            if (person == null) return;
+            RelatedPersonSummary summary = new RelatedPersonSummary(
+                    person.getId(), person.getFullName(), person.getEmailOrPhone(), person.getRole());
+            if ("ROLE_MANAGER".equalsIgnoreCase(person.getRole()) || "ROLE_ADMIN".equalsIgnoreCase(person.getRole())) {
+                managerMap.putIfAbsent(person.getId(), summary);
+            } else {
+                farmerMap.putIfAbsent(person.getId(), summary);
+            }
+        };
+
+        addPerson.accept(f.getFarmer());
+        for (Plot p : farmPlots) {
+            addPerson.accept(peopleById.get(p.getFarmerId()));
+        }
+        for (AnimalGroup g : directGroups) {
+            addPerson.accept(g.getFarmer());
+        }
+        for (RelatedPersonSummary mgr : platformManagers) {
+            managerMap.putIfAbsent(mgr.id(), mgr);
+        }
+
+        List<RelatedPlotSummary> plotSummaries = farmPlots.stream()
+                .map(p -> new RelatedPlotSummary(
+                        p.getId(), p.getName(), p.getArea(), p.getLocation(),
+                        p.getCropType(), p.getStage(), f.getId(), f.getName()))
+                .toList();
+
+        Map<Long, RelatedAnimalGroupSummary> groupMap = new LinkedHashMap<>();
+        for (AnimalGroup g : directGroups) {
+            groupMap.putIfAbsent(g.getId(), new RelatedAnimalGroupSummary(
+                    g.getId(), g.getName(), g.getAnimalType() != null ? g.getAnimalType().name() : "OTHER",
+                    g.getCurrentPopulation(), g.getStatus() != null ? g.getStatus().name() : "ACTIVE"));
+        }
+        for (Plot p : farmPlots) {
+            if (p.getAnimalGroupId() != null) {
+                AnimalGroup linked = groupById.get(p.getAnimalGroupId());
+                if (linked != null) {
+                    groupMap.putIfAbsent(linked.getId(), new RelatedAnimalGroupSummary(
+                            linked.getId(), linked.getName(),
+                            linked.getAnimalType() != null ? linked.getAnimalType().name() : "OTHER",
+                            linked.getCurrentPopulation(),
+                            linked.getStatus() != null ? linked.getStatus().name() : "ACTIVE"));
+                }
+            }
+        }
+
+        Set<String> plotAndCycleCropNames = new LinkedHashSet<>();
+        for (Plot p : farmPlots) {
+            if (p.getCropType() != null && !p.getCropType().isBlank() && !"Unspecified".equalsIgnoreCase(p.getCropType())) {
+                plotAndCycleCropNames.add(p.getCropType().trim());
+            }
+            for (Cycle c : cyclesByPlot.getOrDefault(p.getId(), List.of())) {
+                if (c.getCropName() != null && !c.getCropName().isBlank()) {
+                    plotAndCycleCropNames.add(c.getCropName().trim());
+                }
+            }
+        }
+
+        Map<String, RelatedCropSummary> cropMap = new LinkedHashMap<>();
+        for (Crop c : allCrops) {
+            boolean ownedByFarmPeople = farmerMap.containsKey(c.getFarmerId()) || managerMap.containsKey(c.getFarmerId());
+            boolean matchesPlotCrop = plotAndCycleCropNames.stream().anyMatch(n -> cropNameMatches(c, n));
+            if (ownedByFarmPeople && (matchesPlotCrop || farmPlots.isEmpty())) {
+                cropMap.putIfAbsent("ID:" + c.getId(), new RelatedCropSummary(c.getId(), c.getName(), c.getVariety(), c.getCategory()));
+            } else if (matchesPlotCrop) {
+                cropMap.putIfAbsent("ID:" + c.getId(), new RelatedCropSummary(c.getId(), c.getName(), c.getVariety(), c.getCategory()));
+            }
+        }
+        for (String rawName : plotAndCycleCropNames) {
+            boolean alreadyMatched = allCrops.stream().anyMatch(c -> cropNameMatches(c, rawName));
+            if (!alreadyMatched) {
+                cropMap.putIfAbsent("RAW:" + rawName.toLowerCase(), new RelatedCropSummary(null, rawName, null, "Plot Crop"));
+            }
+        }
+
+        return new ManagedFarmRow(
+                f.getId(),
+                f.getFarmer().getId(),
+                f.getFarmer().getFullName(),
+                f.getName(),
+                f.getType() != null ? f.getType().name() : "MIXED",
+                f.getSize(),
+                f.getSizeUnit() != null ? f.getSizeUnit().name() : "HECTARES",
+                f.getStatus() != null ? f.getStatus().name() : "ACTIVE",
+                f.getCountry(),
+                f.getRegion(),
+                f.getDistrict(),
+                f.getDescription(),
+                farmPlots.size(),
+                f.getCreatedAt(),
+                new ArrayList<>(farmerMap.values()),
+                new ArrayList<>(managerMap.values()),
+                plotSummaries,
+                new ArrayList<>(cropMap.values()),
+                new ArrayList<>(groupMap.values())
+        );
+    }
+
+    private static boolean cropNameMatches(Crop c, String targetName) {
+        if (c == null || c.getName() == null || targetName == null) return false;
+        String t = targetName.trim().toLowerCase();
+        String base = c.getName().trim().toLowerCase();
+        String withVar = c.getVariety() != null && !c.getVariety().isBlank()
+                ? base + " (" + c.getVariety().trim().toLowerCase() + ")"
+                : base;
+        return t.equals(base) || t.equals(withVar) || t.startsWith(base + " (");
     }
 
     // ------------------------------------------------------------------ Plots
@@ -278,8 +426,12 @@ public class ManagementOperationsService {
     @Transactional(readOnly = true)
     public List<ManagedAnimalGroupRow> listAnimalGroups(String search) {
         String q = search != null ? search.trim().toLowerCase() : "";
+        Map<Long, List<Plot>> plotsByGroup = plotRepository.findAll().stream()
+                .filter(p -> p.getAnimalGroupId() != null)
+                .collect(Collectors.groupingBy(Plot::getAnimalGroupId));
+
         return animalGroupRepository.findAll().stream()
-                .map(this::toAnimalGroupRow)
+                .map(g -> toAnimalGroupRow(g, plotsByGroup.getOrDefault(g.getId(), List.of())))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
                         || r.farmerName().toLowerCase().contains(q)
@@ -344,6 +496,32 @@ public class ManagementOperationsService {
     }
 
     private ManagedAnimalGroupRow toAnimalGroupRow(AnimalGroup g) {
+        return toAnimalGroupRow(g, List.of());
+    }
+
+    private ManagedAnimalGroupRow toAnimalGroupRow(AnimalGroup g, List<Plot> linkedPlots) {
+        List<RelatedPlotSummary> plotSummaries = linkedPlots.stream()
+                .map(p -> new RelatedPlotSummary(
+                        p.getId(), p.getName(), p.getArea(), p.getLocation(),
+                        p.getCropType(), p.getStage(),
+                        p.getFarm() != null ? p.getFarm().getId() : null,
+                        p.getFarm() != null ? p.getFarm().getName() : null))
+                .toList();
+
+        Map<Long, RelatedFarmSummary> farmMap = new LinkedHashMap<>();
+        if (g.getFarm() != null) {
+            Farm gf = g.getFarm();
+            farmMap.put(gf.getId(), new RelatedFarmSummary(
+                    gf.getId(), gf.getName(), gf.getType() != null ? gf.getType().name() : null, gf.getRegion()));
+        }
+        for (Plot p : linkedPlots) {
+            if (p.getFarm() != null) {
+                Farm pf = p.getFarm();
+                farmMap.putIfAbsent(pf.getId(), new RelatedFarmSummary(
+                        pf.getId(), pf.getName(), pf.getType() != null ? pf.getType().name() : null, pf.getRegion()));
+            }
+        }
+
         return new ManagedAnimalGroupRow(
                 g.getId(),
                 g.getFarmer().getId(),
@@ -361,7 +539,9 @@ public class ManagementOperationsService {
                 g.getHealthStatus(),
                 g.getNotes(),
                 g.getStartDate(),
-                g.getCreatedAt()
+                g.getCreatedAt(),
+                plotSummaries,
+                new ArrayList<>(farmMap.values())
         );
     }
 
@@ -515,9 +695,11 @@ public class ManagementOperationsService {
         String q = search != null ? search.trim().toLowerCase() : "";
         Map<Long, String> farmerNames = farmerRepository.findAll().stream()
                 .collect(Collectors.toMap(Farmer::getId, Farmer::getFullName, (a, b) -> a));
+        List<Plot> allPlots = plotRepository.findAll();
+        List<Cycle> allCycles = cycleRepository.findAll();
 
         return cropRepository.findAll().stream()
-                .map(c -> toCropRow(c, farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId())))
+                .map(c -> toRichCropRow(c, farmerNames.getOrDefault(c.getFarmerId(), "Farmer #" + c.getFarmerId()), allPlots, allCycles))
                 .filter(r -> q.isEmpty()
                         || r.name().toLowerCase().contains(q)
                         || r.farmerName().toLowerCase().contains(q)
@@ -574,6 +756,38 @@ public class ManagementOperationsService {
     }
 
     private ManagedCropRow toCropRow(Crop c, String farmerName) {
+        return toRichCropRow(c, farmerName, List.of(), List.of());
+    }
+
+    private ManagedCropRow toRichCropRow(Crop c, String farmerName, List<Plot> allPlots, List<Cycle> allCycles) {
+        Map<Long, RelatedPlotSummary> plotMap = new LinkedHashMap<>();
+        Map<Long, RelatedFarmSummary> farmMap = new LinkedHashMap<>();
+
+        Consumer<Plot> addPlot = (p) -> {
+            if (p == null) return;
+            plotMap.putIfAbsent(p.getId(), new RelatedPlotSummary(
+                    p.getId(), p.getName(), p.getArea(), p.getLocation(),
+                    p.getCropType(), p.getStage(),
+                    p.getFarm() != null ? p.getFarm().getId() : null,
+                    p.getFarm() != null ? p.getFarm().getName() : null));
+            if (p.getFarm() != null) {
+                Farm pf = p.getFarm();
+                farmMap.putIfAbsent(pf.getId(), new RelatedFarmSummary(
+                        pf.getId(), pf.getName(), pf.getType() != null ? pf.getType().name() : null, pf.getRegion()));
+            }
+        };
+
+        for (Plot p : allPlots) {
+            if (cropNameMatches(c, p.getCropType())) {
+                addPlot.accept(p);
+            }
+        }
+        for (Cycle cy : allCycles) {
+            if (cy.getPlot() != null && cropNameMatches(c, cy.getCropName())) {
+                addPlot.accept(cy.getPlot());
+            }
+        }
+
         return new ManagedCropRow(
                 c.getId(),
                 c.getFarmerId(),
@@ -588,7 +802,9 @@ public class ManagementOperationsService {
                 c.getWaterRequirement(),
                 c.getSoilPreference(),
                 c.getDescription(),
-                c.getCreatedAt()
+                c.getCreatedAt(),
+                new ArrayList<>(plotMap.values()),
+                new ArrayList<>(farmMap.values())
         );
     }
 

@@ -354,6 +354,26 @@ export function ManageCropsView() {
           longFields={[
             { label: 'Description', value: detailCrop.description },
           ]}
+          sections={[
+            {
+              title: 'Belongs to Farms',
+              emptyText: 'Not currently planted on any registered farm.',
+              items: (detailCrop.farms || []).map((f) => ({
+                primary: f.name,
+                secondary: [f.type, f.region].filter(Boolean).join(' · '),
+                badge: f.type || 'Farm',
+              })),
+            },
+            {
+              title: 'Belongs to Plots',
+              emptyText: 'Not currently planted on any registered plot.',
+              items: (detailCrop.plots || []).map((p) => ({
+                primary: p.name,
+                secondary: `${p.farmName ? `Farm: ${p.farmName} · ` : ''}${p.area ?? '—'} ha${p.location ? ` · ${p.location}` : ''}`,
+                badge: p.stage || 'Plot',
+              })),
+            },
+          ]}
           editLabel="Edit Crop"
           onEdit={() => {
             const target = detailCrop;

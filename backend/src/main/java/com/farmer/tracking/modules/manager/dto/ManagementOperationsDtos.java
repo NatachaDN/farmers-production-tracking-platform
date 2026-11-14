@@ -4,10 +4,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public final class ManagementOperationsDtos {
 
     private ManagementOperationsDtos() {}
+
+    public record RelatedPersonSummary(Long id, String fullName, String emailOrPhone, String role) {}
+    public record RelatedPlotSummary(Long id, String name, Double area, String location, String cropType, String stage, Long farmId, String farmName) {}
+    public record RelatedCropSummary(Long id, String name, String variety, String category) {}
+    public record RelatedAnimalGroupSummary(Long id, String name, String animalType, Integer currentPopulation, String status) {}
+    public record RelatedFarmSummary(Long id, String name, String type, String region) {}
 
     public record ManagedFarmRow(
             Long id,
@@ -23,7 +30,12 @@ public final class ManagementOperationsDtos {
             String district,
             String description,
             int plotCount,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            List<RelatedPersonSummary> farmers,
+            List<RelatedPersonSummary> managers,
+            List<RelatedPlotSummary> plots,
+            List<RelatedCropSummary> crops,
+            List<RelatedAnimalGroupSummary> animalGroups
     ) {}
 
     public record ManagedFarmRequest(
@@ -92,7 +104,9 @@ public final class ManagementOperationsDtos {
             String healthStatus,
             String notes,
             LocalDate startDate,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            List<RelatedPlotSummary> plots,
+            List<RelatedFarmSummary> farms
     ) {}
 
     public record ManagedAnimalGroupRequest(
@@ -152,7 +166,9 @@ public final class ManagementOperationsDtos {
             String waterRequirement,
             String soilPreference,
             String description,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            List<RelatedPlotSummary> plots,
+            List<RelatedFarmSummary> farms
     ) {}
 
     public record ManagedCropRequest(

@@ -10,6 +10,7 @@ export function EntityDetailModal({
   badgeStyle,
   fields = [],
   longFields = [],
+  sections = [],
   onEdit,
   editLabel = 'Edit',
 }) {
@@ -144,6 +145,65 @@ export function EntityDetailModal({
           </div>
         )}
 
+        {sections.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '14px' }}>
+            {sections.map((sec, idx) => (
+              <div
+                key={sec.title || idx}
+                style={{
+                  backgroundColor: '#F9F6F0',
+                  border: '1px solid #ECE7DC',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64716B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {sec.title}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#164230', backgroundColor: '#EAF4ED', padding: '2px 8px', borderRadius: '9999px' }}>
+                    {sec.items?.length || 0}
+                  </span>
+                </div>
+                {!sec.items || sec.items.length === 0 ? (
+                  <div style={{ fontSize: '0.8125rem', color: '#64716B' }}>{sec.emptyText || 'None recorded'}</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {sec.items.map((item, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '8px',
+                          flexWrap: 'wrap',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #ECE7DC',
+                          borderRadius: '8px',
+                          padding: '7px 10px',
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#19201C' }}>{item.primary}</div>
+                          {item.secondary && (
+                            <div style={{ fontSize: '0.75rem', color: '#64716B' }}>{item.secondary}</div>
+                          )}
+                        </div>
+                        {item.badge && (
+                          <span style={{ fontSize: '0.6875rem', fontWeight: 700, padding: '2px 8px', borderRadius: '9999px', backgroundColor: '#EAF4ED', color: '#164230' }}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px', flexWrap: 'wrap' }}>
           {onEdit && (
             <button
@@ -190,3 +250,4 @@ export function EntityDetailModal({
     </div>
   );
 }
+

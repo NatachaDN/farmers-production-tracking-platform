@@ -375,6 +375,26 @@ export function ManageAnimalGroupsView() {
           longFields={[
             { label: 'Notes', value: detailGroup.notes },
           ]}
+          sections={[
+            {
+              title: 'Belongs to Farms',
+              emptyText: 'Not assigned to any farm.',
+              items: (detailGroup.farms || []).map((f) => ({
+                primary: f.name,
+                secondary: [f.type, f.region].filter(Boolean).join(' · '),
+                badge: f.type || 'Farm',
+              })),
+            },
+            {
+              title: 'Belongs to Plots',
+              emptyText: 'Not linked to any plot.',
+              items: (detailGroup.plots || []).map((p) => ({
+                primary: p.name,
+                secondary: `${p.farmName ? `Farm: ${p.farmName} · ` : ''}${p.area ?? '—'} ha${p.location ? ` · ${p.location}` : ''}`,
+                badge: p.stage || 'Plot',
+              })),
+            },
+          ]}
           editLabel="Edit Animal Group"
           onEdit={() => {
             const target = detailGroup;

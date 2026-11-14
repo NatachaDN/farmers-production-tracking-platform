@@ -578,6 +578,53 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
           longFields={[
             { label: 'Description', value: detailItem.data.description },
           ]}
+          sections={[
+            {
+              title: 'Farmers',
+              emptyText: 'No farmers linked to this farm.',
+              items: (detailItem.data.farmers || []).map((f) => ({
+                primary: f.fullName,
+                secondary: f.emailOrPhone || '',
+                badge: 'Farmer',
+              })),
+            },
+            {
+              title: 'Managers',
+              emptyText: 'No managers assigned.',
+              items: (detailItem.data.managers || []).map((m) => ({
+                primary: m.fullName,
+                secondary: m.emailOrPhone || '',
+                badge: m.role === 'ROLE_ADMIN' ? 'Admin' : 'Manager',
+              })),
+            },
+            {
+              title: 'Plots',
+              emptyText: 'No plots registered in this farm yet.',
+              items: (detailItem.data.plots || []).map((p) => ({
+                primary: p.name,
+                secondary: `${p.area ?? '—'} ha · Crop: ${p.cropType || 'Unspecified'}${p.location ? ` · ${p.location}` : ''}`,
+                badge: p.stage || 'Planned',
+              })),
+            },
+            {
+              title: 'Crops',
+              emptyText: 'No crops recorded on this farm yet.',
+              items: (detailItem.data.crops || []).map((c) => ({
+                primary: c.variety ? `${c.name} (${c.variety})` : c.name,
+                secondary: c.category || '',
+                badge: c.category || 'Crop',
+              })),
+            },
+            {
+              title: 'Animal Groups',
+              emptyText: 'No animal groups on this farm yet.',
+              items: (detailItem.data.animalGroups || []).map((g) => ({
+                primary: g.name,
+                secondary: `${g.animalType}${g.currentPopulation != null ? ` · ${g.currentPopulation} head` : ''}`,
+                badge: g.status || 'ACTIVE',
+              })),
+            },
+          ]}
           editLabel="Edit Farm"
           onEdit={() => {
             const target = detailItem.data;
