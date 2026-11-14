@@ -417,6 +417,9 @@ public class AdminManagementService {
                 u.getLocation(),
                 u.getFarmName(),
                 u.getFarmType() != null ? u.getFarmType().name() : "MIXED",
+                u.getCropsGrown(),
+                u.getTotalArea(),
+                u.getAvatarUrl(),
                 u.getAuthProvider(),
                 toInstant(u.getCreatedAt()),
                 toInstant(u.getLastLoginAt())

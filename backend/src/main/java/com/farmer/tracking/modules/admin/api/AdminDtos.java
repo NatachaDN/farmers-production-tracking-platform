@@ -94,6 +94,9 @@ public final class AdminDtos {
             String location,
             String farmName,
             String farmType,
+            String cropsGrown,
+            Double totalArea,
+            String avatarUrl,
             String authProvider,
             Instant createdAt,
             Instant lastLoginAt

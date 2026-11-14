@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
-import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash } from '../../shared/components/Icons';
+import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
+import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -77,6 +78,7 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
 
   const [farmModal, setFarmModal] = useState(null); // null | { mode: 'create'|'edit', data }
   const [plotModal, setPlotModal] = useState(null); // null | { mode: 'create'|'edit', data }
+  const [detailItem, setDetailItem] = useState(null); // null | { type: 'farm'|'plot', data }
   const [saving, setSaving] = useState(false);
 
   const notify = (msg) => {
@@ -373,6 +375,9 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
                 <span>Registered Plots: <strong>{farm.plotCount}</strong></span>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                <button type="button" style={btnSecondary} onClick={() => setDetailItem({ type: 'farm', data: farm })}>
+                  <IconEye size={13} /> View
+                </button>
                 <button type="button" style={btnSecondary} onClick={() => openEditFarm(farm)}>
                   <IconEdit size={13} /> Edit
                 </button>
@@ -408,6 +413,9 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
                 )}
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                <button type="button" style={btnSecondary} onClick={() => setDetailItem({ type: 'plot', data: plot })}>
+                  <IconEye size={13} /> View
+                </button>
                 <button type="button" style={btnSecondary} onClick={() => openEditPlot(plot)}>
                   <IconEdit size={13} /> Edit
                 </button>
@@ -544,6 +552,71 @@ export function ManageFarmsPlotsView({ initialTab = 'farms' }) {
             </div>
           </form>
         </div>
+      )}
+
+      {detailItem?.type === 'farm' && (
+        <EntityDetailModal
+          open
+          onClose={() => setDetailItem(null)}
+          title={detailItem.data.name}
+          subtitle={`Farm #${detailItem.data.id} · Owner: ${detailItem.data.farmerName}`}
+          badge={detailItem.data.status}
+          badgeStyle={{
+            backgroundColor: detailItem.data.status === 'ACTIVE' ? '#EAF4ED' : '#F4EFE6',
+            color: detailItem.data.status === 'ACTIVE' ? '#164230' : '#64716B',
+          }}
+          fields={[
+            { label: 'Owner (Farmer)', value: detailItem.data.farmerName },
+            { label: 'Farm Type', value: detailItem.data.type },
+            { label: 'Size', value: detailItem.data.size != null ? `${detailItem.data.size} ${detailItem.data.sizeUnit || 'HECTARES'}` : '—' },
+            { label: 'Registered Plots', value: detailItem.data.plotCount },
+            { label: 'Country', value: detailItem.data.country },
+            { label: 'Region', value: detailItem.data.region },
+            { label: 'District / Sub-region', value: detailItem.data.district },
+            { label: 'Created At', value: detailItem.data.createdAt ? new Date(detailItem.data.createdAt).toLocaleString() : '—' },
+          ]}
+          longFields={[
+            { label: 'Description', value: detailItem.data.description },
+          ]}
+          editLabel="Edit Farm"
+          onEdit={() => {
+            const target = detailItem.data;
+            setDetailItem(null);
+            openEditFarm(target);
+          }}
+        />
+      )}
+
+      {detailItem?.type === 'plot' && (
+        <EntityDetailModal
+          open
+          onClose={() => setDetailItem(null)}
+          title={detailItem.data.name}
+          subtitle={`Plot #${detailItem.data.id} · ${detailItem.data.farmerName}${detailItem.data.farmName ? ` · ${detailItem.data.farmName}` : ''}`}
+          badge={detailItem.data.stage || 'Planned'}
+          fields={[
+            { label: 'Owner (Farmer)', value: detailItem.data.farmerName },
+            { label: 'Parent Farm', value: detailItem.data.farmName || 'Standalone' },
+            { label: 'Area', value: detailItem.data.area != null ? `${detailItem.data.area} ha` : '—' },
+            { label: 'Location / Sector', value: detailItem.data.location },
+            { label: 'Primary Crop', value: detailItem.data.cropType },
+            { label: 'Growth Stage', value: detailItem.data.stage },
+            { label: 'Soil Type', value: detailItem.data.soilType },
+            { label: 'Irrigation Type', value: detailItem.data.irrigationType },
+            { label: 'Slope / Terrain', value: detailItem.data.slope },
+            { label: 'Linked Animal Group', value: detailItem.data.animalGroupName || 'None' },
+            { label: 'Created At', value: detailItem.data.createdAt ? new Date(detailItem.data.createdAt).toLocaleString() : '—' },
+          ]}
+          longFields={[
+            { label: 'Field Notes', value: detailItem.data.notes },
+          ]}
+          editLabel="Edit Plot"
+          onEdit={() => {
+            const target = detailItem.data;
+            setDetailItem(null);
+            openEditPlot(target);
+          }}
+        />
       )}
     </div>
   );

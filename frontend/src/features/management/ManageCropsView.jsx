@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
-import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash } from '../../shared/components/Icons';
+import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
+import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -69,6 +70,7 @@ export function ManageCropsView() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [modal, setModal] = useState(null);
+  const [detailCrop, setDetailCrop] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const flash = (msg) => {
@@ -254,6 +256,9 @@ export function ManageCropsView() {
                 {c.waterRequirement && <span>Water: {c.waterRequirement}</span>}
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                <button type="button" style={btnSecondary} onClick={() => setDetailCrop(c)}>
+                  <IconEye size={13} /> View
+                </button>
                 <button type="button" style={btnSecondary} onClick={() => openEdit(c)}>
                   <IconEdit size={13} /> Edit
                 </button>
@@ -326,6 +331,38 @@ export function ManageCropsView() {
           </form>
         </div>
       )}
+
+      {detailCrop && (
+        <EntityDetailModal
+          open
+          onClose={() => setDetailCrop(null)}
+          title={`${detailCrop.name}${detailCrop.variety ? ` (${detailCrop.variety})` : ''}`}
+          subtitle={`Crop #${detailCrop.id} · Farmer: ${detailCrop.farmerName}`}
+          badge={detailCrop.category}
+          fields={[
+            { label: 'Farmer', value: detailCrop.farmerName },
+            { label: 'Crop Name', value: detailCrop.name },
+            { label: 'Variety', value: detailCrop.variety },
+            { label: 'Category', value: detailCrop.category },
+            { label: 'Growth Duration', value: detailCrop.growthDurationDays != null ? `${detailCrop.growthDurationDays} days` : '—' },
+            { label: 'Expected Yield / ha', value: detailCrop.expectedYieldPerHectare != null ? `${detailCrop.expectedYieldPerHectare} ${detailCrop.yieldUnit || 'kg/ha'}` : '—' },
+            { label: 'Planting Season', value: detailCrop.plantingSeason },
+            { label: 'Water Requirement', value: detailCrop.waterRequirement },
+            { label: 'Soil Preference', value: detailCrop.soilPreference },
+            { label: 'Created At', value: detailCrop.createdAt ? new Date(detailCrop.createdAt).toLocaleString() : '—' },
+          ]}
+          longFields={[
+            { label: 'Description', value: detailCrop.description },
+          ]}
+          editLabel="Edit Crop"
+          onEdit={() => {
+            const target = detailCrop;
+            setDetailCrop(null);
+            openEdit(target);
+          }}
+        />
+      )}
     </div>
   );
 }
+

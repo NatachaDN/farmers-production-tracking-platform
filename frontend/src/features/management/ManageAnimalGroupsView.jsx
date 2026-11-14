@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { managerService } from '../manager/services/managerService';
-import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash } from '../../shared/components/Icons';
+import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
+import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -71,6 +72,7 @@ export function ManageAnimalGroupsView() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [modal, setModal] = useState(null);
+  const [detailGroup, setDetailGroup] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const notify = (msg) => {
@@ -261,6 +263,9 @@ export function ManageAnimalGroupsView() {
                 {g.healthStatus && <span>Health: {g.healthStatus}</span>}
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #ECE7DC', paddingTop: '10px' }}>
+                <button type="button" style={btnSecondary} onClick={() => setDetailGroup(g)}>
+                  <IconEye size={13} /> View
+                </button>
                 <button type="button" style={btnSecondary} onClick={() => openEdit(g)}>
                   <IconEdit size={13} /> Edit
                 </button>
@@ -341,6 +346,42 @@ export function ManageAnimalGroupsView() {
             </div>
           </form>
         </div>
+      )}
+
+      {detailGroup && (
+        <EntityDetailModal
+          open
+          onClose={() => setDetailGroup(null)}
+          title={detailGroup.name}
+          subtitle={`Animal Group #${detailGroup.id} · ${detailGroup.farmerName}${detailGroup.farmName ? ` · ${detailGroup.farmName}` : ''}`}
+          badge={detailGroup.status}
+          badgeStyle={{
+            backgroundColor: detailGroup.status === 'ACTIVE' ? '#EAF4ED' : '#F4EFE6',
+            color: detailGroup.status === 'ACTIVE' ? '#164230' : '#64716B',
+          }}
+          fields={[
+            { label: 'Farmer', value: detailGroup.farmerName },
+            { label: 'Farm', value: detailGroup.farmName || 'Unassigned' },
+            { label: 'Animal Type', value: detailGroup.animalType },
+            { label: 'Breed', value: detailGroup.breed },
+            { label: 'Initial Population', value: detailGroup.initialPopulation != null ? `${detailGroup.initialPopulation} head` : '—' },
+            { label: 'Current Population', value: detailGroup.currentPopulation != null ? `${detailGroup.currentPopulation} head` : '—' },
+            { label: 'Location / Housing', value: detailGroup.location },
+            { label: 'Purpose', value: detailGroup.purpose },
+            { label: 'Health Status', value: detailGroup.healthStatus },
+            { label: 'Start Date', value: detailGroup.startDate },
+            { label: 'Created At', value: detailGroup.createdAt ? new Date(detailGroup.createdAt).toLocaleString() : '—' },
+          ]}
+          longFields={[
+            { label: 'Notes', value: detailGroup.notes },
+          ]}
+          editLabel="Edit Animal Group"
+          onEdit={() => {
+            const target = detailGroup;
+            setDetailGroup(null);
+            openEdit(target);
+          }}
+        />
       )}
     </div>
   );

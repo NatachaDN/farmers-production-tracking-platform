@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from './services/adminService';
 import { notificationService } from '../../shared/services/notificationService';
-import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash } from '../../shared/components/Icons';
+import { IconPlus, IconSearch, IconClose, IconEdit, IconTrash, IconEye } from '../../shared/components/Icons';
+import { EntityDetailModal } from '../../shared/components/EntityDetailModal';
 
 const cardStyle = {
   backgroundColor: '#FFFFFF',
@@ -84,6 +85,7 @@ export function AdminUsersView({ currentUserId }) {
   const [toast, setToast] = useState('');
   const [modal, setModal] = useState(null);
   const [notifyModal, setNotifyModal] = useState(null);
+  const [detailUser, setDetailUser] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const flash = (msg) => {
@@ -310,6 +312,9 @@ export function AdminUsersView({ currentUserId }) {
                     <td style={{ padding: '12px 16px', color: '#4B5752' }}>{u.location || '—'}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button type="button" style={btnSecondary} onClick={() => setDetailUser(u)}>
+                          <IconEye size={12} /> View
+                        </button>
                         <button type="button" style={btnSecondary} onClick={() => openEdit(u)}>
                           <IconEdit size={12} /> Edit
                         </button>
@@ -443,6 +448,38 @@ export function AdminUsersView({ currentUserId }) {
             </div>
           </form>
         </div>
+      )}
+
+      {detailUser && (
+        <EntityDetailModal
+          open
+          onClose={() => setDetailUser(null)}
+          title={detailUser.fullName}
+          subtitle={`User #${detailUser.id} · ${roleLabel(detailUser.role)} · ${detailUser.emailOrPhone}`}
+          badge={detailUser.status}
+          badgeStyle={statusColors(detailUser.status)}
+          fields={[
+            { label: 'Full Name', value: detailUser.fullName },
+            { label: 'Email or Phone', value: detailUser.emailOrPhone },
+            { label: 'Role', value: roleLabel(detailUser.role) },
+            { label: 'Account Status', value: detailUser.status },
+            { label: 'Location', value: detailUser.location },
+            { label: 'Farm Name', value: detailUser.farmName },
+            { label: 'Farm Type', value: detailUser.farmType },
+            { label: 'Total Area', value: detailUser.totalArea != null ? `${detailUser.totalArea} ha` : '—' },
+            { label: 'Crops Grown', value: detailUser.cropsGrown },
+            { label: 'Auth Provider', value: detailUser.authProvider || 'LOCAL' },
+            { label: 'Joined At', value: detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleString() : '—' },
+            { label: 'Last Login', value: detailUser.lastLoginAt ? new Date(detailUser.lastLoginAt).toLocaleString() : 'Never' },
+          ]}
+          longFields={detailUser.rejectionReason ? [{ label: 'Rejection / Suspension Reason', value: detailUser.rejectionReason }] : []}
+          editLabel="Edit Account"
+          onEdit={() => {
+            const target = detailUser;
+            setDetailUser(null);
+            openEdit(target);
+          }}
+        />
       )}
     </div>
   );
