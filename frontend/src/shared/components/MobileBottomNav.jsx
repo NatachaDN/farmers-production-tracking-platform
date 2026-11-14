@@ -16,8 +16,7 @@ const MOBILE_TABS = [
 
 export function MobileBottomNav({ activeRoute, onNavigate, onOpenMore, isAdmin, isManager }) {
   // Admin and Manager consoles use their own specialized navigation
-  if (isAdmin && String(activeRoute || '').startsWith('admin-')) return null;
-  if (isManager && String(activeRoute || '').startsWith('manager-')) return null;
+  if (isAdmin || isManager) return null;
 
   return (
     <nav className="acrea-mobile-bottom-nav" aria-label="Quick mobile navigation">

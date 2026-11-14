@@ -3,12 +3,20 @@
   background-color: var(--color-sidebar-bg, #164230);
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  position: sticky;
+  height: 100dvh;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: 0;
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 100;
   overflow: hidden;
+}
+
+.acrea-workspace {
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  min-height: 100dvh;
 }
 
 /* Decorative botanical leaf artwork at the bottom of the sidebar */
@@ -217,6 +225,11 @@
 }
 
 @media (max-width: 900px) {
+  .acrea-workspace {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .acrea-sidebar {
     position: fixed;
     left: 0;

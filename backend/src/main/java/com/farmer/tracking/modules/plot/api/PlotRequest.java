@@ -32,6 +32,10 @@ public class PlotRequest {
 
     private String notes;
 
+    private Long animalGroupId;
+
+    private String animalGroupName;
+
     private List<String> imageUrls;
 
     public PlotRequest() {}
@@ -145,5 +149,21 @@ public class PlotRequest {
 
     public void setImageUrls(List<String> imageUrls) {
         this.imageUrls = imageUrls;
+    }
+
+    public Long getAnimalGroupId() {
+        return animalGroupId;
+    }
+
+    public void setAnimalGroupId(Long animalGroupId) {
+        this.animalGroupId = animalGroupId;
+    }
+
+    public String getAnimalGroupName() {
+        return animalGroupName;
+    }
+
+    public void setAnimalGroupName(String animalGroupName) {
+        this.animalGroupName = animalGroupName;
     }
 }

@@ -33,6 +33,7 @@ import { LivestockView } from './features/livestock/LivestockView';
 import { ReportsAnalyticsView } from './features/reports/ReportsAnalyticsView';
 import { ManagerDashboardView } from './features/manager/ManagerDashboardView';
 import { ManagerFarmersView } from './features/manager/ManagerFarmersView';
+import { ManagerProductionsView } from './features/manager/ManagerProductionsView';
 import { ManagerReportsView } from './features/manager/ManagerReportsView';
 import './features/admin/admin.css';
 import './features/manager/manager.css';
@@ -132,6 +133,7 @@ export function App() {
     'admin-system': { title: 'System health', subtitle: 'Server, database and API traffic' },
     'manager-dashboard': { title: 'Supervision Dashboard', subtitle: `${todayLabel()} · Cooperative Network Production` },
     'manager-farmers': { title: 'Supervised Farmers', subtitle: 'Member directory, crop allocations and registration approvals' },
+    'manager-productions': { title: 'Farmer Productions', subtitle: 'Real-time supervision of crop cycles, harvests and livestock' },
     'manager-reports': { title: 'Consolidated Production Reports', subtitle: 'Multi-farmer production aggregation and exports' },
     dashboard: {
       title: 'Dashboard',
@@ -205,7 +207,20 @@ export function App() {
 
   const currentHeader = routeHeaders[currentRoute] || routeHeaders.dashboard;
   const isAdmin = authService.isAdmin(currentUser);
+  const isManager = authService.isManager(currentUser) && !isAdmin;
   const isAdminRoute = currentRoute.startsWith('admin-');
+
+  const navigateGuarded = (route) => {
+    if (isAdmin && !String(route).startsWith('admin-')) {
+      setCurrentRoute('admin-overview');
+      return;
+    }
+    if (isManager && !String(route).startsWith('manager-')) {
+      setCurrentRoute('manager-dashboard');
+      return;
+    }
+    setCurrentRoute(route);
+  };
 
   if (currentRoute === 'google-callback') {
     return <GoogleCallbackView />;
@@ -235,7 +250,7 @@ export function App() {
       ) : (
         <AppLayout
           activeRoute={currentRoute}
-          onNavigate={(r) => setCurrentRoute(r)}
+          onNavigate={navigateGuarded}
           title={currentHeader.title}
           subtitle={currentHeader.subtitle}
           user={currentUser}
@@ -264,6 +279,9 @@ export function App() {
           )}
           {currentRoute === 'manager-farmers' && (
             <ManagerFarmersView />
+          )}
+          {currentRoute === 'manager-productions' && (
+            <ManagerProductionsView />
           )}
           {currentRoute === 'manager-reports' && (
             <ManagerReportsView />

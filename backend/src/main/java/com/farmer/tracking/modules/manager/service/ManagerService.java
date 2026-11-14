@@ -36,4 +36,9 @@ public interface ManagerService {
      * Export consolidated multi-farmer production report as formatted CSV (US-35).
      */
     String exportConsolidatedReportCsv(ConsolidatedReportRequest request);
+
+    /**
+     * Aggregated view of all crop cycles, harvest records, and livestock groups across supervised farmers.
+     */
+    ManagerProductionsResponse getSupervisedProductions(String search, Long farmerId, String status);
 }

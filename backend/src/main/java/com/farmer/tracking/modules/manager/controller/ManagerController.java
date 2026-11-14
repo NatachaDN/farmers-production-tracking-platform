@@ -66,6 +66,16 @@ public class ManagerController {
         return ResponseEntity.ok(updated);
     }
 
+    @GetMapping("/productions")
+    @Operation(summary = "Supervise all crop cycles, harvest records, and livestock across supervised farmers")
+    public ResponseEntity<ManagerProductionsResponse> getSupervisedProductions(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long farmerId,
+            @RequestParam(required = false) String status
+    ) {
+        return ResponseEntity.ok(managerService.getSupervisedProductions(search, farmerId, status));
+    }
+
     @PostMapping("/reports/consolidated")
     @Operation(summary = "Generate a multi-farmer consolidated production report over a given period (US-35)")
     public ResponseEntity<ConsolidatedReportResponse> generateConsolidatedReport(

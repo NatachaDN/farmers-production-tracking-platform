@@ -49,7 +49,7 @@ export function AppLayout({
       />
 
       {/* Main Workspace */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div className="acrea-workspace" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TopBar
           title={title}
           subtitle={subtitle}

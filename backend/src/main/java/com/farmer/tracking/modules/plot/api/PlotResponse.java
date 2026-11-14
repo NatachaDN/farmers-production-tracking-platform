@@ -21,6 +21,8 @@ public class PlotResponse {
     private String irrigationType;
     private String slope;
     private String notes;
+    private Long animalGroupId;
+    private String animalGroupName;
     private List<String> imageUrls = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -58,6 +60,8 @@ public class PlotResponse {
         resp.setSoilType(plot.getSoilType());
         resp.setIrrigationType(plot.getIrrigationType());
         resp.setSlope(plot.getSlope());
+        resp.setAnimalGroupId(plot.getAnimalGroupId());
+        resp.setAnimalGroupName(plot.getAnimalGroupName());
         resp.setNotes(plot.getNotes());
         resp.setImageUrls(plot.getImageUrls() != null ? new ArrayList<>(plot.getImageUrls()) : new ArrayList<>());
         return resp;
@@ -189,5 +193,21 @@ public class PlotResponse {
 
     public void setImageUrls(List<String> imageUrls) {
         this.imageUrls = imageUrls != null ? new ArrayList<>(imageUrls) : new ArrayList<>();
+    }
+
+    public Long getAnimalGroupId() {
+        return animalGroupId;
+    }
+
+    public void setAnimalGroupId(Long animalGroupId) {
+        this.animalGroupId = animalGroupId;
+    }
+
+    public String getAnimalGroupName() {
+        return animalGroupName;
+    }
+
+    public void setAnimalGroupName(String animalGroupName) {
+        this.animalGroupName = animalGroupName;
     }
 }

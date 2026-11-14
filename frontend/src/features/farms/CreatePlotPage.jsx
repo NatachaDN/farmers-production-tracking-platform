@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { farmService } from './services/farmService';
 import { plotService } from './services/plotService';
+import { cropService } from '../crops/services/cropService';
+import { CreateCropModal } from '../crops/components/CreateCropModal';
+import { animalGroupService } from '../livestock/services/animalGroupService';
 import {
   IconAlertCircle,
   IconArrowLeft,
@@ -66,6 +69,41 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
   const photoInputRef = useRef(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [farmerCrops, setFarmerCrops] = useState([]);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [animalGroups, setAnimalGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [hasAnimalGroup, setHasAnimalGroup] = useState(false);
+  const [animalGroupId, setAnimalGroupId] = useState('');
+
+  useEffect(() => {
+    if (!farmerId) return;
+    let mounted = true;
+    cropService.getCrops(farmerId)
+      .then((list) => {
+        if (mounted && Array.isArray(list)) {
+          setFarmerCrops(list);
+        }
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, [farmerId]);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingGroups(true);
+    animalGroupService.getGroups()
+      .then((list) => {
+        if (mounted && Array.isArray(list)) {
+          setAnimalGroups(list);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoadingGroups(false);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -157,6 +195,10 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
 
     setSubmitting(true);
     try {
+      const selectedGroup = hasAnimalGroup && animalGroupId
+        ? animalGroups.find((g) => String(g.id) === String(animalGroupId))
+        : null;
+
       const saved = await plotService.createPlot(farmerId, {
         farmId: Number(farmId),
         name: name.trim(),
@@ -168,6 +210,8 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
         irrigationType: irrigationType || null,
         slope: slope || null,
         notes: notes.trim() || null,
+        animalGroupId: selectedGroup ? Number(selectedGroup.id) : null,
+        animalGroupName: selectedGroup ? selectedGroup.name : null,
         imageUrls,
       });
       if (onPlotCreated) {
@@ -393,41 +437,46 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                 {/* Primary Crop */}
                 <div>
-                  <label htmlFor="plot-crop" style={labelStyle}>
-                    Primary Crop
-                  </label>
-                  <input
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label htmlFor="plot-crop" style={{ ...labelStyle, marginBottom: 0 }}>
+                      Primary Crop
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCropModalOpen(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 10px',
+                        borderRadius: '9999px',
+                        border: '1px solid #3E7B52',
+                        backgroundColor: '#EAF4ED',
+                        color: '#2A6740',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <IconPlus size={12} /> Add New Crop
+                    </button>
+                  </div>
+                  <select
                     id="plot-crop"
-                    type="text"
                     value={cropType}
                     onChange={(e) => setCropType(e.target.value)}
-                    placeholder="e.g., Maize, Tomatoes, Plantain"
                     style={inputStyle}
-                  />
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                    {CROP_SUGGESTIONS.map((crop) => {
-                      const active = cropType.toLowerCase() === crop.toLowerCase();
-                      return (
-                        <button
-                          key={crop}
-                          type="button"
-                          onClick={() => setCropType(crop)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '9999px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            border: active ? '1px solid #3E7B52' : '1px solid #DFD8CA',
-                            backgroundColor: active ? '#EAF4ED' : '#F9F6F0',
-                            color: active ? '#2A6740' : '#4B5752',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {crop}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  >
+                    {Array.from(new Set([
+                      ...farmerCrops.map((c) => c.displayName || c.name).filter(Boolean),
+                      ...CROP_SUGGESTIONS,
+                      ...(cropType ? [cropType] : []),
+                    ])).map((crop) => (
+                      <option key={crop} value={crop}>
+                        {crop}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Growth Stage */}
@@ -448,6 +497,101 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
                 </div>
               </div>
             </div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: hasAnimalGroup ? '16px' : '0' }}>
+              <div>
+                <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: '#19201C', margin: '0 0 4px' }}>
+                  Livestock / Animal Group <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>(optional)</span>
+                </h3>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                  Indicate whether this plot will also host or be linked to an animal group.
+                </p>
+              </div>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  border: hasAnimalGroup ? '1px solid #3E7B52' : '1px solid #DFD8CA',
+                  backgroundColor: hasAnimalGroup ? '#EAF4ED' : '#F9F6F0',
+                  color: hasAnimalGroup ? '#164230' : '#4B5752',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={hasAnimalGroup}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setHasAnimalGroup(checked);
+                    if (!checked) setAnimalGroupId('');
+                  }}
+                  style={{ accentColor: '#164230', width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <span>Add a group of animals to this plot</span>
+              </label>
+            </div>
+
+            {hasAnimalGroup && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '14px', borderTop: '1px solid #ECE7DC' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label htmlFor="plot-animal-group" style={{ ...labelStyle, marginBottom: 0 }}>
+                      Select Animal Group
+                    </label>
+                    {onNavigate && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate('livestock')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 10px',
+                          borderRadius: '9999px',
+                          border: '1px solid #3E7B52',
+                          backgroundColor: '#EAF4ED',
+                          color: '#2A6740',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <IconPlus size={12} /> Create Animal Group
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    id="plot-animal-group"
+                    value={animalGroupId}
+                    onChange={(e) => setAnimalGroupId(e.target.value)}
+                    disabled={loadingGroups}
+                    style={inputStyle}
+                  >
+                    <option value="">
+                      {loadingGroups
+                        ? 'Loading animal groups…'
+                        : animalGroups.length === 0
+                          ? 'No animal groups found — create one first'
+                          : 'Choose an animal group…'}
+                    </option>
+                    {animalGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                        {group.animalType ? ` (${group.animalType}` : ''}
+                        {group.currentPopulation != null ? ` • ${group.currentPopulation} head)` : group.animalType ? ')' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={cardStyle}>
@@ -608,6 +752,17 @@ export function CreatePlotPage({ farmerId, initialFarmId, onBack, onNavigate, on
           </div>
         </form>
       )}
+
+      <CreateCropModal
+        farmerId={farmerId}
+        isOpen={isCropModalOpen}
+        onClose={() => setIsCropModalOpen(false)}
+        onCreated={(created) => {
+          setFarmerCrops((prev) => [created, ...prev]);
+          setCropType(created.displayName || created.name || '');
+          setIsCropModalOpen(false);
+        }}
+      />
     </div>
   );
 }

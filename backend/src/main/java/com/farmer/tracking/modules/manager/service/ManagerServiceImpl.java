@@ -81,6 +81,10 @@ public class ManagerServiceImpl implements ManagerService {
         };
     }
 
+    private static boolean isSupervisedFarmer(Farmer f) {
+        return f != null && (f.getRole() == null || "ROLE_FARMER".equalsIgnoreCase(f.getRole()));
+    }
+
     private static Long getFarmerId(Harvest h) {
         return (h != null && h.getCycle() != null) ? h.getCycle().getFarmerId() : null;
     }
@@ -92,7 +96,9 @@ public class ManagerServiceImpl implements ManagerService {
 
     @Override
     public ManagerDashboardSummary getDashboardSummary() {
-        List<Farmer> farmers = farmerRepository.findAll();
+        List<Farmer> farmers = farmerRepository.findAll().stream()
+                .filter(ManagerServiceImpl::isSupervisedFarmer)
+                .toList();
         Map<Long, Farmer> farmerMap = farmers.stream().collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
 
         long totalFarmers = farmers.size();
@@ -222,7 +228,9 @@ public class ManagerServiceImpl implements ManagerService {
 
     @Override
     public List<ManagerFarmerRow> getFarmers(String search, String region, String crop, RegistrationStatus status, String sort) {
-        List<Farmer> farmers = farmerRepository.findAll();
+        List<Farmer> farmers = farmerRepository.findAll().stream()
+                .filter(ManagerServiceImpl::isSupervisedFarmer)
+                .toList();
         List<Plot> allPlots = plotRepository.findAll();
         List<Cycle> allCycles = cycleRepository.findAll();
         List<Harvest> allHarvests = harvestRepository.findAll();
@@ -427,9 +435,13 @@ public class ManagerServiceImpl implements ManagerService {
 
         List<Farmer> farmers;
         if (request.getFarmerIds() != null && !request.getFarmerIds().isEmpty()) {
-            farmers = farmerRepository.findAllById(request.getFarmerIds());
+            farmers = farmerRepository.findAllById(request.getFarmerIds()).stream()
+                    .filter(ManagerServiceImpl::isSupervisedFarmer)
+                    .toList();
         } else {
-            farmers = farmerRepository.findAll();
+            farmers = farmerRepository.findAll().stream()
+                    .filter(ManagerServiceImpl::isSupervisedFarmer)
+                    .toList();
         }
 
         // Apply region filter if specified
@@ -615,5 +627,112 @@ public class ManagerServiceImpl implements ManagerService {
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public ManagerProductionsResponse getSupervisedProductions(String search, Long farmerId, String status) {
+        List<Farmer> farmers = farmerRepository.findAll().stream()
+                .filter(ManagerServiceImpl::isSupervisedFarmer)
+                .toList();
+        Map<Long, Farmer> farmerMap = farmers.stream()
+                .collect(Collectors.toMap(Farmer::getId, Function.identity(), (a, b) -> a));
+
+        List<Cycle> allCycles = cycleRepository.findAll();
+        List<Harvest> allHarvests = harvestRepository.findAll();
+        List<AnimalGroup> allAnimals = animalGroupRepository.findAll();
+
+        Map<Long, Double> harvestedByCycle = allHarvests.stream()
+                .filter(h -> h.getCycle() != null && h.getCycle().getId() != null)
+                .collect(Collectors.groupingBy(
+                        h -> h.getCycle().getId(),
+                        Collectors.summingDouble(ManagerServiceImpl::toKg)
+                ));
+
+        String q = (search != null && !search.isBlank()) ? search.trim().toLowerCase() : null;
+        String statusFilter = (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status.trim()))
+                ? status.trim().toUpperCase() : null;
+
+        List<SupervisedCycleRow> cycleRows = allCycles.stream()
+                .filter(c -> c.getFarmerId() != null && farmerMap.containsKey(c.getFarmerId()))
+                .filter(c -> farmerId == null || farmerId.equals(c.getFarmerId()))
+                .filter(c -> statusFilter == null || (c.getStatus() != null && c.getStatus().name().equalsIgnoreCase(statusFilter)))
+                .map(c -> {
+                    Farmer f = farmerMap.get(c.getFarmerId());
+                    String fName = f.getFullName() != null ? f.getFullName() : "Farmer #" + f.getId();
+                    String farmName = f.getFarmName() != null ? f.getFarmName() : "Main Farm";
+                    String plotName = c.getPlot() != null ? c.getPlot().getName() : "Plot";
+                    String cStatus = c.getStatus() != null ? c.getStatus().name() : "ACTIVE";
+                    double yKg = Math.round(harvestedByCycle.getOrDefault(c.getId(), 0.0) * 10.0) / 10.0;
+                    return new SupervisedCycleRow(
+                            c.getId(), f.getId(), fName, farmName,
+                            c.getName(), c.getCropName(), plotName, cStatus,
+                            c.getStartDate(), c.getEndDate(), c.getAcreage(), yKg
+                    );
+                })
+                .filter(row -> q == null ||
+                        row.farmerName().toLowerCase().contains(q) ||
+                        (row.cropName() != null && row.cropName().toLowerCase().contains(q)) ||
+                        (row.name() != null && row.name().toLowerCase().contains(q)) ||
+                        (row.plotName() != null && row.plotName().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(SupervisedCycleRow::startDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+
+        List<SupervisedHarvestRow> harvestRows = allHarvests.stream()
+                .filter(h -> getFarmerId(h) != null && farmerMap.containsKey(getFarmerId(h)))
+                .filter(h -> farmerId == null || farmerId.equals(getFarmerId(h)))
+                .map(h -> {
+                    Farmer f = farmerMap.get(getFarmerId(h));
+                    String fName = f.getFullName() != null ? f.getFullName() : "Farmer #" + f.getId();
+                    String farmName = f.getFarmName() != null ? f.getFarmName() : "Main Farm";
+                    Long cId = h.getCycle() != null ? h.getCycle().getId() : null;
+                    String cName = h.getCycle() != null ? h.getCycle().getName() : "Cycle";
+                    double qtyKg = Math.round(toKg(h) * 10.0) / 10.0;
+                    return new SupervisedHarvestRow(
+                            h.getId(), f.getId(), fName, farmName,
+                            cId, cName, getCropName(h), qtyKg, h.getHarvestDate()
+                    );
+                })
+                .filter(row -> q == null ||
+                        row.farmerName().toLowerCase().contains(q) ||
+                        (row.cropName() != null && row.cropName().toLowerCase().contains(q)) ||
+                        (row.cycleName() != null && row.cycleName().toLowerCase().contains(q)))
+                .sorted(Comparator.comparing(SupervisedHarvestRow::harvestDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+
+        List<SupervisedAnimalRow> animalRows = allAnimals.stream()
+                .filter(ag -> ag.getFarmerId() != null && farmerMap.containsKey(ag.getFarmerId()))
+                .filter(ag -> farmerId == null || farmerId.equals(ag.getFarmerId()))
+                .filter(ag -> statusFilter == null || (ag.getStatus() != null && ag.getStatus().name().equalsIgnoreCase(statusFilter)))
+                .map(ag -> {
+                    Farmer f = farmerMap.get(ag.getFarmerId());
+                    String fName = f.getFullName() != null ? f.getFullName() : "Farmer #" + f.getId();
+                    String farmName = f.getFarmName() != null ? f.getFarmName() : "Main Farm";
+                    String typeLabel = ag.getAnimalType() != null ? ag.getAnimalType().getDisplayName() : "Livestock";
+                    String aStatus = ag.getStatus() != null ? ag.getStatus().name() : "ACTIVE";
+                    return new SupervisedAnimalRow(
+                            ag.getId(), f.getId(), fName, farmName,
+                            ag.getName(), typeLabel, ag.getBreed(),
+                            ag.getCurrentPopulation(), ag.getLocation(), aStatus
+                    );
+                })
+                .filter(row -> q == null ||
+                        row.farmerName().toLowerCase().contains(q) ||
+                        (row.name() != null && row.name().toLowerCase().contains(q)) ||
+                        (row.animalType() != null && row.animalType().toLowerCase().contains(q)) ||
+                        (row.breed() != null && row.breed().toLowerCase().contains(q)))
+                .toList();
+
+        int activeCycles = (int) cycleRows.stream().filter(c -> "ACTIVE".equalsIgnoreCase(c.status())).count();
+        int completedCycles = (int) cycleRows.stream().filter(c -> "COMPLETED".equalsIgnoreCase(c.status())).count();
+        double totalHarvestKg = Math.round(harvestRows.stream().mapToDouble(SupervisedHarvestRow::quantityKg).sum() * 10.0) / 10.0;
+        double totalHarvestTons = Math.round((totalHarvestKg / 1000.0) * 100.0) / 100.0;
+        long totalAnimalPop = animalRows.stream().mapToLong(a -> a.currentPopulation() != null ? a.currentPopulation() : 0L).sum();
+
+        return new ManagerProductionsResponse(
+                cycleRows.size(), activeCycles, completedCycles,
+                totalHarvestKg, totalHarvestTons,
+                animalRows.size(), totalAnimalPop,
+                cycleRows, harvestRows, animalRows
+        );
     }
 }

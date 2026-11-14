@@ -141,6 +141,59 @@ public class ManagerDtos {
             String status
     ) {}
 
+    public record SupervisedCycleRow(
+            Long id,
+            Long farmerId,
+            String farmerName,
+            String farmName,
+            String name,
+            String cropName,
+            String plotName,
+            String status,
+            LocalDate startDate,
+            LocalDate endDate,
+            Double acreage,
+            double harvestedKg
+    ) {}
+
+    public record SupervisedHarvestRow(
+            Long id,
+            Long farmerId,
+            String farmerName,
+            String farmName,
+            Long cycleId,
+            String cycleName,
+            String cropName,
+            double quantityKg,
+            LocalDate harvestDate
+    ) {}
+
+    public record SupervisedAnimalRow(
+            Long id,
+            Long farmerId,
+            String farmerName,
+            String farmName,
+            String name,
+            String animalType,
+            String breed,
+            Integer currentPopulation,
+            String location,
+            String status
+    ) {}
+
+    public record ManagerProductionsResponse(
+            int totalCycles,
+            int activeCycles,
+            int completedCycles,
+            double totalHarvestKg,
+            double totalHarvestTons,
+            int totalAnimalGroups,
+            long totalAnimalPopulation,
+            List<SupervisedCycleRow> cycles,
+            List<SupervisedHarvestRow> harvests,
+            List<SupervisedAnimalRow> animalGroups
+    ) {}
+
     public static class UpdateFarmerStatusRequest {
         @NotNull(message = "Registration status is required")
         private RegistrationStatus status;

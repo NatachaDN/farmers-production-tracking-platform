@@ -83,12 +83,8 @@ export function DashboardView({ onNavigate, user }) {
         </div>
       )}
 
-      {/* 4 Stat Cards Row - 100% Real Database Values */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
-        gap: '16px'
-      }}>
+      {/* 4 Stat Cards Row - Mobile-first 1 -> 2 -> 4 columns */}
+      <div className="acrea-kpi-grid">
         <MetricCard
           label="Active crop cycles"
           value={String(activeCycles)}

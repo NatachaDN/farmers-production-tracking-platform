@@ -8,6 +8,7 @@ import {
   IconRefresh
 } from '../../shared/components/Icons.jsx';
 import { Skeleton } from '../../shared/components/Skeleton.jsx';
+import { generateManagerReportPdf } from './utils/generateManagerReportPdf.js';
 import './manager.css';
 
 export function ManagerReportsView() {
@@ -81,7 +82,7 @@ export function ManagerReportsView() {
   };
 
   const handlePrint = () => {
-    window.print();
+    generateManagerReportPdf(report);
   };
 
   const handleToggleFarmer = (id) => {
@@ -123,7 +124,7 @@ export function ManagerReportsView() {
   return (
     <div className="mgr-stack">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary, #19201C)', margin: 0 }}>
             Consolidated Multi-Farmer Production Reports
@@ -132,14 +133,14 @@ export function ManagerReportsView() {
             Generate and export aggregated production statements across selected farmers and cooperative regions.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {report && (
             <>
               <button
                 className="mgr-btn"
                 onClick={handlePrint}
               >
-                Print / PDF
+                Export PDF
               </button>
               <button
                 className="mgr-btn mgr-btn-primary"
