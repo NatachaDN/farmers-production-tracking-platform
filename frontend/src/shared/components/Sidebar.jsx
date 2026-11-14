@@ -68,7 +68,7 @@ export function Sidebar({ activeRoute = 'dashboard', onNavigate, isAdmin = false
     { id: 'crops', label: 'Crop Production', icon: IconCrop },
     { id: 'livestock', label: 'Livestock', icon: IconLivestock },
     { id: 'activities', label: 'Activities', icon: IconActivities },
-    { id: 'production', label: 'Production', icon: IconProduction },
+    { id: 'production', label: 'Harvest', icon: IconProduction },
     { id: 'inputs', label: 'Farm Inputs', icon: IconInputs },
     { id: 'cycle-inputs', label: 'Cycle Inputs', icon: IconInputs },
     { id: 'incidents', label: 'Incidents', icon: IconActivities },

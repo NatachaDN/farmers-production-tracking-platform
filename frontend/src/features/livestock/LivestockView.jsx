@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AnimalGroupCard } from './components/AnimalGroupCard';
-import { CreateAnimalGroupModal } from './components/CreateAnimalGroupModal';
-import { EditAnimalGroupModal } from './components/EditAnimalGroupModal';
-import { AnimalGroupDetailsModal } from './components/AnimalGroupDetailsModal';
+import { AnimalGroupFormPage } from './AnimalGroupFormPage';
+import { AnimalGroupDetailsPage } from './AnimalGroupDetailsPage';
 import { DeleteAnimalGroupModal } from './components/DeleteAnimalGroupModal';
 import { animalGroupService } from './services/animalGroupService';
 import { MetricCard } from '../../shared/components/MetricCard';
@@ -28,10 +27,8 @@ export function LivestockView({ user }) {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Modals state
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  // Page view mode: 'list' | 'detail' | 'create' | 'edit'
+  const [viewMode, setViewMode] = useState('list');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
 
@@ -88,23 +85,75 @@ export function LivestockView({ user }) {
   const handleCreateGroup = async (formData) => {
     const created = await animalGroupService.createGroup(formData);
     setGroups((prev) => [created, ...prev]);
+    setSelectedGroup(created);
+    setViewMode('detail');
     showToast(`Animal group "${created.name}" registered successfully.`);
   };
 
   const handleUpdateGroup = async (id, formData) => {
     const updated = await animalGroupService.updateGroup(id, formData);
     setGroups((prev) => prev.map((g) => (g.id === id ? updated : g)));
-    if (selectedGroup && selectedGroup.id === id) {
-      setSelectedGroup(updated);
-    }
+    setSelectedGroup(updated);
+    setViewMode('detail');
     showToast(`Animal group "${updated.name}" updated successfully.`);
   };
 
   const handleDeleteGroup = async (id) => {
     await animalGroupService.deleteGroup(id);
     setGroups((prev) => prev.filter((g) => g.id !== id));
+    if (selectedGroup?.id === id) {
+      setSelectedGroup(null);
+      setViewMode('list');
+    }
     showToast('Animal group deleted successfully.');
   };
+
+  if (viewMode === 'create') {
+    return (
+      <AnimalGroupFormPage
+        onBack={() => setViewMode('list')}
+        onSave={handleCreateGroup}
+      />
+    );
+  }
+
+  if (viewMode === 'edit' && selectedGroup) {
+    return (
+      <AnimalGroupFormPage
+        group={selectedGroup}
+        onBack={() => setViewMode('detail')}
+        onSave={(payload) => handleUpdateGroup(selectedGroup.id, payload)}
+      />
+    );
+  }
+
+  if (viewMode === 'detail' && selectedGroup) {
+    return (
+      <>
+        <AnimalGroupDetailsPage
+          group={selectedGroup}
+          onBack={() => {
+            setSelectedGroup(null);
+            setViewMode('list');
+          }}
+          onEdit={(g) => {
+            setSelectedGroup(g);
+            setViewMode('edit');
+          }}
+          onDelete={(g) => {
+            setSelectedGroup(g);
+            setIsDeleteModalOpen(true);
+          }}
+        />
+        <DeleteAnimalGroupModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          group={selectedGroup}
+          onConfirmDelete={handleDeleteGroup}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -188,7 +237,7 @@ export function LivestockView({ user }) {
         </div>
 
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => setViewMode('create')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -488,7 +537,7 @@ export function LivestockView({ user }) {
 
           {groups.length === 0 ? (
             <button
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={() => setViewMode('create')}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -536,7 +585,7 @@ export function LivestockView({ user }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 310px), 1fr))',
             gap: '20px'
           }}
         >
@@ -546,11 +595,11 @@ export function LivestockView({ user }) {
               group={group}
               onViewDetails={(g) => {
                 setSelectedGroup(g);
-                setIsDetailsModalOpen(true);
+                setViewMode('detail');
               }}
               onEdit={(g) => {
                 setSelectedGroup(g);
-                setIsEditModalOpen(true);
+                setViewMode('edit');
               }}
               onDelete={(g) => {
                 setSelectedGroup(g);
@@ -560,40 +609,6 @@ export function LivestockView({ user }) {
           ))}
         </div>
       )}
-
-      {/* Modals */}
-      <CreateAnimalGroupModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onCreateGroup={handleCreateGroup}
-      />
-
-      <EditAnimalGroupModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedGroup(null);
-        }}
-        group={selectedGroup}
-        onUpdateGroup={handleUpdateGroup}
-      />
-
-      <AnimalGroupDetailsModal
-        isOpen={isDetailsModalOpen}
-        onClose={() => {
-          setIsDetailsModalOpen(false);
-          setSelectedGroup(null);
-        }}
-        group={selectedGroup}
-        onEdit={(g) => {
-          setSelectedGroup(g);
-          setIsEditModalOpen(true);
-        }}
-        onDelete={(g) => {
-          setSelectedGroup(g);
-          setIsDeleteModalOpen(true);
-        }}
-      />
 
       <DeleteAnimalGroupModal
         isOpen={isDeleteModalOpen}

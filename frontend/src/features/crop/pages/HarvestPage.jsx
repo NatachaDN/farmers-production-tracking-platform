@@ -137,7 +137,7 @@ export function HarvestPage({ farmerId }) {
           {cycles.length > 0 ? (
             cycles.map((c) => {
               const isSelected = selectedCycleId === c.id;
-              const displayName = c.name || `${c.cropName || 'Crop'} (${c.plotName || 'Plot'})`;
+              const displayName = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || 'Unnamed cycle';
               return (
                 <button
                   key={c.id}
@@ -188,7 +188,7 @@ export function HarvestPage({ farmerId }) {
           {/* 4 Summary KPI Cards */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))',
             gap: '20px'
           }}>
             <MetricCard

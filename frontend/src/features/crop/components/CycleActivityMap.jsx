@@ -35,7 +35,7 @@ export function CycleActivityMap({ activities = [], cycleName = '' }) {
     }}>
       <AcreaMap
         markers={markers}
-        locationText={cycleName || 'Bandjoun'}
+        locationText={cycleName}
         label={`Field Interventions Map (${markers.length} pinned ${markers.length === 1 ? 'task' : 'tasks'})`}
         hint="Interactive map of logged agronomic interventions across the cycle field."
         height="220px"

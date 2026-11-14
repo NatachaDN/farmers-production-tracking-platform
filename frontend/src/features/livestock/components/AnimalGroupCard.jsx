@@ -6,6 +6,7 @@ import {
   IconTrash,
   IconArrowRight
 } from '../../../shared/components/Icons';
+import { resolveAnimalImageUrl } from '../AnimalGroupFormPage';
 
 function getStatusStyle(status) {
   switch (status) {
@@ -29,6 +30,8 @@ export function AnimalGroupCard({ group, onViewDetails, onEdit, onDelete }) {
   const currentPop = group.currentPopulation ?? group.initialPopulation ?? 0;
   const initialPop = group.initialPopulation ?? currentPop;
   const diff = currentPop - initialPop;
+  const coverUrl = resolveAnimalImageUrl(group.imageUrls?.[0]);
+  const extraPhotos = (group.imageUrls?.length || 0) - 1;
 
   return (
     <div
@@ -38,7 +41,7 @@ export function AnimalGroupCard({ group, onViewDetails, onEdit, onDelete }) {
         backgroundColor: '#FFFFFF',
         border: `1px solid ${isHovered ? '#DFD8CA' : 'var(--color-card-border)'}`,
         borderRadius: 'var(--radius-xl)',
-        padding: '24px',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -50,6 +53,38 @@ export function AnimalGroupCard({ group, onViewDetails, onEdit, onDelete }) {
         position: 'relative'
       }}
     >
+      {coverUrl && (
+        <div style={{
+          height: '156px',
+          backgroundColor: '#F4EFE6',
+          position: 'relative',
+          overflow: 'hidden',
+          borderBottom: '1px solid var(--color-card-border)'
+        }}>
+          <img
+            src={coverUrl}
+            alt={group.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+          {extraPhotos > 0 && (
+            <span style={{
+              position: 'absolute',
+              bottom: '8px',
+              right: '10px',
+              padding: '3px 9px',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              backgroundColor: 'rgba(25, 32, 28, 0.78)',
+              color: '#FFFFFF'
+            }}>
+              +{extraPhotos} {extraPhotos === 1 ? 'photo' : 'photos'}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
       <div>
         {/* Top Header Row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -272,6 +307,7 @@ export function AnimalGroupCard({ group, onViewDetails, onEdit, onDelete }) {
             <IconTrash size={15} color="#B91C1C" />
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

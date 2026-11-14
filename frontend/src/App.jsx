@@ -174,7 +174,7 @@ export function App() {
       subtitle: 'Record and track daily farming activities per cycle'
     },
     production: {
-      title: 'Harvest & Production Records',
+      title: 'Harvest',
       subtitle: 'Harvest tallies, batch weighings, and yield logs'
     },
     inputs: {

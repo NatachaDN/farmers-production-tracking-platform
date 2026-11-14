@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Schema(description = "Payload to register a new animal group / livestock batch")
 public class CreateAnimalGroupRequest {
@@ -55,6 +56,24 @@ public class CreateAnimalGroupRequest {
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     @Schema(description = "Additional descriptive notes", example = "Acquired from regional cooperative")
     private String notes;
+
+    @Size(max = 2000, message = "Description cannot exceed 2000 characters")
+    @Schema(description = "Detailed description of the herd/flock, origin, and management notes")
+    private String description;
+
+    @Size(max = 160, message = "Feeding regime cannot exceed 160 characters")
+    @Schema(description = "Feeding regime or ration", example = "Zero-grazing + Dairy meal")
+    private String feedingRegime;
+
+    @Size(max = 60, message = "Health status cannot exceed 60 characters")
+    @Schema(description = "Current health status", example = "Healthy / Vaccinated")
+    private String healthStatus;
+
+    @Schema(description = "Average animal weight in kg", example = "380.0")
+    private Double averageWeightKg;
+
+    @Schema(description = "Photo URLs for the animal group")
+    private List<String> imageUrls;
 
     public CreateAnimalGroupRequest() {}
 
@@ -144,6 +163,46 @@ public class CreateAnimalGroupRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getFeedingRegime() {
+        return feedingRegime;
+    }
+
+    public void setFeedingRegime(String feedingRegime) {
+        this.feedingRegime = feedingRegime;
+    }
+
+    public String getHealthStatus() {
+        return healthStatus;
+    }
+
+    public void setHealthStatus(String healthStatus) {
+        this.healthStatus = healthStatus;
+    }
+
+    public Double getAverageWeightKg() {
+        return averageWeightKg;
+    }
+
+    public void setAverageWeightKg(Double averageWeightKg) {
+        this.averageWeightKg = averageWeightKg;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
     }
 }
 

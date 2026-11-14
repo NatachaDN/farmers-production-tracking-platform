@@ -5,6 +5,8 @@ import com.farmer.tracking.modules.farm.model.Farm;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a group, herd, flock, pen, or colony of animals managed by a farmer.
@@ -61,6 +63,24 @@ public class AnimalGroup {
 
     @Column(name = "notes", length = 500)
     private String notes;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "feeding_regime", length = 160)
+    private String feedingRegime;
+
+    @Column(name = "health_status", length = 60)
+    private String healthStatus;
+
+    @Column(name = "average_weight_kg")
+    private Double averageWeightKg;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "animal_group_images", joinColumns = @JoinColumn(name = "animal_group_id"))
+    @OrderColumn(name = "image_order")
+    @Column(name = "image_url", length = 1000, nullable = false)
+    private List<String> imageUrls = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -228,6 +248,46 @@ public class AnimalGroup {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getFeedingRegime() {
+        return feedingRegime;
+    }
+
+    public void setFeedingRegime(String feedingRegime) {
+        this.feedingRegime = feedingRegime;
+    }
+
+    public String getHealthStatus() {
+        return healthStatus;
+    }
+
+    public void setHealthStatus(String healthStatus) {
+        this.healthStatus = healthStatus;
+    }
+
+    public Double getAverageWeightKg() {
+        return averageWeightKg;
+    }
+
+    public void setAverageWeightKg(Double averageWeightKg) {
+        this.averageWeightKg = averageWeightKg;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
     }
 
     public LocalDateTime getCreatedAt() {

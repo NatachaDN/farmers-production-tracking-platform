@@ -18,11 +18,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service implementation for managing animal groups / livestock batches.
- * Enforces strict multi-tenant data isolation and historical retention policies.
+ * Enforces strict multi-tenant data isolation and historical retention
+ * policies.
  */
 @Service
 @Transactional
@@ -35,8 +38,7 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
     public AnimalGroupServiceImpl(
             AnimalGroupRepository animalGroupRepository,
             FarmerRepository farmerRepository,
-            FarmRepository farmRepository
-    ) {
+            FarmRepository farmRepository) {
         this.animalGroupRepository = animalGroupRepository;
         this.farmerRepository = farmerRepository;
         this.farmRepository = farmRepository;
@@ -45,7 +47,8 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
     @Override
     public AnimalGroupResponse createAnimalGroup(Long farmerId, CreateAnimalGroupRequest request) {
         Farmer farmer = farmerRepository.findById(farmerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Authenticated farmer not found with ID: " + farmerId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Authenticated farmer not found with ID: " + farmerId));
 
         if (request.getInitialPopulation() == null || request.getInitialPopulation() <= 0) {
             throw new BadRequestException("Initial population must be greater than zero");
@@ -62,7 +65,8 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         Farm farm = null;
         if (request.getFarmId() != null) {
             farm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Farm not found with ID " + request.getFarmId() + " for this farmer"));
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Farm not found with ID " + request.getFarmId() + " for this farmer"));
         }
 
         AnimalGroup group = new AnimalGroup();
@@ -78,6 +82,13 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         group.setStatus(request.getStatus() != null ? request.getStatus() : AnimalGroupStatus.ACTIVE);
         group.setStartDate(request.getStartDate() != null ? request.getStartDate() : LocalDate.now());
         group.setNotes(request.getNotes() != null ? request.getNotes().trim() : null);
+        applyExtendedDetails(
+                group,
+                request.getDescription(),
+                request.getFeedingRegime(),
+                request.getHealthStatus(),
+                request.getAverageWeightKg(),
+                request.getImageUrls());
 
         AnimalGroup saved = animalGroupRepository.save(group);
         return AnimalGroupResponse.fromEntity(saved);
@@ -121,9 +132,11 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         Farm farm = group.getFarm();
         if (request.getFarmId() != null) {
             farm = farmRepository.findByIdAndFarmerId(request.getFarmId(), farmerId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Farm not found with ID " + request.getFarmId() + " for this farmer"));
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Farm not found with ID " + request.getFarmId() + " for this farmer"));
         } else if (request.getFarmId() == null && request.getName() != null) {
-            // Keep existing or clear if explicitly needed; if null in request, preserve unless requested
+            // Keep existing or clear if explicitly needed; if null in request, preserve
+            // unless requested
         }
 
         group.setName(request.getName().trim());
@@ -143,9 +156,43 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         }
         group.setNotes(request.getNotes() != null ? request.getNotes().trim() : null);
         group.setFarm(farm);
+        applyExtendedDetails(
+                group,
+                request.getDescription(),
+                request.getFeedingRegime(),
+                request.getHealthStatus(),
+                request.getAverageWeightKg(),
+                request.getImageUrls());
 
         AnimalGroup updated = animalGroupRepository.save(group);
         return AnimalGroupResponse.fromEntity(updated);
+    }
+
+    private void applyExtendedDetails(
+            AnimalGroup group,
+            String description,
+            String feedingRegime,
+            String healthStatus,
+            Double averageWeightKg,
+            List<String> imageUrls) {
+        group.setDescription(trimOrNull(description));
+        group.setFeedingRegime(trimOrNull(feedingRegime));
+        group.setHealthStatus(trimOrNull(healthStatus));
+        group.setAverageWeightKg(averageWeightKg);
+        if (imageUrls != null) {
+            List<String> cleaned = imageUrls.stream()
+                    .filter(u -> u != null && !u.trim().isEmpty())
+                    .map(String::trim)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            group.setImageUrls(cleaned);
+        }
+    }
+
+    private String trimOrNull(String value) {
+        if (value == null)
+            return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Override
@@ -156,24 +203,29 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
         validateOwnership(group, farmerId);
 
         // Deletion Strategy & Policy (AC-08 & AC-09):
-        // Allow deletion only when doing so does not compromise associated production or historical records.
-        // If the group is archived with historical records or has active production logs, deletion is rejected.
+        // Allow deletion only when doing so does not compromise associated production
+        // or historical records.
+        // If the group is archived with historical records or has active production
+        // logs, deletion is rejected.
         if (hasProtectedHistoricalDependencies(group)) {
             throw new ConflictException(
-                    "Cannot delete animal group '" + group.getName() + "' because it has protected historical records or active production history. Consider updating its status to ARCHIVED instead."
-            );
+                    "Cannot delete animal group '" + group.getName()
+                            + "' because it has protected historical records or active production history. Consider updating its status to ARCHIVED instead.");
         }
 
         animalGroupRepository.delete(group);
     }
 
     /**
-     * Checks if the animal group has protected historical records that must be retained.
-     * In this baseline, an archived group with recorded notes or custom population shifts is protected,
+     * Checks if the animal group has protected historical records that must be
+     * retained.
+     * In this baseline, an archived group with recorded notes or custom population
+     * shifts is protected,
      * laying the foundation for future production and health logs.
      */
     private boolean hasProtectedHistoricalDependencies(AnimalGroup group) {
-        if (group.getStatus() == AnimalGroupStatus.ARCHIVED && group.getNotes() != null && group.getNotes().contains("[PROTECTED]")) {
+        if (group.getStatus() == AnimalGroupStatus.ARCHIVED && group.getNotes() != null
+                && group.getNotes().contains("[PROTECTED]")) {
             return true;
         }
         return false;
@@ -181,8 +233,8 @@ public class AnimalGroupServiceImpl implements AnimalGroupService {
 
     private void validateOwnership(AnimalGroup group, Long farmerId) {
         if (group.getFarmer() == null || !group.getFarmer().getId().equals(farmerId)) {
-            throw new ForbiddenException("Data Isolation Violation: You do not have permission to access animal group " + group.getId());
+            throw new ForbiddenException(
+                    "Data Isolation Violation: You do not have permission to access animal group " + group.getId());
         }
     }
 }
-

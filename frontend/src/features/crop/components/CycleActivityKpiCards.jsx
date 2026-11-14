@@ -12,7 +12,7 @@ export function CycleActivityKpiCards({
   isLoading
 }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '20px' }}>
       <MetricCard
         label="Total Interventions"
         value={String(totalCount)}

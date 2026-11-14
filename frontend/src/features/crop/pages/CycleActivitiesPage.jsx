@@ -5,6 +5,7 @@ import { ActivityForm } from '../components/ActivityForm';
 import { ActivityList } from '../components/ActivityList';
 import { CycleActivityKpiCards } from '../components/CycleActivityKpiCards';
 import { CycleActivityMap } from '../components/CycleActivityMap';
+import { ConfirmModal } from '../../../shared/components/ConfirmModal';
 import {
   IconActivities,
   IconPlus,
@@ -20,6 +21,8 @@ export function CycleActivitiesPage({ farmerId }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState(null);
+  const [activityIdToDelete, setActivityIdToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Fetch cycles from database
@@ -59,8 +62,9 @@ export function CycleActivitiesPage({ farmerId }) {
     try {
       const data = await cycleActivityService.getActivities(farmerId, cycleId);
       setActivities(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (err) {
       setActivities([]);
+      showToast(err?.message || 'Failed to load activities from server.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -110,18 +114,26 @@ export function CycleActivitiesPage({ farmerId }) {
   };
 
   // Handle Delete
-  const handleDeleteActivity = async (activityId) => {
-    if (!window.confirm('Are you sure you want to delete this activity record?')) return;
+  const handleDeleteActivity = (activityId) => {
+    setActivityIdToDelete(activityId);
+  };
+
+  const confirmDeleteActivity = async () => {
+    if (!activityIdToDelete) return;
+    setIsDeleting(true);
     try {
-      await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityId);
-      setActivities((prev) => prev.filter((a) => a.id !== activityId));
+      await cycleActivityService.deleteActivity(farmerId, selectedCycleId, activityIdToDelete);
+      setActivities((prev) => prev.filter((a) => a.id !== activityIdToDelete));
       showToast('Activity deleted successfully.');
-      if (editingActivity?.id === activityId) {
+      if (editingActivity?.id === activityIdToDelete) {
         setEditingActivity(null);
         setShowForm(false);
       }
+      setActivityIdToDelete(null);
     } catch (err) {
       showToast(err?.message || 'Failed to delete activity.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -169,7 +181,7 @@ export function CycleActivitiesPage({ farmerId }) {
           {cycles.length > 0 ? (
             cycles.map((c) => {
               const isSelected = selectedCycleId === c.id;
-              const displayName = c.name || `${c.cropName || 'Crop'} (${c.plotName || 'Plot'})`;
+              const displayName = c.name || [c.cropName, c.plotName].filter(Boolean).join(' · ') || 'Unnamed cycle';
               return (
                 <button
                   key={c.id}
@@ -290,6 +302,17 @@ export function CycleActivitiesPage({ farmerId }) {
           />
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={!!activityIdToDelete}
+        onClose={() => setActivityIdToDelete(null)}
+        onConfirm={confirmDeleteActivity}
+        title="Delete Activity"
+        message="Are you sure you want to delete this activity record?"
+        confirmText="Delete Activity"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

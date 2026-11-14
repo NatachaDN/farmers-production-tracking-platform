@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Schema(description = "Animal group details returned by the API")
 public class AnimalGroupResponse {
@@ -56,6 +58,21 @@ public class AnimalGroupResponse {
     @Schema(description = "Descriptive notes", example = "Healthy batch")
     private String notes;
 
+    @Schema(description = "Detailed description of the animal group")
+    private String description;
+
+    @Schema(description = "Feeding regime or ration")
+    private String feedingRegime;
+
+    @Schema(description = "Health status")
+    private String healthStatus;
+
+    @Schema(description = "Average animal weight in kg")
+    private Double averageWeightKg;
+
+    @Schema(description = "Photo URLs for the animal group")
+    private List<String> imageUrls = new ArrayList<>();
+
     @Schema(description = "Record creation timestamp", example = "2026-11-10T09:30:00")
     private LocalDateTime createdAt;
 
@@ -82,6 +99,11 @@ public class AnimalGroupResponse {
         res.setStatus(group.getStatus());
         res.setStartDate(group.getStartDate());
         res.setNotes(group.getNotes());
+        res.setDescription(group.getDescription());
+        res.setFeedingRegime(group.getFeedingRegime());
+        res.setHealthStatus(group.getHealthStatus());
+        res.setAverageWeightKg(group.getAverageWeightKg());
+        res.setImageUrls(group.getImageUrls() != null ? new ArrayList<>(group.getImageUrls()) : new ArrayList<>());
         res.setCreatedAt(group.getCreatedAt());
         res.setUpdatedAt(group.getUpdatedAt());
         return res;
@@ -221,6 +243,46 @@ public class AnimalGroupResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getFeedingRegime() {
+        return feedingRegime;
+    }
+
+    public void setFeedingRegime(String feedingRegime) {
+        this.feedingRegime = feedingRegime;
+    }
+
+    public String getHealthStatus() {
+        return healthStatus;
+    }
+
+    public void setHealthStatus(String healthStatus) {
+        this.healthStatus = healthStatus;
+    }
+
+    public Double getAverageWeightKg() {
+        return averageWeightKg;
+    }
+
+    public void setAverageWeightKg(Double averageWeightKg) {
+        this.averageWeightKg = averageWeightKg;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
     }
 }
 

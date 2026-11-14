@@ -37,5 +37,16 @@ export const animalGroupService = {
    */
   async deleteGroup(id) {
     return await apiClient.delete(`/animals/groups/${id}`);
+  },
+
+  /**
+   * Upload an animal group photo from the farmer's device or camera.
+   * @param {File} file
+   * @returns {Promise<{ url: string }>}
+   */
+  async uploadAnimalPhoto(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.upload('/farms/upload-image', formData);
   }
 };
