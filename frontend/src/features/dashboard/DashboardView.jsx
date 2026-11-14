@@ -124,11 +124,7 @@ export function DashboardView({ onNavigate, user }) {
       </div>
 
       {/* Middle Section: Production Overview & Upcoming Activities */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1.7fr 1fr',
-        gap: '20px'
-      }}>
+      <div className="acrea-dashboard-split">
         <ProductionOverviewChart
           data={summary?.monthlyProduction || []}
           totalKg={totalHarvestKg}
@@ -142,11 +138,7 @@ export function DashboardView({ onNavigate, user }) {
       </div>
 
       {/* Bottom Section: Recent Activities & Module Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1.2fr 1fr 1fr',
-        gap: '20px'
-      }}>
+      <div className="acrea-dashboard-triple">
         <RecentActivitiesCard
           activities={summary?.recentActivities || []}
           onNavigate={onNavigate}

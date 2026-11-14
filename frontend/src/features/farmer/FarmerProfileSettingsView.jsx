@@ -445,7 +445,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
             <span>Farm Holding Information</span>
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '18px' }}>
             {/* Farm Name */}
             <div>
               <label htmlFor="profile-farm-name" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -511,7 +511,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
                 Farming Type
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div className="acrea-grid-3" style={{ gap: '12px' }}>
                 {[
                   { id: 'CROP', label: 'Crop Production', desc: 'Grain, horticulture & field crops', icon: IconCrop },
                   { id: 'LIVESTOCK', label: 'Livestock / Animals', desc: 'Cattle, poultry, small stock', icon: IconFarms },
@@ -577,7 +577,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
             <span>Crops Grown & Total Land Area</span>
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '18px' }}>
             {/* Total Area */}
             <div>
               <label htmlFor="profile-total-area" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
@@ -704,7 +704,7 @@ export function FarmerProfileSettingsView({ user, onProfileUpdated }) {
             <span>Farmer Identity & Profile Photo</span>
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '18px' }}>
             {/* Full Name */}
             <div>
               <label htmlFor="profile-full-name" style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>

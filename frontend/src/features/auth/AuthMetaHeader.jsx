@@ -3,7 +3,7 @@ import { AcreaLogo, IconGlobe } from '../../shared/components/Icons';
 
 export function AuthMetaHeader({ subtitle = 'Secure farmer access' }) {
   return (
-    <>
+    <div>
       {/* Mobile-only brand header */}
       <div
         className="auth-mobile-brand"
@@ -46,6 +46,6 @@ export function AuthMetaHeader({ subtitle = 'Secure farmer access' }) {
           <span>English</span>
         </button>
       </div>
-    </>
+    </div>
   );
 }

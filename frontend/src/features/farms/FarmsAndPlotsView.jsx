@@ -298,7 +298,7 @@ export function FarmsAndPlotsView({ farmerId, onNavigate, onSelectFarm, onSelect
         </div>
 
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+          <div className="acrea-grid-2" style={{ gap: '20px' }}>
             {[1, 2].map((n) => (
               <div key={n} style={{ border: '1px solid #ECE7DC', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { MobileBottomNav } from './MobileBottomNav';
 
 export function AppLayout({
   activeRoute,
@@ -64,6 +65,13 @@ export function AppLayout({
         <main className="acrea-main">
           {children}
         </main>
+        <MobileBottomNav
+          activeRoute={activeRoute}
+          onNavigate={onNavigate}
+          onOpenMore={() => setMobileMenuOpen(true)}
+          isAdmin={isUserAdmin}
+          isManager={isUserManager}
+        />
       </div>
     </div>
   );

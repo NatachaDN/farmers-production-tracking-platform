@@ -186,14 +186,14 @@ export function ReportsAnalyticsView({ farmerId }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '16px' }}>
+        <div className="acrea-grid-4">
           {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
         </div>
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #ECE7DC', padding: '24px' }}>
           <Skeleton width="220px" height="20px" />
           <div style={{ marginTop: '12px' }}><SkeletonText lines={3} /></div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '20px' }}>
+        <div className="acrea-grid-2">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #ECE7DC', padding: '22px' }}>
               <Skeleton width="180px" height="18px" />
@@ -411,7 +411,7 @@ export function ReportsAnalyticsView({ farmerId }) {
       </div>
 
       {/* Chart.js Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '20px' }}>
         {focus !== 'LIVESTOCK' && (
           <ExpectedVsActualChart cycleComparisons={analytics.cycleComparisons} />
         )}

@@ -260,13 +260,7 @@ export function LivestockView({ user }) {
       </div>
 
       {/* 4 Summary Stat Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '20px'
-        }}
-      >
+      <div className="acrea-grid-4">
         <MetricCard
           label="Animal Groups"
           value={String(totalGroups)}
@@ -462,7 +456,7 @@ export function LivestockView({ user }) {
 
       {/* Loading Skeleton */}
       {loading && groups.length === 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
