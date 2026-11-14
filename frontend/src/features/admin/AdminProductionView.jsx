@@ -14,6 +14,35 @@ export function AdminProductionView() {
   const inputs = useAdminData(() => adminService.inputs(), []);
   const active = { cycles, harvests, inputs }[tab];
 
+  const handleCycleStatusChange = async (cycle, nextStatus) => {
+    try {
+      await adminService.updateCycle(cycle.id, { status: nextStatus });
+      cycles.reload();
+    } catch (err) {
+      alert(err.message || 'Could not update cycle.');
+    }
+  };
+
+  const handleDeleteCycle = async (cycle) => {
+    if (!window.confirm(`Delete production cycle "${cycle.cropName || cycle.name}"?`)) return;
+    try {
+      await adminService.deleteCycle(cycle.id);
+      cycles.reload();
+    } catch (err) {
+      alert(err.message || 'Could not delete cycle.');
+    }
+  };
+
+  const handleDeleteHarvest = async (h) => {
+    if (!window.confirm(`Delete harvest record for "${h.cropName}"?`)) return;
+    try {
+      await adminService.deleteHarvest(h.id);
+      harvests.reload();
+    } catch (err) {
+      alert(err.message || 'Could not delete harvest.');
+    }
+  };
+
   return (
     <div className="adm-stack fade-in">
       <div className="adm-toolbar">
@@ -35,7 +64,7 @@ export function AdminProductionView() {
               subtitle="Cycles with a past harvest date, or no field work in 14 days, are flagged">
               {rows.length === 0 ? <EmptyState>No production cycle matches this filter.</EmptyState> : (
                 <div className="adm-table-wrap"><table className="adm-table">
-                  <thead><tr><th>Crop</th><th>Farmer</th><th>Status</th><th>Stage</th><th>Progress</th><th>Started</th><th>Harvest due</th><th className="num">Activities</th><th className="num">Yield</th></tr></thead>
+                  <thead><tr><th>Crop</th><th>Farmer</th><th>Status</th><th>Stage</th><th>Progress</th><th>Started</th><th>Harvest due</th><th className="num">Activities</th><th className="num">Yield</th><th>Actions</th></tr></thead>
                   <tbody>
                     {rows.map((c) => (
                       <tr key={c.id}>
@@ -48,6 +77,22 @@ export function AdminProductionView() {
                         <td>{fmtDate(c.endDate)}</td>
                         <td className="num">{c.activityCount}</td>
                         <td className="num">{c.harvest ? `${fmtNumber(c.harvest.quantity)} ${label(c.harvest.unit)}` : '—'}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <select
+                              aria-label="Cycle status"
+                              value={c.status}
+                              onChange={(e) => handleCycleStatusChange(c, e.target.value)}
+                              className="adm-input"
+                              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                            >
+                              <option value="ACTIVE">ACTIVE</option>
+                              <option value="COMPLETED">COMPLETED</option>
+                              <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                            <button type="button" className="adm-chip" style={{ color: '#B91C1C' }} onClick={() => handleDeleteCycle(c)}>Delete</button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -67,7 +112,7 @@ export function AdminProductionView() {
               subtitle={`${fmtKg(kg)} by weight${bags ? ` and ${fmtNumber(bags)} bags` : ''}`}>
               {rows.length === 0 ? <EmptyState>No harvest has been recorded yet.</EmptyState> : (
                 <div className="adm-table-wrap"><table className="adm-table">
-                  <thead><tr><th>Crop</th><th>Farmer</th><th>Harvested on</th><th className="num">Quantity</th><th className="num">Yield</th><th>Notes</th></tr></thead>
+                  <thead><tr><th>Crop</th><th>Farmer</th><th>Harvested on</th><th className="num">Quantity</th><th className="num">Yield</th><th>Notes</th><th>Actions</th></tr></thead>
                   <tbody>
                     {rows.map((h) => (
                       <tr key={h.id}>
@@ -75,6 +120,9 @@ export function AdminProductionView() {
                         <td className="num">{fmtNumber(h.quantity)} {label(h.unit)}</td>
                         <td className="num">{h.yield != null ? fmtNumber(h.yield) : '—'}</td>
                         <td className="notes" title={h.notes || ''}>{h.notes || '—'}</td>
+                        <td>
+                          <button type="button" className="adm-chip" style={{ color: '#B91C1C' }} onClick={() => handleDeleteHarvest(h)}>Delete</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

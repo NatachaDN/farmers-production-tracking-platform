@@ -21,16 +21,24 @@ import './Skeleton.css';
 
 const ADMIN_NAV = [
   { id: 'admin-overview', label: 'Overview', icon: IconDashboard },
-  { id: 'admin-farmers', label: 'Farmers', icon: IconUsers },
-  { id: 'admin-activity', label: 'Activity', icon: IconPulse },
+  { id: 'admin-users', label: 'Users & Managers', icon: IconUsers },
+  { id: 'admin-notifications', label: 'Notify Users', icon: IconHelp },
+  { id: 'admin-farms', label: 'Farms & Plots', icon: IconFarms },
+  { id: 'admin-livestock', label: 'Animal Groups', icon: IconLivestock },
+  { id: 'admin-activity', label: 'Activities', icon: IconPulse },
   { id: 'admin-production', label: 'Production', icon: IconProduction },
+  { id: 'admin-incidents', label: 'Incidents', icon: IconActivities },
+  { id: 'admin-analytics', label: 'Analytics', icon: IconReports },
   { id: 'admin-system', label: 'System health', icon: IconServer },
 ];
 
 const MANAGER_NAV = [
   { id: 'manager-dashboard', label: 'Overview', icon: IconDashboard },
   { id: 'manager-farmers', label: 'Supervised Farmers', icon: IconUsers },
+  { id: 'manager-farms', label: 'Farms & Plots', icon: IconFarms },
+  { id: 'manager-livestock', label: 'Animal Groups', icon: IconLivestock },
   { id: 'manager-productions', label: 'Farmer Productions', icon: IconProduction },
+  { id: 'manager-incidents', label: 'Incidents', icon: IconActivities },
   { id: 'manager-reports', label: 'Consolidated Reports', icon: IconReports },
 ];
 

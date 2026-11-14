@@ -27,9 +27,11 @@ public class PlotResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public PlotResponse() {}
+    public PlotResponse() {
+    }
 
-    public PlotResponse(Long id, Long farmerId, String name, Double area, String location, String cropType, String stage, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public PlotResponse(Long id, Long farmerId, String name, Double area, String location, String cropType,
+            String stage, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.farmerId = farmerId;
         this.name = name;
@@ -51,8 +53,7 @@ public class PlotResponse {
                 plot.getCropType(),
                 plot.getStage(),
                 plot.getCreatedAt(),
-                plot.getUpdatedAt()
-        );
+                plot.getUpdatedAt());
         if (plot.getFarm() != null) {
             resp.setFarmId(plot.getFarm().getId());
             resp.setFarmName(plot.getFarm().getName());

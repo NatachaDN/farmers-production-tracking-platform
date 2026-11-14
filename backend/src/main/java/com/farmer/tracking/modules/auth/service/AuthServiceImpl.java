@@ -104,6 +104,13 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException(explanation);
         }
 
+        if (farmer.getStatus() == com.farmer.tracking.modules.auth.model.RegistrationStatus.SUSPENDED) {
+            String explanation = (farmer.getRejectionReason() != null && !farmer.getRejectionReason().isBlank())
+                    ? "Your account has been suspended: " + farmer.getRejectionReason()
+                    : "Your account has been suspended by an administrator. Please contact support.";
+            throw new UnauthorizedException(explanation);
+        }
+
         farmer.setLastLoginAt(LocalDateTime.now());
         farmerRepository.save(farmer);
 

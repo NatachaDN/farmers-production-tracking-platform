@@ -19,4 +19,24 @@ export const adminService = {
   passwordRequests: (status) => apiClient.get(`/admin/password-requests${qs({ status })}`),
   approvePasswordRequest: (id, adminNote) => apiClient.post(`/admin/password-requests/${id}/approve`, { adminNote }),
   rejectPasswordRequest: (id, adminNote) => apiClient.post(`/admin/password-requests/${id}/reject`, { adminNote }),
+
+  // User CRUD + Manager Creation + Suspension
+  users: ({ role, status, q } = {}) => apiClient.get(`/admin/users${qs({ role, status, q })}`),
+  createUser: (payload) => apiClient.post('/admin/users', payload),
+  updateUser: (id, payload) => apiClient.put(`/admin/users/${id}`, payload),
+  updateUserStatus: (id, status, reason = '') => apiClient.put(`/admin/users/${id}/status`, { status, reason }),
+  deleteUser: (id) => apiClient.delete(`/admin/users/${id}`),
+
+  // Activity Management
+  createActivity: (payload) => apiClient.post('/admin/activities', payload),
+  updateActivity: (id, payload) => apiClient.put(`/admin/activities/${id}`, payload),
+  deleteActivity: (id) => apiClient.delete(`/admin/activities/${id}`),
+
+  // Production Management
+  updateCycle: (id, payload) => apiClient.put(`/admin/cycles/${id}`, payload),
+  deleteCycle: (id) => apiClient.delete(`/admin/cycles/${id}`),
+  deleteHarvest: (id) => apiClient.delete(`/admin/harvests/${id}`),
+
+  // Global Analytics
+  analytics: () => apiClient.get('/admin/analytics'),
 };

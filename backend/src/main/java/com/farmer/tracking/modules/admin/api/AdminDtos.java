@@ -81,4 +81,102 @@ public final class AdminDtos {
     public record Telemetry(Instant generatedAt, SystemSnapshot system, TrafficSnapshot traffic) {}
 
     public record ReviewPasswordChangeRequest(String adminNote) {}
+
+    // ── User CRUD & Manager Creation ──
+
+    public record AdminUserRow(
+            Long id,
+            String fullName,
+            String emailOrPhone,
+            String role,
+            String status,
+            String rejectionReason,
+            String location,
+            String farmName,
+            String farmType,
+            String authProvider,
+            Instant createdAt,
+            Instant lastLoginAt
+    ) {}
+
+    public record CreateUserRequest(
+            String fullName,
+            String emailOrPhone,
+            String password,
+            String role,
+            String location,
+            String farmName,
+            String farmType,
+            String status
+    ) {}
+
+    public record UpdateUserRequest(
+            String fullName,
+            String emailOrPhone,
+            String role,
+            String location,
+            String farmName,
+            String farmType,
+            String status,
+            String newPassword
+    ) {}
+
+    public record UpdateUserStatusRequest(
+            String status,
+            String reason
+    ) {}
+
+    // ── Activity & Production Management ──
+
+    public record AdminActivityRequest(
+            Long cycleId,
+            String activityType,
+            LocalDate activityDate,
+            String notes
+    ) {}
+
+    public record AdminCycleUpdateRequest(
+            String status,
+            String stage,
+            Integer progress
+    ) {}
+
+    // ── Global Analytics ──
+
+    public record RegionBreakdown(String region, long farms, double totalAreaHa) {}
+
+    public record LivestockBreakdown(String animalType, long groups, long population) {}
+
+    public record AdminAnalyticsResponse(
+            Instant generatedAt,
+            long totalUsers,
+            long totalFarmers,
+            long totalManagers,
+            long totalAdmins,
+            long suspendedUsers,
+            long pendingUsers,
+            long totalFarms,
+            long totalPlots,
+            double totalPlotAreaHa,
+            long totalAnimalGroups,
+            long totalAnimalPopulation,
+            long totalCycles,
+            long activeCycles,
+            long completedCycles,
+            long totalActivities,
+            long totalHarvests,
+            double totalHarvestedKg,
+            double totalInputSpend,
+            long totalIncidents,
+            long openIncidents,
+            long resolvedIncidents,
+            List<Count> usersByRole,
+            List<Count> usersByStatus,
+            List<Count> incidentsByStatus,
+            List<RegionBreakdown> farmsByRegion,
+            List<LivestockBreakdown> livestockByType,
+            List<CropOutput> harvestByCrop,
+            List<MonthlyHarvest> harvestPerMonth,
+            List<InputSpend> inputsByType
+    ) {}
 }
